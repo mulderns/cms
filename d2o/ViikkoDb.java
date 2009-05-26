@@ -1,7 +1,6 @@
 package d2o;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
@@ -10,9 +9,9 @@ import util.ActionLog;
 import util.Csv;
 import util.Logger;
 import util.Utils;
-
 import cms.Cgicms;
 import cms.FileHive;
+import cms.FileOps;
 
 public class ViikkoDb {
 	Logger log;
@@ -84,36 +83,8 @@ public class ViikkoDb {
 	}
 
 	public String addEntry(ViikkoEntry ve){
-		File dest = new File(db_file, genFilename(ve));
-		File lock = new File(db_file, dest.getName()+".lock");
-		FileHive fh = FileHive.getFileHive(db_file);
-		int trys = 5;
-		try{
-			if(dest.exists()){
-				while(trys > 0){
-					if(lock.createNewFile()){
-						fh.appendFileIso(dest.getName(), Csv.encode(ve.fieldsToArray()));
-						if(!lock.delete())
-							log.info("could not delete ["+lock.getName()+"]");
-						ActionLog.system("add trys ["+trys+"]");
-						return null;
-					}else{
-						Utils.sleep(100);
-						trys--;
-					}
-				}
-				ActionLog.error("out of trys");
-				return "out of tryes";
-			}else{
-				log.info("creating new file");
-				fh.appendFileIso(dest.getName(), Csv.encode(ve.fieldsToArray()));
-				return null;
-			}
-		}catch (IOException ioe) {
-			log.fail("ioexception adding entry:"+ioe);
-		}
-
-		return "add failed";
+		FlushingFile dest = new FlushingFile(new File(db_file, genFilename(ve)));
+		return dest.append(Csv.encode(ve.fieldsToArray()));
 	}
 
 	public String removeEntry(String id){
@@ -121,68 +92,40 @@ public class ViikkoDb {
 		if(filename == null){
 			return "can't generate filename from id";
 		}
-		File dest = new File(db_file, filename);
-		File lock = new File(db_file, filename+".lock");
 
-		FileHive fh = FileHive.getFileHive(db_file);
-		int trys = 5;
+		FlushingFile dest = new FlushingFile(new File(db_file, filename));
+		String[] lines = dest.loadAll();
+		log.info("read lines["+lines.length+"]");
+		ArrayList<String> store = new ArrayList<String>(lines.length);
 		boolean found = false;
-		try{
-			if(dest.exists()){
-				while(trys > 0){
-					if(lock.createNewFile()){
-						ActionLog.system("remove trys ["+trys+"]");
-						String[] lines = fh.readFileToArrayIso(dest.getName());
-						log.info("read lines["+lines.length+"]");
-						ArrayList<String> store = new ArrayList<String>(lines.length);
-						for(String line : lines){
-							if(line != null){
-								ViikkoEntry ve = new ViikkoEntry(Csv.decode(line));
-								log.info("/ ve["+ve.id+"]");
-								log.info("  id["+id+"]");
-								if(!ve.id.equals(id)){
-									log.info(" -");
-									store.add(line);
-								}else{
-									log.info(" +");
-									found = true;
-								}
-							}
-						}
-						if(found){
-							boolean isit = fh.storeFile(dest.getName(), store);
-							log.info("stored successfully " + isit);
-							lock.delete();
-							return null;
-						}else{
-							log.info("id not found");
-							if(!lock.delete())
-								log.fail("could not delete["+lock.getName()+"]");
-							return "id not found";
-						}
-					}else{
-						Utils.sleep(100);
-						trys--;
-					}
+		for(String line : lines){
+			if(line != null){
+				ViikkoEntry ve = new ViikkoEntry(Csv.decode(line));
+				log.info("/ ve["+ve.id+"]");
+				log.info("  id["+id+"]");
+				if(!ve.id.equals(id)){
+					log.info(" -");
+					store.add(line);
+				}else{
+					log.info(" +");
+					found = true;
 				}
-				ActionLog.error("out of trys");
-				log.fail("out of trys");
-				return "db timed out";
-			}else{
-				log.fail("remove: file does not exist ["+dest.getName()+"]");
-				return "record file not found";
 			}
-		}catch (IOException ioe) {
-			log.fail("exception occurred:"+ioe);
-			return "io exception";
 		}
+		if(found){
+			return dest.overwrite(store.toArray(new String[store.size()]));
+		}else{
+			log.fail("can't remove, id not found");
+			return "id not found";
+		}
+
 	}
 
 	public ArrayList<ViikkoEntry> getUserEntries(String username) {
 		ArrayList<ViikkoEntry> array = new ArrayList<ViikkoEntry>();
-		FileHive fh = FileHive.getFileHive(db_file);
 		if(username.equals("all")){
-			for(String file : fh.getFiles("hap")){
+				for(File _file : FileOps.getFiles(db_file,"hap")){
+				String file = _file.getName();
 				if(!(file.equals("templates.hap") || file.equals("automatic.hap"))){
 					for(ViikkoEntry ve : loadEntries(file,false,false)){
 						array.add(ve);
@@ -190,7 +133,8 @@ public class ViikkoDb {
 				}
 			}
 		}else if(username.equals("auto")){
-			for(String file : fh.getFiles("hap")){
+			for(File _file : FileOps.getFiles(db_file,"hap")){
+				String file = _file.getName();
 				if(file.equals("automatic.hap")){
 					for(ViikkoEntry ve : loadEntries(file,false,false)){
 						array.add(ve);
@@ -198,7 +142,8 @@ public class ViikkoDb {
 				}
 			}
 		}else{
-			for(String file : fh.getFiles("hap")){
+			for(File _file : FileOps.getFiles(db_file,"hap")){
+				String file = _file.getName();
 				for(ViikkoEntry ve : loadEntries(file,false,false)){
 					if(ve != null && ve.user.equals(username)){
 						log.fail("wrong users gotten");
@@ -213,54 +158,34 @@ public class ViikkoDb {
 
 	private ArrayList<ViikkoEntry> loadEntries(String filename, boolean vain_mailiin, boolean vain_etukateen) {
 		ArrayList<ViikkoEntry> temp = new ArrayList<ViikkoEntry>();
+		FlushingFile dest = new FlushingFile(new File(db_file, filename));
+		String[] lines = dest.loadAll();
 
-		File dest = new File(db_file, filename);
-		File lock = new File(db_file, filename+".lock");
-
-		FileHive fh = FileHive.getFileHive(db_file);
-		int trys = 5;
-		if(dest.exists()){
-			while(trys > 0){
-				if(!lock.exists()){
-					if(trys < 5)
-						ActionLog.system("read trys ["+trys+"]");
-					String[] lines = fh.readFileToArrayIso(dest.getName());
-					for(String line : lines){
-						if(line != null){
-							//temp.add(new ViikkoEntry(Csv.decode(line)));
-							ViikkoEntry ve = new ViikkoEntry(Csv.decode(line));
-							if(vain_mailiin){
-								if(vain_etukateen){
-									if(ve.mailiin&&ve.etukateen)
-										temp.add(ve);
-								}else{
-									if(ve.mailiin)
-										temp.add(ve);
-								}
-							}else if(vain_etukateen){
-								if(ve.etukateen){
-									temp.add(ve);
-								}
-							}else{
-								temp.add(ve);
-							}
-							log.info(ve.otsikko);
-						}
+		for(String line : lines){
+			if(line != null){
+				ViikkoEntry ve = new ViikkoEntry(Csv.decode(line));
+				if(vain_mailiin){
+					if(vain_etukateen){
+						if(ve.mailiin&&ve.etukateen)
+							temp.add(ve);
+					}else{
+						if(ve.mailiin)
+							temp.add(ve);
 					}
-					return temp;
+				}else if(vain_etukateen){
+					if(ve.etukateen){
+						temp.add(ve);
+					}
 				}else{
-					Utils.sleep(100);
-					trys--;
+					temp.add(ve);
 				}
+				log.info(ve.otsikko);
 			}
-			ActionLog.error("out of trys");
-			log.fail("out of trys");
-		}else{
-			log.info("l_entries: file does not exist ["+dest.getName()+"]");
 		}
-
-		return null;
+		return temp;
 	}
+
+
 
 	public ViikkoEntry loadEntry(String id) {
 		ViikkoEntry temp;
@@ -269,36 +194,17 @@ public class ViikkoDb {
 		if(filename == null){
 			return null;
 		}
-		File dest = new File(db_file, filename);
-		File lock = new File(db_file, filename+".lock");
 
-		FileHive fh = FileHive.getFileHive(db_file);
-		int trys = 5;
-		if(dest.exists()){
-			while(trys > 0){
-				if(!lock.exists()){
-					if(trys < 5)
-						ActionLog.system("read trys ["+trys+"]");
-					String[] lines = fh.readFileToArrayIso(dest.getName());
-					for(String line : lines){
-						temp = new ViikkoEntry(Csv.decode(line));
-						if(temp.id.equals(id)){
-							log.info(temp.otsikko);
-							return temp;
-						}
-					}
-					return null;
-				}else{
-					Utils.sleep(100);
-					trys--;
-				}
+		FlushingFile dest = new FlushingFile(new File(db_file, filename));
+		String[] lines = dest.loadAll();
+
+		for(String line : lines){
+			temp = new ViikkoEntry(Csv.decode(line));
+			if(temp.id.equals(id)){
+				log.info(temp.otsikko);
+				return temp;
 			}
-			ActionLog.error("out of trys");
-			log.fail("out of trys");
-		}else{
-			log.fail("load: file does not exist ["+dest.getName()+"]");
 		}
-
 		return null;
 	}
 
@@ -323,9 +229,7 @@ public class ViikkoDb {
 		Calendar now = Calendar.getInstance();
 		now.setFirstDayOfWeek(Calendar.MONDAY);
 		now.add(Calendar.WEEK_OF_YEAR, offset);
-		int week = now.get(Calendar.WEEK_OF_YEAR);
-		return week;
-
+		return now.get(Calendar.WEEK_OF_YEAR);
 	}
 
 	public void removeOld() {
@@ -335,7 +239,8 @@ public class ViikkoDb {
 		int cur_week = now.get(Calendar.WEEK_OF_YEAR);
 
 		FileHive fh = FileHive.getFileHive(db_file);
-		for(String file : fh.getFiles("hap")){
+		for(File _file : FileOps.getFiles(db_file,"hap")){
+			String file = _file.getName();
 			if(file.length() > 4){
 				int year = 0;
 				int week = 0; 
@@ -492,21 +397,22 @@ public class ViikkoDb {
 
 		return null;
 	}
-	 */
+
 	public ViikkoEntry[] loadTemplates() {
 		ArrayList<ViikkoEntry> temp = new ArrayList<ViikkoEntry>();
 
 		File dest = new File(db_file, "templates.hap");
 		File lock = new File(db_file, dest.getName()+".lock");
 
-		FileHive fh = FileHive.getFileHive(db_file);
+		//		FileHive fh = FileHive.getFileHive(db_file);
 		int trys = 5;
 		if(dest.exists()){
 			while(trys > 0){
 				if(!lock.exists()){
 					if(trys < 5)
 						ActionLog.system("read trys ["+trys+"]");
-					String[] lines = fh.readFileToArrayIso(dest.getName());
+					String[] lines = FileOps.readToArray(new File(db_file,dest.getName()));
+					//					String[] lines = fh.readFileToArrayIso(dest.getName());
 					for(String line : lines){
 						if(line != null){
 							//temp.add(new ViikkoEntry(Csv.decode(line)));
@@ -528,7 +434,7 @@ public class ViikkoDb {
 		}
 
 		return new ViikkoEntry[0];
-	}
+	}*/
 
 	public void checkDb() {
 		if(!db_file.exists()){

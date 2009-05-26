@@ -17,7 +17,7 @@ import java.util.List;
 import util.ActionLog;
 import util.Utils;
 import cms.DataRelay;
-import cms.FileHive;
+import cms.FileOps;
 import cms.Mailer;
 import d2o.ViikkoDb;
 import d2o.ViikkoEntry;
@@ -129,32 +129,32 @@ public class ModViikko extends Module {
 		help.addLayer("dl","help");
 		help.addTag("h4", "Ohjeita");
 		help.addTag("p", "Ensimm‰inen laatikko ker‰‰ tapahtumasta tiivistetyt perustiedot, "+
-"jotka n‰kyv‰t sivuilla olevassa viikko-ohjelmassa, sek‰ " +
-"viikkopostissa jos n‰in halutaan.");
+				"jotka n‰kyv‰t sivuilla olevassa viikko-ohjelmassa, sek‰ " +
+		"viikkopostissa jos n‰in halutaan.");
 		help.addTag("p","Toisessa laatikossa oleva viesti tulee pelk‰st‰‰n viikkopostiin "+
-"ja voi olla pidempi ja yksityis kohtaisempi.");
+		"ja voi olla pidempi ja yksityis kohtaisempi.");
 		help.addTag("h4", "Kent‰t");
 
 		help.addTag("dt", "Otsikko");
 		help.addTag("dd","<b>Pakollinen kentt‰.</b>");
 		help.addTag("dd","Tapahtumaa kuvaava yleisotsikko.");
 		help.addTag("dd","esim. kappeli-ilta, lenkki, kahvitus.");
-		
+
 		help.addTag("dt", "P‰iv‰");
 		help.addTag("dd","<b>Pakollinen kentt‰.</b>");
 		help.addTag("dd","Ekaan laatikkoon p‰iv‰, tokaan kuu ja kolmanteen vuosi.");
 		help.addTag("dd","Tapahtumia ei voi lis‰t‰ menneisyyteen.");
-				
+
 		help.addTag("dt", "Kello");
 		help.addTag("dd","Jos tapahtumalle ei halua kellon aikaa, kelpaa tyhj‰ kentt‰ tai 00:00");
-				
+
 		help.addTag("dt", "Paikka");
 		help.addTag("dd","Miss‰ tapahtuu.");
-					
+
 		help.addTag("dt", "Lis‰tiedot");
 		help.addTag("dd","Muita huomioon otettavia tietoja tiivistettyn‰.");
 		help.addTag("dd","esim. kappeli-illan aihe / puhuja.");
-		
+
 		help.addTag("dt", "Lis‰‰ viesti viikkopostiin");
 		help.addTag("dd","Rasti t‰h‰n jos haluat tapahtuman n‰kyv‰n viikkopostissa.");
 		help.addTag("dd","Alla olevaan laatikkoon voi kirjoittaa yksityiskohtaisen viestin joka n‰kyy vain viikkopostissa");
@@ -164,7 +164,7 @@ public class ModViikko extends Module {
 		help.addTag("dd","Tapahtuma n‰kyy sek‰ sivuilla ett‰ viikko postissa(jos valittu) alkaen kahta viikkoa ennen tapahtuman ajankohtaa ");
 		help.addTag("dt", "Automaattisesti toistuva");
 		help.addTag("dd","Tapahtuma lis‰t‰‰n viikko-ohjelmaan ja postiin(jos valittu) automaattisesti joka viikko.");
-		
+
 		actions.add(new Action(null, ""){public void execute(){
 			CmsElement tap = new CmsElement();
 
@@ -362,8 +362,6 @@ public class ModViikko extends Module {
 				log.info("fields not found");
 				page.setTitle("Lis‰‰ tapahtuma");
 				page.addTop(getMenu());
-				//forlaBoxma
-				//page.addCenter(laBox.toString());
 
 				forma.addFormTop(script+"/"+hook+"/"+action_hook);
 
@@ -372,16 +370,12 @@ public class ModViikko extends Module {
 				page.addRight(genMonth(0));
 				page.addRight(genMonth(1));
 				page.addRight(genBugreport());
-				//page.addRight(genTalkback().toString());
-				//page.addRight(genBugreport().toString());
-				//page.addRight(genMonth(0));
-				//page.addRight(genMonth(1));
-				//page.addRight(genTemplates().toString());
+
 			}
 		}});
 
 		actions.add(null);
-		
+
 		/*
 		actions.add(
 				new Action(null, "poistapohja"){
@@ -421,6 +415,7 @@ public class ModViikko extends Module {
 				}
 		);*/
 
+		/*
 		actions.add(new Action(null, "pohjat"){public void execute(){
 			if(!ext.trim().equals("")){
 
@@ -507,13 +502,12 @@ public class ModViikko extends Module {
 				//page.addRight(genBugreport().toString());
 			}
 
-		}});
+		}});*/
 
 		actions.add(new Action(null, "muokkaa"){public void execute(){
 			log.info("/muokkaa ["+ext+"]");
 			if(ext != ""){
 				if(checkFields(forma.getFields())){
-					//if(checkField("otsikko")&&checkField("paiva")&&checkField("teksti")&&checkField("vuosi")){
 					log.info(" required fields found");
 					ArrayList<String> results = new ArrayList<String>();
 					if(!datarelay.post.containsKey("otsikko")){
@@ -543,10 +537,6 @@ public class ModViikko extends Module {
 					if(datarelay.post.containsKey("aika"))
 						if((res = temp.setAika(datarelay.post.get("aika"))) != null)
 							results.add(res);
-
-					//if((res = temp.setTeksti(datarelay.post.get("teksti"))) != null)
-					//	results.add(res);
-
 					if(datarelay.post.containsKey("lisa")){
 						if((res = temp.setLisa(datarelay.post.get("lisa"))) != null){
 							results.add(res);
@@ -617,8 +607,7 @@ public class ModViikko extends Module {
 						page.setTitle("Muokkaa tapahtumaa");
 						page.addTop(getMenu());
 						page.addCenter(result.toString());
-						//page.addCenter(prev);
-						//page.addCenter(genBugreport().toString());
+
 					}else{
 						ActionLog.action(username + " - failed to modify happening ["+datarelay.post.get("otsikko")+"]");
 						CmsBoxi result = new CmsBoxi("Tapahtuman muokkaus ep‰onnistui");
@@ -635,7 +624,6 @@ public class ModViikko extends Module {
 						page.addCenter(result.toString());
 						page.addCenter(forma.toString());
 
-						//page.addCenter(genBugreport().toString());
 					}
 
 				}else{
@@ -688,20 +676,14 @@ public class ModViikko extends Module {
 
 					page.setTitle("Muokkaa tapahtumaa");
 					page.addTop(getMenu());
-					
+
 					page.addRight(genMonth(0));
 					page.addRight(genMonth(1));
 					page.addRight(genBugreport());
 
-					//page.addRight(genTalkback().toString());
-					//page.addRight(genBugreport().toString());
-					
-					//results_page.addRight(genTemplates().toString());
-					//results_page.addCenter(getActionLinks());
 				}
 			}else{
 				CmsBoxi box = new CmsBoxi("Muokkaus sivu");
-				//box.addParagraph("lista kaikista muokattavista tai ei");
 				page.setTitle("Viikkoohjelma");
 				page.addTop(getMenu());
 				page.addCenter(box.toString());
@@ -734,14 +716,13 @@ public class ModViikko extends Module {
 				}else{
 					ViikkoDb db = new ViikkoDb();
 					ViikkoEntry ve;
-					//CmsBoxi box = new CmsBoxi("Muokkaus sivu");
+
 					CmsElement poista = new CmsElement();
 
 					poista.addLayer("div","boxi2 medium3");
 					poista.addTag("h4",null,"Poista tapahtuma");
 					poista.addLayer("div", "ingroup filled");
 
-					//poista.addSingle("colgroup width=\"70\"");
 
 					if((ve = db.loadEntry(ext)) == null){
 						poista.addTag("p", "tapahtumaa ["+ext+"] ei lˆydy!");
@@ -770,16 +751,13 @@ public class ModViikko extends Module {
 					page.setTitle("Viikkoohjelma");
 					page.addTop(getMenu());
 					page.addCenter(poista.toString());
-					//page.addLeft(getActionLinks().toString());
 				}
 			}else{
 				CmsBoxi box = new CmsBoxi("Muokkaus sivu");
-				//box.addParagraph("lista kaikista muokattavista tai ei");
 				page.setTitle("Viikkoohjelma");
 				page.addTop(getMenu());
 				page.addCenter(box.toString());
 				page.addCenter(getActionLinks().toString());
-				//page.addCenter(genBugreport().toString());
 			}
 		}});
 
@@ -855,46 +833,6 @@ public class ModViikko extends Module {
 				page.addTop(getMenu());
 				page.addLeft(getActionLinks().toString());
 				page.addCenter(esi.toString());
-				/**
-				pagebuilder.clear();
-				pagebuilder.setTitle("Esikatselu");
-
-				pagebuilder.build("<html xmlns=\"http://www.w3.org/1999/xhtml\" xml:lang=\"en\" lang=\"fi\">");
-				pagebuilder.build("<head>");
-				pagebuilder.build("<title>Tampereen kristityt teekkarit - nyt</title>");
-				pagebuilder.build("<link rel=\"stylesheet\" type=\"text/css\" href=\"http://www.students.tut.fi/~tkrt/style.css\"/>");
-				pagebuilder.build("<link rel=\"shortcut icon\" href=\"http://www.students.tut.fi/~tkrt/favicon.png\"/>");
-				pagebuilder.build("</head>");
-
-				pagebuilder.build("<body style=\"background-image:none;background-color:#fff;\">");
-				pagebuilder.build("<div class=\"wrapper\">");
-				pagebuilder.build("<div class=\"content\">");
-				pagebuilder.build("<div class=\"center\">");
-				pagebuilder.build("<div class=\"right\">");
-				pagebuilder.build(getViikkoHtml(0,true));
-				pagebuilder.build(getViikkoHtml(1,true));
-				pagebuilder.build("</div>");
-				pagebuilder.build("<div class=\"left\">");
-				pagebuilder.build("<p style=\"clear:right;color:#fff\">.</p>");
-				pagebuilder.build("<div class=\"tulossa\" style=\"margin-right:auto;\">");
-
-				pagebuilder.build("<p style=\"font-size:10pt;\">");
-				pagebuilder.build(getViikkoMail(0,true));
-				pagebuilder.build("</p>");
-				pagebuilder.build("</div>");
-
-				pagebuilder.build("<div class=\"tulossa\" style=\"margin-right:auto;\">");
-				pagebuilder.build("<p style=\"font-size:10pt;\">");
-				pagebuilder.build(getViikkoMail(1,true));
-				pagebuilder.build("</p>");
-				//pagebuilder.build("<p style=\"color:#fff\">.</p>");
-				pagebuilder.build("</div>");
-				pagebuilder.build("</div>");
-				pagebuilder.build("</div>");
-				pagebuilder.build("</div>");
-				pagebuilder.build("</div>");
-				pagebuilder.build("</body>");
-				pagebuilder.build("</html>");*/
 			}
 		}});
 
@@ -965,7 +903,7 @@ public class ModViikko extends Module {
 						boxi.addTag("h4", "Error");
 						week = 7;
 					}
-					
+
 					boxi.addLayer("div","ingroup filled");
 					boxi.addFormTop(script + "/" + hook + "/" + action_hook+"/"+week);
 					boxi.addTag("p", "Osoite johon posti l‰hetet‰‰n");
@@ -977,7 +915,7 @@ public class ModViikko extends Module {
 					boxi.addLayer("div", "ingroup filled");
 					boxi.addLayer("pre style=\"font-size:12.5px\"");
 					boxi.addContent(getViikkoMail(week, false));
-					
+
 
 					page.setTitle("Viikko-ohjelma");
 					page.addTop(getMenu());
@@ -989,10 +927,9 @@ public class ModViikko extends Module {
 		actions.add(new Action("P‰ivit‰ sivut", "julkaise"){public void execute(){
 			if(checkField("flag")){
 
-				FileHive fh = FileHive.getFileHive();
-				//fh.storeFile(new File(Cgicms.products_dir,"s_viikko_gen.html"), viikko.toString());
-				fh.storeFile(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false));
-				//fh.storeTargetFile("s_viikko_gen.html", getViikkoHtml(false).toString());
+				//FileHive fh = FileHive.getFileHive();
+				FileOps.write(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false), false);
+				//				fh.storeFile(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false));
 				CmsBoxi box = new CmsBoxi("Sivujen p‰ivitys");
 				box.addP("sivut p‰ivitetty");
 				box.addLink("Ok", script+"/"+hook);
@@ -1008,12 +945,12 @@ public class ModViikko extends Module {
 				box.addLayer("div","boxi2 medium3");
 				box.addTag("h4","Sivujen p‰ivitys");
 				box.addLayer("div", "ingroup filled");
-				
+
 				box.addLayer("table", "table5");
 				box.addSingle("colgroup");
 				box.addSingle("colgroup width=\"30\"");
 				box.addSingle("colgroup width=\"70\"");
-			
+
 				box.addLayer("tr");
 				box.addTag("td","do you really want this?");
 				box.addLayer("td style=\"text-align:right;\"");
@@ -1038,8 +975,6 @@ public class ModViikko extends Module {
 			}
 		}});
 
-		
-		
 		actions.add(null);
 
 		actions.add(new Action("Clear old", "clearold"){public void execute(){
@@ -1053,167 +988,140 @@ public class ModViikko extends Module {
 			page.addCenter(boxi.toString());
 		}});
 
-		/*
-		actions.add(
-				new Action("Test cal", "testcal"){
-					public void execute(){
-						CmsBoxi abc = new CmsBoxi("Calendar tests");
-						Calendar test = Calendar.getInstance();
 
-						abc.addTag("<pre>");
-						abc.addTag(" d["+test.get(Calendar.DAY_OF_MONTH)+
-								"] dow["+test.get(Calendar.DAY_OF_WEEK)+
-								"] fdow["+test.getFirstDayOfWeek()+"]");
+	}
 
-						test.setFirstDayOfWeek(Calendar.MONDAY);
-
-						abc.addTag(" d["+test.get(Calendar.DAY_OF_MONTH)+
-								"] dow["+test.get(Calendar.DAY_OF_WEEK)+
-								"] fdow["+test.getFirstDayOfWeek()+"]");
-
-						abc.addTag("</pre>");
-						CmsPage results_page = new CmsPage("Viikkoohjelma");
-						results_page.addTop(getMenu());
-						results_page.addCenter(abc.toString());
-						results_page.addCenter(getActionLinks().toString());
-						pagebuilder.buildPage(results_page);
-					}
+	private String genWeekHtmlString(List<ViikkoEntry> week, boolean preview){
+		//ArrayList<String> strings = new ArrayList<String>();
+		StringBuilder strings = new StringBuilder();
+		int previous_day = 0;
+		strings.append("<ul>");
+		for(ViikkoEntry ve: week){
+			if(previous_day != ve.day){
+				if( previous_day != 0){
+					strings.append("</dl></li>\n");
 				}
-		);
-		 */
-}
-
-private String genWeekHtmlString(List<ViikkoEntry> week, boolean preview){
-	//ArrayList<String> strings = new ArrayList<String>();
-	StringBuilder strings = new StringBuilder();
-	int previous_day = 0;
-	strings.append("<ul>");
-	for(ViikkoEntry ve: week){
-		if(previous_day != ve.day){
-			if( previous_day != 0){
-				strings.append("</dl></li>\n");
+				previous_day = ve.day;
+				strings.append("<li>\n");
+				strings.append("<h4>"+ve.getDayName()+" - "+ve.day+"."+ve.month+".</h4>\n");
+				strings.append("<dl>\n");
 			}
-			previous_day = ve.day;
-			strings.append("<li>\n");
-			strings.append("<h4>"+ve.getDayName()+" - "+ve.day+"."+ve.month+".</h4>\n");
-			strings.append("<dl>\n");
+			strings.append("<dt>"+ve.otsikko);
+			if(preview)
+				strings.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
+			strings.append("</dt>\n");
+			if(ve.hour != 0)
+				strings.append("<dd>Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2)+"</dd>\n");
+			if(ve.paikka.length() > 0)
+				strings.append("<dd>"+ve.paikka+"</dd>\n");
+			for(String s:ve.yhteenveto)
+				strings.append("<dd>"+s+"</dd>\n");
 		}
-		strings.append("<dt>"+ve.otsikko);
+
+		if(previous_day != 0){
+			strings.append("</dl></li>");
+		}else{
+			log.info("temp paiva == null");
+		}
+		strings.append("</ul>");
+		return strings.toString();
+	}
+	private String genWeekHtmlString(ViikkoEntry ve, boolean preview){
+		//ArrayList<String> strings = new ArrayList<String>();
+		StringBuilder sb = new StringBuilder();
+		sb.append("<ul>\n");
+		sb.append("<li>\n");
+		sb.append("<h4>"+ve.getDayName()+" - "+ve.day+"."+ve.month+".</h4>\n");
+		sb.append("<dl>\n");
+
+		sb.append("<dt>"+ve.otsikko);
 		if(preview)
-			strings.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
-		strings.append("</dt>\n");
+			sb.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
+		sb.append("</dt>\n");
 		if(ve.hour != 0)
-			strings.append("<dd>Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2)+"</dd>\n");
+			sb.append("<dd>Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2)+"</dd>\n");
 		if(ve.paikka.length() > 0)
-			strings.append("<dd>"+ve.paikka+"</dd>\n");
+			sb.append("<dd>"+ve.paikka+"</dd>\n");
 		for(String s:ve.yhteenveto)
-			strings.append("<dd>"+s+"</dd>\n");
+			sb.append("<dd>"+s+"</dd>\n");
+
+		sb.append("</dl></li>");
+		sb.append("</ul>\n");
+		return sb.toString();
 	}
 
-	if(previous_day != 0){
-		strings.append("</dl></li>");
-	}else{
-		log.info("temp paiva == null");
+	@Override
+	public void execute(){
+		activate();
+		super.execute();
 	}
-	strings.append("</ul>");
-	return strings.toString();
-}
-private String genWeekHtmlString(ViikkoEntry ve, boolean preview){
-	//ArrayList<String> strings = new ArrayList<String>();
-	StringBuilder sb = new StringBuilder();
-	sb.append("<ul>\n");
-	sb.append("<li>\n");
-	sb.append("<h4>"+ve.getDayName()+" - "+ve.day+"."+ve.month+".</h4>\n");
-	sb.append("<dl>\n");
 
-	sb.append("<dt>"+ve.otsikko);
-	if(preview)
-		sb.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
-	sb.append("</dt>\n");
-	if(ve.hour != 0)
-		sb.append("<dd>Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2)+"</dd>\n");
-	if(ve.paikka.length() > 0)
-		sb.append("<dd>"+ve.paikka+"</dd>\n");
-	for(String s:ve.yhteenveto)
-		sb.append("<dd>"+s+"</dd>\n");
+	private String genMonth(int offset) {
+		Calendar k = Calendar.getInstance();
+		k.setFirstDayOfWeek(Calendar.MONDAY);
+		if(offset != 0){
+			k.set(k.get(Calendar.YEAR), k.get(Calendar.MONTH)+offset, 1);
+		}
+		int daymonth = k.get(Calendar.DAY_OF_MONTH);
+		int dayweek = k.get(Calendar.DAY_OF_WEEK);
+		int lastday = k.getActualMaximum(Calendar.DAY_OF_MONTH);
 
-	sb.append("</dl></li>");
-	sb.append("</ul>\n");
-	return sb.toString();
-}
+		String[] months = {
+				"Tammi",
+				"Helmi",
+				"Maalis",
+				"Huhti",
+				"Touko",
+				"Kes‰",
+				"Hein‰",
+				"Elo",
+				"Syys",
+				"Loka",
+				"Marras",
+				"Joulu",
+		};
 
-@Override
-public void execute(){
-	activate();
-	super.execute();
-}
+		StringBuilder sb = new StringBuilder();
+		sb.append("<div class=\"sidebar\">\n");
+		sb.append("<h4>"+months[k.get(Calendar.MONTH)]+"kuu</h4>");
+		sb.append("<table class=\"def\" style=\"background-color:white;text-align:right;font-size:9.5px;font-family:verdana;border:1px solid black;margin:10 auto; padding:0px\"><tr>\n");
+		sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">MA</td>\n");
+		sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">TI</td>\n");
+		sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">KE</td>\n");
+		sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">TO</td>\n");
+		sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">PE</td>\n");
+		sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">LA</td>\n");
+		sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">SU</td>\n");
+		sb.append("</tr><tr>\n");
 
-private String genMonth(int offset) {
-	Calendar k = Calendar.getInstance();
-	k.setFirstDayOfWeek(Calendar.MONDAY);
-	if(offset != 0){
-		k.set(k.get(Calendar.YEAR), k.get(Calendar.MONTH)+offset, 1);
-	}
-	int daymonth = k.get(Calendar.DAY_OF_MONTH);
-	int dayweek = k.get(Calendar.DAY_OF_WEEK);
-	int lastday = k.getActualMaximum(Calendar.DAY_OF_MONTH);
-	
-	String[] months = {
-			"Tammi",
-			"Helmi",
-			"Maalis",
-			"Huhti",
-			"Touko",
-			"Kes‰",
-			"Hein‰",
-			"Elo",
-			"Syys",
-			"Loka",
-			"Marras",
-			"Joulu",
-	};
-
-	StringBuilder sb = new StringBuilder();
-	sb.append("<div class=\"sidebar\">\n");
-	sb.append("<h4>"+months[k.get(Calendar.MONTH)]+"kuu</h4>");
-	sb.append("<table class=\"def\" style=\"background-color:white;text-align:right;font-size:9.5px;font-family:verdana;border:1px solid black;margin:10 auto; padding:0px\"><tr>\n");
-	sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">MA</td>\n");
-	sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">TI</td>\n");
-	sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">KE</td>\n");
-	sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">TO</td>\n");
-	sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">PE</td>\n");
-	sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">LA</td>\n");
-	sb.append(" <td style=\"background-color:#00B3E0;color:white;padding:1px 2px;text-align:center;\">SU</td>\n");
-	sb.append("</tr><tr>\n");
-	
-	int daycount = 0;
-	for(int i = 0 - (dayweek-2);(daymonth+i < lastday+1); i++){
-		if(!(i > 0)){
-			//write empty cell <td>&nbsp;</td>
-			if(i == 0){
-				if(offset == 0){
-					sb.append(" <td style=\"background-color:orange;padding:1px 2px;\">"+(daymonth)+"</td>\n");
+		int daycount = 0;
+		for(int i = 0 - (dayweek-2);(daymonth+i < lastday+1); i++){
+			if(!(i > 0)){
+				//write empty cell <td>&nbsp;</td>
+				if(i == 0){
+					if(offset == 0){
+						sb.append(" <td style=\"background-color:orange;padding:1px 2px;\">"+(daymonth)+"</td>\n");
+					}else{
+						sb.append(" <td style=\"background-color:#ACE8FD;padding:1px 2px;\">"+(daymonth)+"</td>\n");
+					}
 				}else{
-					sb.append(" <td style=\"background-color:#ACE8FD;padding:1px 2px;\">"+(daymonth)+"</td>\n");
+					sb.append(" <td style=\"padding:1px 2px;\">&nbsp;</td>\n");
 				}
 			}else{
-				sb.append(" <td style=\"padding:1px 2px;\">&nbsp;</td>\n");
+				//write  <td>day+i</td>
+				sb.append(" <td style=\"background-color:#ACE8FD;padding:1px 2px;\">"+(daymonth+i)+"</td>\n");
 			}
-		}else{
-			//write  <td>day+i</td>
-			sb.append(" <td style=\"background-color:#ACE8FD;padding:1px 2px;\">"+(daymonth+i)+"</td>\n");
+			if(++daycount == 7){
+				daycount = 0;
+				//write new row </tr><tr>
+				sb.append("</tr><tr>\n");
+			}
 		}
-		if(++daycount == 7){
-			daycount = 0;
-			//write new row </tr><tr>
-			sb.append("</tr><tr>\n");
-		}
+		sb.append("</tr></table></div>\n");
+		return sb.toString();
 	}
-	sb.append("</tr></table></div>\n");
-	return sb.toString();
-}
 
-/*
+	/*
 	private CmsToolBoxi genTemplates() {
 		ViikkoDb db = new ViikkoDb();
 
@@ -1230,52 +1138,40 @@ private String genMonth(int offset) {
 		return tools;
 	}*/
 
-private String getViikkoMail(int offset, boolean preview){
-	ViikkoDb db = new ViikkoDb();
+	private String getViikkoMail(int offset, boolean preview){
+		ViikkoDb db = new ViikkoDb();
 
-	ArrayList<ViikkoEntry> stweekmail = 
-		new ArrayList<ViikkoEntry>(Arrays.asList(db.getWeek(offset,true,false)));
+		ArrayList<ViikkoEntry> stweekmail = 
+			new ArrayList<ViikkoEntry>(Arrays.asList(db.getWeek(offset,true,false)));
 
-	List<ViikkoEntry> ndweekmail = Arrays.asList(db.getWeek(offset+1,true,true));
+		List<ViikkoEntry> ndweekmail = Arrays.asList(db.getWeek(offset+1,true,true));
 
-	for(ViikkoEntry ve :db.getUserEntries("auto")){
-		if(ve.enabled){
-			if(ve.mailiin){			
-				ve.genAutoWeek(offset);
-				stweekmail.add(ve);
+		for(ViikkoEntry ve :db.getUserEntries("auto")){
+			if(ve.enabled){
+				if(ve.mailiin){			
+					ve.genAutoWeek(offset);
+					stweekmail.add(ve);
+				}
 			}
 		}
-	}
 
-	Collections.sort(stweekmail);
-	Collections.sort(ndweekmail);
+		Collections.sort(stweekmail);
+		Collections.sort(ndweekmail);
 
-	final String lf = "\n";//(preview?"<br/>\n":"\n");
-	final String delimit = "*************************************************************************";
+		final String lf = "\n";//(preview?"<br/>\n":"\n");
+		final String delimit = "*************************************************************************";
 
-	StringBuilder sb = new StringBuilder();
-	sb.append("TKrT:n tulevaa toimintaa"+lf);
-	sb.append("\nVko "+db.getWeekNumber(offset)+lf);
-	int oldday = 0;
-	for(ViikkoEntry ve: stweekmail){
-		if(oldday != ve.day){
-			sb.append(ve.getDayName()+" ");
-			oldday = ve.day;
-		}else{
-			sb.append("   ");
-		}
-		sb.append(ve.day+"."+ve.month+". ");
-		sb.append(ve.otsikko);
-		if(!(ve.hour==0&&ve.minute==0))
-			sb.append(" "+ve.hour+":"+Utils.addLeading(ve.minute,2));
-		if(ve.paikka != null && ve.paikka.length() != 0)
-			sb.append(" "+ve.paikka);
-		sb.append(lf);
-	}
-	sb.append(lf);
-	if(ndweekmail.size()>0){
-		sb.append(lf+"Vko "+db.getWeekNumber(offset+1)+lf);
-		for(ViikkoEntry ve: ndweekmail){
+		StringBuilder sb = new StringBuilder();
+		sb.append("TKrT:n tulevaa toimintaa"+lf);
+		sb.append("\nVko "+db.getWeekNumber(offset)+lf);
+		int oldday = 0;
+		for(ViikkoEntry ve: stweekmail){
+			if(oldday != ve.day){
+				sb.append(ve.getDayName()+" ");
+				oldday = ve.day;
+			}else{
+				sb.append("   ");
+			}
 			sb.append(ve.day+"."+ve.month+". ");
 			sb.append(ve.otsikko);
 			if(!(ve.hour==0&&ve.minute==0))
@@ -1285,97 +1181,134 @@ private String getViikkoMail(int offset, boolean preview){
 			sb.append(lf);
 		}
 		sb.append(lf);
-	}
-
-	sb.append(delimit+lf); //*******
-
-	for(ViikkoEntry ve: stweekmail){
-		if(ve.yhteenveto.size()<1 && ve.teksti.size()<1){
-			continue;
-		}else{
-			pagebuilder.addHidden("yhteen["+ve.yhteenveto.size()+"] ["+ve.otsikko+"]");
-			pagebuilder.addHidden("teksti["+ve.teksti.size()+"]");
-		}
-
-		sb.append(ve.otsikko);
-
-		if(preview)
-			sb.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
-
-		sb.append(lf+lf+ve.getDayName()+" "+ve.day+"."+ve.month+". ");
-
-		if(!(ve.hour==0&&ve.minute==0))
-			sb.append("Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2));
-		if(ve.paikka != null && ve.paikka.length() != 0)
-			sb.append(lf+ve.paikka);
-		if(ve.yhteenveto.size()>0)
-			for(String s: ve.yhteenveto)
-				if(s.length()>0){sb.append(lf+s);}
-
-		sb.append(lf+lf);
-		if(ve.teksti.size()>0){
-			for(String rivi : ve.teksti)
-				sb.append(chop(rivi,73)+lf);
+		if(ndweekmail.size()>0){
+			sb.append(lf+"Vko "+db.getWeekNumber(offset+1)+lf);
+			for(ViikkoEntry ve: ndweekmail){
+				sb.append(ve.day+"."+ve.month+". ");
+				sb.append(ve.otsikko);
+				if(!(ve.hour==0&&ve.minute==0))
+					sb.append(" "+ve.hour+":"+Utils.addLeading(ve.minute,2));
+				if(ve.paikka != null && ve.paikka.length() != 0)
+					sb.append(" "+ve.paikka);
+				sb.append(lf);
+			}
 			sb.append(lf);
 		}
-		sb.append(delimit+lf);
-	}
-	for(ViikkoEntry ve: ndweekmail){
-		sb.append(ve.otsikko);
-		if(preview)
-			sb.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
-		sb.append(lf+ve.getDayName()+" "+ve.day+"."+ve.month+". ");
-		if(!(ve.hour==0&&ve.minute==0))
-			sb.append("Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2));
-		if(ve.paikka != null && ve.paikka.length() != 0)
-			sb.append(lf+ve.paikka);
 
-		sb.append(lf+lf);
-		for(String rivi : ve.teksti)
-			sb.append(rivi+lf);
-		sb.append(lf);
-		sb.append(delimit+lf);
-	}
-	return sb.toString();
-}
+		sb.append(delimit+lf); //*******
 
-private String chop(String rivi, final int line_size) {
-	StringBuilder sb = new StringBuilder(rivi);
-	int current_line_size = 0;
-	int last_space = 0;
-	for(int i = 0; i < sb.length(); i++){
-		if(sb.charAt(i) == ' ')
-			last_space = i;
+		for(ViikkoEntry ve: stweekmail){
+			if(ve.yhteenveto.size()<1 && ve.teksti.size()<1){
+				continue;
+			}else{
+				pagebuilder.addHidden("yhteen["+ve.yhteenveto.size()+"] ["+ve.otsikko+"]");
+				pagebuilder.addHidden("teksti["+ve.teksti.size()+"]");
+			}
 
-		if(current_line_size == line_size){
-			//if(i-last_space <= current_line_size){
-			//	sb.insert(i, '\n');
-			//	i++;
-			//	current_line_size = 0;
-			//}else{
-			sb.insert(last_space, '\n');
-			sb.deleteCharAt(last_space+1);
-			current_line_size = i - last_space;				
-			//}
+			sb.append(ve.otsikko);
 
-		}else{
-			current_line_size++;
+			if(preview)
+				sb.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
+
+			sb.append(lf+lf+ve.getDayName()+" "+ve.day+"."+ve.month+". ");
+
+			if(!(ve.hour==0&&ve.minute==0))
+				sb.append("Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2));
+			if(ve.paikka != null && ve.paikka.length() != 0)
+				sb.append(lf+ve.paikka);
+			if(ve.yhteenveto.size()>0)
+				for(String s: ve.yhteenveto)
+					if(s.length()>0){sb.append(lf+s);}
+
+			sb.append(lf+lf);
+			if(ve.teksti.size()>0){
+				for(String rivi : ve.teksti)
+					sb.append(chop(rivi,73)+lf);
+				sb.append(lf);
+			}
+			sb.append(delimit+lf);
 		}
+		for(ViikkoEntry ve: ndweekmail){
+			sb.append(ve.otsikko);
+			if(preview)
+				sb.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
+			sb.append(lf+ve.getDayName()+" "+ve.day+"."+ve.month+". ");
+			if(!(ve.hour==0&&ve.minute==0))
+				sb.append("Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2));
+			if(ve.paikka != null && ve.paikka.length() != 0)
+				sb.append(lf+ve.paikka);
+
+			sb.append(lf+lf);
+			for(String rivi : ve.teksti)
+				sb.append(rivi+lf);
+			sb.append(lf);
+			sb.append(delimit+lf);
+		}
+		return sb.toString();
 	}
-	return sb.toString();
-}
 
-private String getViikkoHtml(int offset, boolean preview){
-	ViikkoDb db = new ViikkoDb();
-	//Calendar k = Calendar.getInstance();
-	//k.setFirstDayOfWeek(Calendar.MONDAY);
-	//int weekday = k.get(Calendar.DAY_OF_WEEK);
+	private String chop(String rivi, final int line_size) {
+		StringBuilder sb = new StringBuilder(rivi);
+		int current_line_size = 0;
+		int last_space = 0;
+		for(int i = 0; i < sb.length(); i++){
+			if(sb.charAt(i) == ' ')
+				last_space = i;
 
-	List<ViikkoEntry> stweek;
-	//List<ViikkoEntry> ndweek;
-	//List<ViikkoEntry> rdweek;
+			if(current_line_size == line_size){
+				//if(i-last_space <= current_line_size){
+				//	sb.insert(i, '\n');
+				//	i++;
+				//	current_line_size = 0;
+				//}else{
+				sb.insert(last_space, '\n');
+				sb.deleteCharAt(last_space+1);
+				current_line_size = i - last_space;				
+				//}
 
-	/*if(weekday == Calendar.SATURDAY || weekday == Calendar.SUNDAY){
+			}else{
+				current_line_size++;
+			}
+		}
+		return sb.toString();
+	}
+
+	private String getViikkoHtml(int offset, boolean preview){
+		ViikkoDb db = new ViikkoDb();
+
+		List<ViikkoEntry> stweek;
+
+		stweek = new ArrayList<ViikkoEntry>(Arrays.asList(db.getWeek(offset,false,false)));
+
+		for(ViikkoEntry ve :db.getUserEntries("auto")){
+			if(ve.enabled){
+				ve.genAutoWeek(offset);
+				stweek.add(ve);
+			}
+		}
+
+		Collections.sort(stweek);
+
+		StringBuilder viikko = new StringBuilder();
+
+		if(stweek.size() > 0){
+			viikko.append(genWeekHtmlString(stweek,preview)+"\n");
+		}
+		return viikko.toString();
+	}
+
+
+	private String getViikkoHtml(boolean preview){
+		ViikkoDb db = new ViikkoDb();
+		Calendar k = Calendar.getInstance();
+		k.setFirstDayOfWeek(Calendar.MONDAY);
+		int weekday = k.get(Calendar.DAY_OF_WEEK);
+
+		List<ViikkoEntry> stweek;
+		List<ViikkoEntry> ndweek;
+		List<ViikkoEntry> rdweek;
+
+		if(weekday == Calendar.SATURDAY || weekday == Calendar.SUNDAY){
 			stweek = Arrays.asList(db.getWeek(0,false,false));
 			ndweek = new ArrayList<ViikkoEntry>(Arrays.asList(db.getWeek(1,false,false)));
 			rdweek = Arrays.asList(db.getWeek(2,false,true));
@@ -1393,6 +1326,7 @@ private String getViikkoHtml(int offset, boolean preview){
 
 			Calendar tester = Calendar.getInstance();
 			int dow;
+			boolean found = false;
 			for(int i = 0; i < stweek.size(); i++){
 				ViikkoEntry entry = stweek.get(i);
 				tester.clear();
@@ -1401,185 +1335,96 @@ private String getViikkoHtml(int offset, boolean preview){
 				dow = tester.get(Calendar.DAY_OF_WEEK);
 				if(dow == Calendar.SATURDAY || dow == Calendar.SUNDAY){
 					stweek = stweek.subList(i, stweek.size());
+					found = true;
 					break;
 				}
 			}
+			if(!found){
+				stweek = new ArrayList<ViikkoEntry>();
+			}
 
-		}else{*/
-	stweek = new ArrayList<ViikkoEntry>(Arrays.asList(db.getWeek(offset,false,false)));
-	//ndweek = Arrays.asList(db.getWeek(1,false,true));
-	//rdweek = Arrays.asList(db.getWeek(2,false,true));
+		}else{
+			stweek = new ArrayList<ViikkoEntry>(Arrays.asList(db.getWeek(0,false,false)));
+			ndweek = Arrays.asList(db.getWeek(1,false,true));
+			rdweek = Arrays.asList(db.getWeek(2,false,true));
 
-	for(ViikkoEntry ve :db.getUserEntries("auto")){
-		if(ve.enabled){
-			ve.genAutoWeek(offset);
-			stweek.add(ve);
+			for(ViikkoEntry ve :db.getUserEntries("auto")){
+				if(ve.enabled){
+					ve.genAutoWeek(0);
+					stweek.add(ve);
+				}
+			}
+
+			Collections.sort(stweek);
+			Collections.sort(ndweek);
+			Collections.sort(rdweek);
 		}
-	}
 
-	Collections.sort(stweek);
-	//Collections.sort(ndweek);
-	//Collections.sort(rdweek);
-	//}
+		StringBuilder viikko = new StringBuilder();
 
-	StringBuilder viikko = new StringBuilder();
+		if(stweek.size() > 0){
+			viikko.append(genWeekHtmlString(stweek,preview)+"\n");
+		}
 
-	if(stweek.size() > 0){
-		//viikko.append("<ul>\n");
-		viikko.append(genWeekHtmlString(stweek,preview)+"\n");
-		//viikko.append("</ul>\n");
-	}
-	/*
 		if(ndweek.size() > 0){
-			//viikko.append("<ul>\n");
 			viikko.append(genWeekHtmlString(ndweek,preview)+"\n");
-			//viikko.append("</ul>\n");
 		}
 
 		if(rdweek.size() > 0){
-			//viikko.append("<ul>\n");
 			viikko.append(genWeekHtmlString(rdweek,preview)+"\n");
-			//viikko.append("</ul>\n");
-		}*/
-	return viikko.toString();
-
-}
-
-
-private String getViikkoHtml(boolean preview){
-	ViikkoDb db = new ViikkoDb();
-	Calendar k = Calendar.getInstance();
-	k.setFirstDayOfWeek(Calendar.MONDAY);
-	int weekday = k.get(Calendar.DAY_OF_WEEK);
-
-	List<ViikkoEntry> stweek;
-	List<ViikkoEntry> ndweek;
-	List<ViikkoEntry> rdweek;
-
-	if(weekday == Calendar.SATURDAY || weekday == Calendar.SUNDAY){
-		stweek = Arrays.asList(db.getWeek(0,false,false));
-		ndweek = new ArrayList<ViikkoEntry>(Arrays.asList(db.getWeek(1,false,false)));
-		rdweek = Arrays.asList(db.getWeek(2,false,true));
-
-		for(ViikkoEntry ve :db.getUserEntries("auto")){
-			if(ve.enabled){
-				ve.genAutoWeek(1);
-				ndweek.add(ve);
-			}
 		}
+		return viikko.toString();
 
-		Collections.sort(stweek);
-		Collections.sort(ndweek);
-		Collections.sort(rdweek);
-
-		Calendar tester = Calendar.getInstance();
-		int dow;
-		boolean found = false;
-		for(int i = 0; i < stweek.size(); i++){
-			ViikkoEntry entry = stweek.get(i);
-			tester.clear();
-			tester.setFirstDayOfWeek(Calendar.MONDAY);
-			tester.set(entry.year, entry.month-1, entry.day);
-			dow = tester.get(Calendar.DAY_OF_WEEK);
-			if(dow == Calendar.SATURDAY || dow == Calendar.SUNDAY){
-				stweek = stweek.subList(i, stweek.size());
-				found = true;
-				break;
-			}
-		}
-		if(!found){
-			stweek = new ArrayList<ViikkoEntry>();
-		}
-
-	}else{
-		stweek = new ArrayList<ViikkoEntry>(Arrays.asList(db.getWeek(0,false,false)));
-		ndweek = Arrays.asList(db.getWeek(1,false,true));
-		rdweek = Arrays.asList(db.getWeek(2,false,true));
-
-		for(ViikkoEntry ve :db.getUserEntries("auto")){
-			if(ve.enabled){
-				ve.genAutoWeek(0);
-				stweek.add(ve);
-			}
-		}
-
-		Collections.sort(stweek);
-		Collections.sort(ndweek);
-		Collections.sort(rdweek);
 	}
 
-	StringBuilder viikko = new StringBuilder();
+	private String genPreview(ViikkoEntry ve){
+		StringBuilder sb = new StringBuilder();
+		sb.append("<div class=\"right\" style=\"margin:10px auto;\">");
+		sb.append(genWeekHtmlString(ve,true));
+		sb.append("</div>");
+		String lf = "\n";
+		if(ve.mailiin){
+			sb.append("<div class=\"ingroup medium4\">");
+			sb.append("<pre style=\"font-size:12.5px;\">");
 
-	if(stweek.size() > 0){
-		//viikko.append("<ul>\n");
-		viikko.append(genWeekHtmlString(stweek,preview)+"\n");
-		//viikko.append("</ul>\n");
-	}
-
-	if(ndweek.size() > 0){
-		//viikko.append("<ul>\n");
-		viikko.append(genWeekHtmlString(ndweek,preview)+"\n");
-		//viikko.append("</ul>\n");
-	}
-
-	if(rdweek.size() > 0){
-		//viikko.append("<ul>\n");
-		viikko.append(genWeekHtmlString(rdweek,preview)+"\n");
-		//viikko.append("</ul>\n");
-	}
-	return viikko.toString();
-
-}
-
-private String genPreview(ViikkoEntry ve){
-
-	StringBuilder sb = new StringBuilder();
-	sb.append("<div class=\"right\" style=\"margin:10px auto;\">");
-	sb.append(genWeekHtmlString(ve,true));
-	sb.append("</div>");
-	String lf = "\n";
-	if(ve.mailiin){
-		sb.append("<div class=\"ingroup medium4\">");
-		sb.append("<pre style=\"font-size:12.5px;\">");
-
-		sb.append(ve.day+"."+ve.month+". ");
-		sb.append(ve.otsikko);
-		if(!(ve.hour==0&&ve.minute==0))
-			sb.append(" "+ve.hour+":"+Utils.addLeading(ve.minute,2));
-		if(ve.paikka != null && ve.paikka.length() != 0)
-			sb.append(" "+ve.paikka);
-		sb.append(lf);			
-
-		if(ve.yhteenveto.size()>0 && ve.teksti.size()>0){
-			sb.append("\n************************************\n");
-
+			sb.append(ve.day+"."+ve.month+". ");
 			sb.append(ve.otsikko);
-
-			sb.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
-
-			sb.append(lf+lf+ve.getDayName()+" "+ve.day+"."+ve.month+". ");
-
 			if(!(ve.hour==0&&ve.minute==0))
-				sb.append("Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2));
+				sb.append(" "+ve.hour+":"+Utils.addLeading(ve.minute,2));
 			if(ve.paikka != null && ve.paikka.length() != 0)
-				sb.append(lf+ve.paikka);
-			if(ve.yhteenveto.size()>0)
-				for(String s: ve.yhteenveto)
-					if(s.length()>0){sb.append(lf+s);}
+				sb.append(" "+ve.paikka);
+			sb.append(lf);			
 
-			sb.append(lf+lf);
-			if(ve.teksti.size()>0){
-				for(String rivi : ve.teksti)
-					sb.append(chop(rivi,47)+lf);
-				sb.append(lf);
+			if(ve.yhteenveto.size()>0 && ve.teksti.size()>0){
+				sb.append("\n************************************\n");
+
+				sb.append(ve.otsikko);
+
+				sb.append(" <a href=\""+script+"/"+hook+"/muokkaa/"+ve.id+"\">&#187;m</a>");
+
+				sb.append(lf+lf+ve.getDayName()+" "+ve.day+"."+ve.month+". ");
+
+				if(!(ve.hour==0&&ve.minute==0))
+					sb.append("Klo "+ve.hour+":"+Utils.addLeading(ve.minute,2));
+				if(ve.paikka != null && ve.paikka.length() != 0)
+					sb.append(lf+ve.paikka);
+				if(ve.yhteenveto.size()>0)
+					for(String s: ve.yhteenveto)
+						if(s.length()>0){sb.append(lf+s);}
+
+				sb.append(lf+lf);
+				if(ve.teksti.size()>0){
+					for(String rivi : ve.teksti)
+						sb.append(chop(rivi,47)+lf);
+					sb.append(lf);
+				}
+
 			}
-
+			sb.append("</p>");
+			sb.append("</div>\n");
 		}
-		sb.append("</p>");
-		sb.append("</div>\n");
+		return sb.toString();
 	}
-	return sb.toString();
-}
 
 
 }

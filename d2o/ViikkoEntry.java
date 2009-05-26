@@ -7,6 +7,7 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import util.Csv;
 import util.Logger;
 import util.Utils;
 
@@ -567,7 +568,9 @@ public class ViikkoEntry implements Comparable<ViikkoEntry>{
 		return week;
 	}
 
-
+	public String toString(){
+		return Csv.encode(fieldsToArray());
+	}
 
 }
 

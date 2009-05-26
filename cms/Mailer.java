@@ -1,8 +1,8 @@
 package cms;
 
-//import java.io.BufferedInputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
@@ -85,8 +85,8 @@ public class Mailer {
 			berr.close();
 
 			if(sberr.length()>0 || sbin.length()>0){
-				FileHive fh = FileHive.getFileHive();
-				fh.appendFile("main-err", sbin.toString()+sberr.toString());
+				FileOps.write(new File("../logbooks","main-err"), sbin.toString()+sberr.toString(), true);
+				//fh.appendFile("main-err", sbin.toString()+sberr.toString());
 			}
 			while(System.currentTimeMillis() - start < 5000){
 				try{

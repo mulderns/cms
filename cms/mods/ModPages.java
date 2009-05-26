@@ -20,6 +20,7 @@ import http.FormPart;
 
 import cms.DataRelay;
 import cms.FileHive;
+import cms.FileOps;
 
 import d2o.pages.CmsFile;
 import d2o.pages.PageDb;
@@ -1062,9 +1063,10 @@ public class ModPages extends Module {
 				String[] ds = new String[1];
 				ds[0] = data;
 				File target_path = new File(datarelay.target);
-				FileHive fh = FileHive.getFileHive(target_path);
+//				FileHive fh = FileHive.getFileHive(target_path);
 
-				fh.writeFileIso(new File(target_path,file.name), ds , true);
+				FileOps.write(new File(target_path,file.name), ds , false);
+//				fh.writeFileIso(new File(target_path,file.name), ds , true);
 				page.addCenter("ok");
 			}
 		}});

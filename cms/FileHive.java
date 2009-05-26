@@ -5,26 +5,36 @@ import http.HttpRequest;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.FilenameFilter;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-
-import java.io.IOException;
 import java.util.ArrayList;
-
-import d2o.FlushingFile;
-//import java.util.Set;
 
 import util.Csv;
 import util.Logger;
 import util.Utils;
+import d2o.FlushingFile;
+
+
+/**
+ * index
+ add file
+ rename file
+ remove file
+
+store from part
+
+send file
+
+genfilename
+
+ */
 
 public class FileHive {
 	private static final String linesep = System.getProperty("line.separator");
@@ -44,19 +54,18 @@ public class FileHive {
 	public static FileHive getFileHive(File hive_dir){
 		if(initiated){
 			spot.hive_dir = hive_dir;
-			spot.index = new File(hive_dir, "index");
+			spot.index_file = new File(hive_dir, "index");
 			return spot;
 		}else{
 			initiated = true;
 			spot = new FileHive(hive_dir);
-			spot.index = new File(hive_dir, "index");
+			spot.index_file = new File(hive_dir, "index");
 			return spot;
 		}
 	}
 	private Logger log;
 	private File hive_dir;
-
-	private File index;
+	private File index_file;
 
 	private static final String prefix = "file";
 
@@ -64,7 +73,7 @@ public class FileHive {
 		log = new Logger("FileHive");
 
 		this.hive_dir = hive_dir;
-		index = new File(this.hive_dir, "index");
+		index_file = new File(this.hive_dir, "index");
 		log.info("init hive["+hive_dir.getName()+"]");
 	}
 
@@ -76,12 +85,12 @@ public class FileHive {
 		log.info("adding to index: "+targetfile+" -> "+realname);
 
 		try{
-			if(!index.exists())
-				index.createNewFile();
+			if(!index_file.exists())
+				index_file.createNewFile();
 			BufferedOutputStream bout =
 				new BufferedOutputStream(
 						new FileOutputStream(
-								index, true
+								index_file, true
 						)
 				);
 			String[] line = {targetfile, realname};			
@@ -94,65 +103,53 @@ public class FileHive {
 			log.fail("addToIndex failed:"+ioe);
 		}
 		//return false;
-
 	}
 
-	private void removeFromIndex(String realname){
-		FlushingFile ff = new FlushingFile(index);
-		ArrayList<String> buffer = new ArrayList<String>();
-		for(String s: ff.loadAll()){
-			if(Csv.decode(s)[1].compareTo(realname) == 0){
-				continue;
+	public boolean archive(File file, boolean overwrite) {
+		String filename = file.getName();
+		//File archived = new File(hive_dir,filename);
+		if(file.exists()){
+			File dest;// = new File(Cgicms.archives_dir,file);
+			if(overwrite){
+				dest = new File(Cgicms.archives_dir,filename);
+				if(dest.exists()){
+					if(!dest.delete()){
+						log.fail("could not delete destination file");
+						return false;
+					}
+				}
+				file.renameTo(dest);
+				log.info("archive success["+filename+"] (overwrite)");
+				return true;
 			}
-			buffer.add(s);
-		}
-		ff.overwrite(buffer.toArray(new String[buffer.size()]));
-	}
 
-	public void appendFile(String fileName, String line) {
-		log.info("appending file["+fileName+"] hive["+hive_dir+"]");
-		try {
-			BufferedOutputStream bfout = new BufferedOutputStream(
-					new FileOutputStream(new File(hive_dir,fileName), true));
-
-			bfout.write(line.getBytes());
-			bfout.write(linesep_bytes);
-
-			bfout.close();
-			log.info("wrote actionlog successfully");
-		} catch (FileNotFoundException fnfe) {
-			log.fail("could not write actionlog:"+fnfe);
-		} catch (IOException ioe){
-			log.fail("could not write actionlog:"+ioe);
-		}
-	}
-
-	public boolean appendFileIso(String filename, String data) {
-		log.info("storing file:"+filename);
-		try{
-			BufferedWriter bout =
-				new BufferedWriter(
-						new OutputStreamWriter(
-								new FileOutputStream(
-										new File(hive_dir, filename), true
-								), "ISO-8859-1"
-						)
+			for(int i = 0; i < 1000;i++){
+				dest = new File(
+						Cgicms.archives_dir,
+						filename+"."+Utils.addLeading(i, 3)
 				);
-			bout.write(data);
-			bout.write(linesep);
-			bout.close();
-			log.info(" ->success");
-			return true;
-		}catch(IOException ioe){
-			log.fail("appendFileIso failed:"+ioe);
+
+				if(!dest.exists()){
+					if(file.renameTo(dest)){
+						log.info("archive success["+filename+"]");
+						return true;
+					}else{
+						log.info("archive failed["+filename+"]");
+						return false;
+					}
+				}
+			}
+			log.fail("archive failed["+filename+"] -> too many files in archive");
+		}else{
+			log.fail("no file["+filename+"] found");
 		}
 		return false;
 	}
-
+/*
 	public void delete(String file) {
 		new File(hive_dir,file).delete(); 
 	}
-
+*/
 	// TODO: change to non-iterative renaming. instead look up the
 	// last file and so on.
 	public void archive(String file, boolean overwrite) {
@@ -207,7 +204,7 @@ public class FileHive {
 					}
 				}
 
-				writeFileIso(dest, readFileToArrayIso(file), true);
+				FileOps.write(dest, FileOps.readToArray(file), false);
 				log.info("archive success["+file+"] (overwrite)");
 				return;
 			}
@@ -219,7 +216,7 @@ public class FileHive {
 				);
 
 				if(!dest.exists()){
-					writeFileIso(dest, readFileToArrayIso(file), true);
+					FileOps.write(dest, FileOps.readToArray(file), false);
 					return;
 				}
 			}
@@ -227,32 +224,6 @@ public class FileHive {
 		}else{
 			log.fail("cant archive, no file["+file+"] found");
 		}
-	}
-
-
-	public boolean writeFileIso(File file, String[] data, boolean overwrite){
-		log.info("writeFileIso");
-		log.info(" :"+file.getAbsolutePath());
-		try{
-			BufferedWriter bout =
-				new BufferedWriter(
-						new OutputStreamWriter(
-								new FileOutputStream(
-										file, !overwrite
-								), "ISO-8859-1"
-						)
-				);
-			for(String s: data){
-				bout.write(s);
-				bout.newLine();				
-			}
-			bout.close();
-			log.info(" ->success");
-			return true;
-		}catch(IOException ioe){
-			log.fail("writeFileIso failed:"+ioe);
-		}
-		return false;
 	}
 
 
@@ -270,18 +241,16 @@ public class FileHive {
 		return sb.toString();
 	}
 
-	public boolean fileExists(String filename) {
-		File supposed = new File(hive_dir,filename);
-		return supposed.exists();
-	}
+
+	
 
 	private String generateFileName() {
 		log.info("generating filename");
 		try {
-			if(!index.exists()){
-				index.createNewFile();
+			if(!index_file.exists()){
+				index_file.createNewFile();
 			}
-			BufferedReader bin = new BufferedReader(new FileReader(index));
+			BufferedReader bin = new BufferedReader(new FileReader(index_file));
 
 			//ArrayList<String> files = new ArrayList<String>();
 			String line;
@@ -312,8 +281,6 @@ public class FileHive {
 
 	private String genFileName() {
 		return generateFileName();
-
-
 	}
 
 	public String getActionLog() {
@@ -332,37 +299,6 @@ public class FileHive {
 			log.fail("getActionLog failed: "+e);
 		} catch (IOException ioe){
 			log.fail("getActionLog failed: "+ioe);
-		}
-		return null;
-	}
-
-	public String getData(File file) {
-
-		try{
-			BufferedReader bin =
-				new BufferedReader(
-						new InputStreamReader(
-								new FileInputStream(
-										file
-								), "ISO-8859-1"
-						)
-				);
-			//byte[] store = new byte[file.length()];
-
-			StringBuilder sbuf = new StringBuilder();
-			int last;
-
-			while((last = bin.read()) > -1){
-				sbuf.append((char)last);
-				/*if(last == 13 || last == 10){
-					return sbuf.toString();
-				}*/
-			}
-			bin.close();
-
-			return sbuf.toString();
-		}catch (IOException ioe) {
-			log.fail("error reading data: "+ioe);
 		}
 		return null;
 	}
@@ -392,6 +328,64 @@ public class FileHive {
 		return null;
 	}
 
+	/*
+	public String getData(File file) {
+
+		try{
+			BufferedReader bin =
+				new BufferedReader(
+						new InputStreamReader(
+								new FileInputStream(
+										file
+								), "ISO-8859-1"
+						)
+				);
+			//byte[] store = new byte[file.length()];
+
+			StringBuilder sbuf = new StringBuilder();
+			int last;
+
+			while((last = bin.read()) > -1){
+				sbuf.append((char)last);
+//				if(last == 13 || last == 10){
+//					return sbuf.toString();
+//				}
+			}
+			bin.close();
+
+			return sbuf.toString();
+		}catch (IOException ioe) {
+			log.fail("error reading data: "+ioe);
+		}
+		return null;
+	}*/
+
+	public String getFileData(String filename) {
+		String storefname;
+		if((storefname = getFileName(filename)) != null){
+			String[] meta = getMeta(storefname);
+			String ctype = meta[1];
+			//String cenc = meta[2];
+			log.info("Ctype:"+ctype);
+			log.info(filename+" -> "+storefname);
+			String data = getData(storefname);
+			//try{
+			/*System.out.println("Content-Length: "+data.length);*/
+			log.info("Clen: "+data.length());
+			StringBuilder sb = new StringBuilder("Content-Type: "+ctype);
+			sb.append("\nContent-Disposition: attachment; filename=\""+filename+"\"");
+			sb.append('\n');
+			sb.append('\n');
+			/*BufferedWriter bout = new BufferedWriter(
+						new OutputStreamWriter(System.out,"ISO-8859-1"));*/
+			sb.append(data);
+			//bout.write(sb.toString());
+			return sb.toString();
+		}else{
+			return null;
+		}
+	}
+
 	private String getFileName(String file) {
 		ArrayList<String> files = readIndex();
 		for (String line : files) {
@@ -403,39 +397,9 @@ public class FileHive {
 		return null;
 	}
 
-	public ArrayList<String> getFiles() {
-		//read index
-		log.info("getting filelist");
-		try {
-			BufferedReader bin = new BufferedReader(new FileReader(index));
-			ArrayList<String> files = new ArrayList<String>();
-			String line;
-			while((line = bin.readLine())!=null){
-				files.add(Csv.decode(line)[1]);
-			}
-			bin.close();
-			return files;
-		} catch (FileNotFoundException e) {
-			log.fail("getFiles failed: "+e);
-		} catch (IOException ioe){
-			log.fail("getFiles failed: "+ioe);
-		}
-		return new ArrayList<String>();
-	}
+	
 
-	public String[] getFiles(final String extension) {
-		String[] files = hive_dir.list(
-				new FilenameFilter(){
-					public boolean accept(File dir, String name){
-						if(name.contains("."+extension))
-							return true;
-						return false;
-					}
-				}
-		);
-		return files;
 
-	}
 
 	private String[] getMeta(String file) {
 		log.info("reading metadata: "+file);
@@ -465,6 +429,7 @@ public class FileHive {
 		return null;
 	}
 
+	/*
 	public String readFile(String filename) {
 		File source = new File(hive_dir,filename);
 		if(source.canRead()){
@@ -484,9 +449,10 @@ public class FileHive {
 		} 
 		Cgicms.log.fail("quick check could not read user file:"+source);
 		return null;
-	}
+	}*/
 
 
+	/*
 	public String[] readFile2Array(File filename) {
 		if(filename.canRead()){
 			ArrayList<String> sb = new ArrayList<String>();
@@ -508,8 +474,9 @@ public class FileHive {
 		} 
 		Cgicms.log.fail("quick check could not read user file:"+filename.getAbsolutePath());
 		return null;
-	}
+	}*/
 
+	/*
 	public String[] readFile2Array(String filename) {
 		File source = new File(hive_dir,filename);
 		if(source.canRead()){
@@ -529,70 +496,31 @@ public class FileHive {
 		} 
 		Cgicms.log.fail("quick check could not read user file:"+source);
 		return null;
-	}
+	}*/
 
-	public String[] readFileToArrayIso(String filename) {
-		ArrayList<String> lines = new ArrayList<String>();
-		log.info("reading file:" + filename);
-		try{
-			BufferedReader bin =
-				new BufferedReader(
-						new InputStreamReader(
-								new FileInputStream(
-										new File(hive_dir, filename)
-								), "ISO-8859-1"
-						)
-				);
-			String line;
-			while((line = bin.readLine())!= null){
-				lines.add(line);
-			}
-			bin.close();
-			log.info(" ->success");
-			return lines.toArray(new String[0]);
-		}catch(IOException ioe){
-			log.fail("readFileToArrayIso failed:"+ioe);
+	public boolean hasFile(String filename) {
+		if(getFileName(filename) != null){
+			return true;
 		}
-		return new String[0];
+		return false;
 	}
 
-	public String[] readFileToArrayIso(File file) {
-		log.info("readFileToArrayIso:" + file.getAbsolutePath());
-		ArrayList<String> lines = new ArrayList<String>();
-		try{
-			BufferedReader bin =
-				new BufferedReader(
-						new InputStreamReader(
-								new FileInputStream(
-										file
-								), "ISO-8859-1"
-						)
-				);
-			String line;
-			while((line = bin.readLine())!= null){
-				lines.add(line);
-			}
-			bin.close();
-			log.info(" ->success");
-			return lines.toArray(new String[0]);
-		}catch(IOException ioe){
-			log.fail("readFileToArrayIso failed:"+ioe);
-		}
-		return new String[0];
-	}
+	
 
+
+	
 
 	private ArrayList<String> readIndex(){
 
 		try{
-			if(!index.exists()){
-				index.createNewFile();
+			if(!index_file.exists()){
+				index_file.createNewFile();
 			}
-			log.info("reading index hf["+hive_dir.getAbsolutePath()+"] i["+index.getCanonicalPath()+"]");
+			log.info("reading index hf["+hive_dir.getAbsolutePath()+"] i["+index_file.getCanonicalPath()+"]");
 			BufferedReader bin =
 				new BufferedReader(
 						new FileReader(
-								index
+								index_file
 						)
 				);
 			String line;
@@ -609,6 +537,37 @@ public class FileHive {
 		return null;
 
 	}
+
+	public void removeFile(String realname){
+		log.info("removing file and index entry from uploads");
+		String storefname = getFileName(realname);
+		File late = new File(hive_dir, storefname);
+		late.delete();
+		late = new File(hive_dir, storefname+".meta");
+		late.delete();
+		removeFromIndex(realname);
+	}
+
+	private void removeFromIndex(String realname){
+		FlushingFile ff = new FlushingFile(index_file);
+		ArrayList<String> buffer = new ArrayList<String>();
+		for(String s: ff.loadAll()){
+			if(Csv.decode(s)[1].compareTo(realname) == 0){
+				continue;
+			}
+			buffer.add(s);
+		}
+		ff.overwrite(buffer.toArray(new String[buffer.size()]));
+	}
+
+	/*
+	public boolean writeFile(FormPart part){
+		log.info("storing form part");
+		if(storeFile(part.getFilename(),part.bytes)){
+			return true;
+		}
+		return false;
+	}*/
 
 	public boolean sendFile(HttpRequest request) {
 		log.info("sendFile()...");
@@ -656,6 +615,30 @@ public class FileHive {
 		return false;
 	}
 
+	/*public boolean storeTargetFile(String filename, String data) {
+		log.info("storing file to target dir:"+filename);
+		File target = new File()
+		try{
+			BufferedWriter bout =
+				new BufferedWriter(
+						new OutputStreamWriter(
+								new FileOutputStream(
+										filename, false
+								), "ISO-8859-1"
+						)
+				);
+			bout.write(data);
+			log.info("write["+data+"]");
+			bout.close();
+			log.info(" ->success");
+			return true;
+		}catch(IOException ioe){
+			log.severe("storing upload failed:"+ioe);
+		}
+		return false;
+
+	}*/
+
 	public boolean storeFile(File file, String data) {
 		log.info("storing file:"+file);
 		try{
@@ -691,50 +674,6 @@ public class FileHive {
 		return false;
 	}
 
-	public boolean writeFile(FormPart part){
-
-		log.info("storing form part");
-		if(storeFile(part.getFilename(),part.bytes)){
-			return true;
-		}
-		return false;
-
-	}
-
-	public void removeFile(String realname){
-		log.info("removing file and index entry from uploads");
-		String storefname = getFileName(realname);
-		File late = new File(hive_dir, storefname);
-		late.delete();
-		late = new File(hive_dir, storefname+".meta");
-		late.delete();
-		removeFromIndex(realname);
-	}
-
-	/*public boolean storeTargetFile(String filename, String data) {
-		log.info("storing file to target dir:"+filename);
-		File target = new File()
-		try{
-			BufferedWriter bout =
-				new BufferedWriter(
-						new OutputStreamWriter(
-								new FileOutputStream(
-										filename, false
-								), "ISO-8859-1"
-						)
-				);
-			bout.write(data);
-			log.info("write["+data+"]");
-			bout.close();
-			log.info(" ->success");
-			return true;
-		}catch(IOException ioe){
-			log.severe("storing upload failed:"+ioe);
-		}
-		return false;
-
-	}*/
-
 	public boolean storeFile(String filename, ArrayList<String> data) {
 		log.info("storing file:"+filename);
 		try{
@@ -758,7 +697,6 @@ public class FileHive {
 		return false;
 
 	}
-
 	public boolean storeFile(String filename, byte[] filecontent){
 		log.info("storing file:"+filename);
 
@@ -777,7 +715,6 @@ public class FileHive {
 		}
 		return false;
 	}
-
 	public boolean storeFile(String filename, String data) {
 		log.info("storing file:"+filename);
 		try{
@@ -798,80 +735,30 @@ public class FileHive {
 		}
 		return false;
 	}
-	public boolean hasFile(String filename) {
-		if(getFileName(filename) != null){
-			return true;
-		}
-		return false;
-	}
-	public String getFileData(String filename) {
-		String storefname;
-		if((storefname = getFileName(filename)) != null){
-			String[] meta = getMeta(storefname);
-			String ctype = meta[1];
-			//String cenc = meta[2];
-			log.info("Ctype:"+ctype);
-			log.info(filename+" -> "+storefname);
-			String data = getData(storefname);
-			//try{
-			/*System.out.println("Content-Length: "+data.length);*/
-			log.info("Clen: "+data.length());
-			StringBuilder sb = new StringBuilder("Content-Type: "+ctype);
-			sb.append("\nContent-Disposition: attachment; filename=\""+filename+"\"");
-			sb.append('\n');
-			sb.append('\n');
-			/*BufferedWriter bout = new BufferedWriter(
-						new OutputStreamWriter(System.out,"ISO-8859-1"));*/
-			sb.append(data);
-			//bout.write(sb.toString());
-			return sb.toString();
-		}else{
-			return null;
-		}
-	}
 
+	/*
 	public void delete(File file) {
 		file.delete();		
-	}
-	public boolean archive(File file, boolean overwrite) {
-		String filename = file.getName();
-		//File archived = new File(hive_dir,filename);
-		if(file.exists()){
-			File dest;// = new File(Cgicms.archives_dir,file);
-			if(overwrite){
-				dest = new File(Cgicms.archives_dir,filename);
-				if(dest.exists()){
-					if(!dest.delete()){
-						log.fail("could not delete destination file");
-						return false;
-					}
-				}
-				file.renameTo(dest);
-				log.info("archive success["+filename+"] (overwrite)");
-				return true;
+	}*/
+	public ArrayList<String> getFiles() {
+		//read index
+		log.info("getting filelist");
+		try {
+			BufferedReader bin = new BufferedReader(new FileReader(index_file));
+			ArrayList<String> files = new ArrayList<String>();
+			String line;
+			while((line = bin.readLine())!=null){
+				files.add(Csv.decode(line)[1]);
 			}
-
-			for(int i = 0; i < 1000;i++){
-				dest = new File(
-						Cgicms.archives_dir,
-						filename+"."+Utils.addLeading(i, 3)
-				);
-
-				if(!dest.exists()){
-					if(file.renameTo(dest)){
-						log.info("archive success["+filename+"]");
-						return true;
-					}else{
-						log.info("archive failed["+filename+"]");
-						return false;
-					}
-				}
-			}
-			log.fail("archive failed["+filename+"] -> too many files in archive");
-		}else{
-			log.fail("no file["+filename+"] found");
+			bin.close();
+			return files;
+		} catch (FileNotFoundException e) {
+			log.fail("getFiles failed: "+e);
+		} catch (IOException ioe){
+			log.fail("getFiles failed: "+ioe);
 		}
-		return false;
+		return new ArrayList<String>();
 	}
+	
 }
 
