@@ -1,9 +1,9 @@
 package cms.mods;
 
-import html.CmsBoxi;
 import html.CmsElement;
 import html.FileField;
 import html.HiddenField;
+import html.PassField;
 import html.SubmitField;
 import html.TextAreaField;
 import http.FormPart;
@@ -305,23 +305,22 @@ public class ModOwn extends Module{
 			if(!datarelay.env.containsKey("HTTPS")){
 				pagebuilder.setRedirect("https"+script.substring(4)+"/"+hook+"/"+action_hook);
 			}else{
-				CmsBoxi box = new CmsBoxi("Salasanan vaihto", "medium3");
-				box.addForm("https"+script.substring(4)+"/"+hook+"/"+action_hook);
-				box.addTag("<table class=\"table5\"><tr><td>");
-				box.addInput(null, null, null, "Vanha");
-				box.addTag("</td><td>");
-				box.addInput("vanha", null, "password", null);
-				box.addTag("</td></tr><tr><td>");
-				box.addInput(null, null, null, "Uusi");
-				box.addTag("</td><td>");
-				box.addInput("uusi", null, "password", null);
-				box.addTag("</td></tr><tr><td>");
-				box.addInput(null, null, null, "Uudestaan");
-				box.addTag("</td><td>");
-				box.addInput("uusi2", null, "password", null);
-				box.addTag("</td></tr></table");
-				box.addSource("<input type=\"submit\" value=\"vaihda\" class=\"list\">");
-				box.addTag("</form>");				
+				//CmsBoxi box = new CmsBoxi("Salasanan vaihto", "medium3");
+				CmsElement box = new CmsElement();
+				box.addLayer("div","boxi2 medium3");
+				box.addTag("h4","Salasanan vaihto");
+				box.addLayer("div","ingroup filled");
+				
+				box.addFormTop("https"+script.substring(4)+"/"+hook+"/"+action_hook);
+				box.addContent("<table class=\"table5\"><tr><td>Vanha:</td><td>");
+				box.addField("vanha", null, true, new PassField(-1));
+				box.addContent("</td></tr><tr><td>Uusi:</td><td>");
+				box.addField("uusi", null, true, new PassField(-1));
+				box.addContent("</td></tr><tr><td>Uudestaan:</td><td>");
+				box.addField("uusi2", null, true, new PassField(-1));
+				box.addContent("</td></tr></table");
+				box.addContent("<input type=\"submit\" value=\"vaihda\" class=\"list\">");
+				box.addContent("</form>");				
 
 				if(checkFields(box.getFields())){
 					log.info("fields found");
@@ -366,8 +365,12 @@ public class ModOwn extends Module{
 					if(!virhe_sanoma.equals("")){
 						ActionLog.action(username + " - failure in changing password");
 
-						CmsBoxi result = new CmsBoxi("Salasanan vaihto epäonnistui");
-						result.addP("Virhe: " + virhe_sanoma);
+						//CmsBoxi result = new CmsBoxi("Salasanan vaihto epäonnistui");
+						CmsElement result = new CmsElement();
+						result.addLayer("div","boxi2 medium3");
+						result.addTag("h4","Salasanan vaihto epäonnistui");
+						result.addLayer("div","ingroup filled");
+						result.addTag("p","Virhe: " + virhe_sanoma);
 
 						page.setTitle("Käyttäjä kohtaiset hommelit");
 						page.addTop(getMenu());
@@ -378,8 +381,12 @@ public class ModOwn extends Module{
 					}else{
 						ActionLog.action(username + " - changed  own password");
 
-						CmsBoxi result = new CmsBoxi("Salasanan vaihto onnistui");
-						result.addP("Salasana vaihdettu.");
+						//CmsBoxi result = new CmsBoxi("Salasanan vaihto onnistui");
+						CmsElement result = new CmsElement();
+						result.addLayer("div","boxi2 medium3");
+						result.addTag("h4","Salasanan vaihto onnistui");
+						result.addLayer("div","ingroup filled");
+						result.addTag("p","Salasana vaihdettu.");
 						result.addLink("muut toiminnot", script + "/" + hook );
 
 						page.setTitle("Omat tiedot");

@@ -7,9 +7,8 @@ import java.util.Collections;
 
 import util.ActionLog;
 import util.Logger;
-
 import cms.Cgicms;
-import cms.FileHive;
+import cms.FileOps;
 import d2o.FlushingFile;
 
 public class PageDb {
@@ -706,20 +705,20 @@ public class PageDb {
 		if( (result = index.removeRecord(name)) != null)
 			return result;
 
-		FileHive fh = FileHive.getFileHive();
+		//FileHive fh = FileHive.getFileHive();
 		File dir = new File(sdir,path);
 		File meta = new File(dir,"page.meta."+name);
 		File data = new File(dir,"page.data."+name);
 
 		StringBuilder errors = new StringBuilder();
 
-		if(!fh.archive(data, false)){
+		if(!FileOps.archive(data)){
 			errors.append("could not remove data["+data.getAbsolutePath()+"]\n");
 		}
 		if( (result = index.storeRecords()) != null){
 			errors.append(result+"\n");
 		}
-		if(!fh.archive(meta, false)){
+		if(!FileOps.archive(meta)){
 			errors.append("could not remove meta["+meta.getAbsolutePath()+"]");
 		}
 		if(errors.length() > 0){

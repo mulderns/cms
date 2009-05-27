@@ -1,9 +1,9 @@
 package cms.mods;
 
+import html.CmsElement;
+
 import java.io.File;
 
-import html.CmsBoxi;
-import html.CmsElement;
 import cms.Cgicms;
 import cms.DataRelay;
 import d2o.FlushingFile;
@@ -65,7 +65,7 @@ public class ModMain extends Module {
 			page.addRight(genBugreport());
 		}});
 
-		actions.add(new Action(null,"esittely"){public void execute(){
+		/*actions.add(new Action(null,"esittely"){public void execute(){
 			CmsBoxi esittely = new CmsBoxi("Tour de vesibajatso");
 			esittely.addTag("<h3>Linkit</h3>");
 			esittely.addP(
@@ -87,7 +87,7 @@ public class ModMain extends Module {
 			page.addTop(getMenu());
 			page.addCenter(esittely.toString());
 			//page.addRight(genTalkback().toString());
-		}});
+		}});*/
 	}
 
 	@Override

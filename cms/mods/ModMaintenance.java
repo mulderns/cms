@@ -1,6 +1,7 @@
 package cms.mods;
 
-import html.CmsBoxi;
+import html.CmsElement;
+import html.SubmitField;
 import html.TextAreaField;
 
 import java.io.BufferedInputStream;
@@ -12,6 +13,7 @@ import util.Utils;
 import cms.Cgicms;
 import cms.DataRelay;
 import cms.FileHive;
+import cms.FileOps;
 import d2o.FlushingFile;
 import d2o.UserDb;
 
@@ -34,8 +36,8 @@ public class ModMaintenance extends Module {
 		actions.add(new Action("Puhdista vanhat istunnot", "cleanup"){public void execute(){
 			log.info("doing cleanup");
 
-			CmsBoxi result = new CmsBoxi("Cleanup");
-			result.addPre(clearSessions());
+			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","Cleanup");result.addLayer("div","ingroup filled");
+			result.addTag("pre",clearSessions());
 			result.addLink("muut toiminnot", script + "/" + hook );
 
 			page.setTitle("Maintenance");
@@ -63,11 +65,15 @@ public class ModMaintenance extends Module {
 			//String motd = fh.readFile("misc.motd");
 
 
-			CmsBoxi box = new CmsBoxi("Message of the day");
-			box.addForm(script + "/" + hook + "/" + action_hook);
+			CmsElement box = new CmsElement();
+			box.addLayer("div","boxi2 medium3");
+			box.addTag("h4","Message of the day");
+			box.addLayer("div","ingroup filled");
+			box.addFormTop(script + "/" + hook + "/" + action_hook);
 			box.addField("motd", sb.toString(), true, new TextAreaField(50,10));
-			box.addSource("<br/>");
-			box.addInput(null, "submit", "submit", null);
+			box.addContent("<br/>");
+			box.addField(null,"submit", false, new SubmitField(true));
+			//box.addInput(null, "submit", "submit", null);
 
 			page.setTitle("Maintenance - Message of the day");
 			page.addTop(getMenu());
@@ -80,8 +86,8 @@ public class ModMaintenance extends Module {
 		actions.add(new Action("näytä logi", "viewlog"){public void execute(){
 			log.info("viewing log");
 
-			CmsBoxi result = new CmsBoxi("Logi");
-			result.addPre(getActionLog());
+			CmsElement result = new CmsElement();result.addLayer("div","boxi2");result.addTag("h4","Logi");result.addLayer("div","ingroup filled");
+			result.addTag("pre",getActionLog());
 			result.addLink("lataa logi", script + "/" + hook + "/downlog");
 			result.addLink("arkistoi logi", script + "/" + hook + "/archlog");
 			result.addLink("muut toiminnot", script + "/" + hook );
@@ -106,11 +112,11 @@ public class ModMaintenance extends Module {
 		actions.add(new Action("arkistoi logi", "archlog"){public void execute(){
 			log.info("archiving log");
 
-			FileHive fh = FileHive.getFileHive(Cgicms.logbooks_dir);
-			fh.archive("actionlog",false);
+//			FileHive fh = FileHive.getFileHive();
+			FileOps.archive(new File(Cgicms.logbooks_dir,"actionlog"));
 
-			CmsBoxi result = new CmsBoxi("Logi");
-			result.addP("joo");
+			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","Logi");result.addLayer("div","ingroup filled");
+			result.addTag("p","joo");
 			result.addLink("ok", script + "/" + hook );
 
 			page.setTitle("Maintenance - Logi");
@@ -120,9 +126,9 @@ public class ModMaintenance extends Module {
 		actions.add(null);
 
 		actions.add(new Action("puhdista käyttäjäkanta", "cleanuserdb"){public void execute(){
-			CmsBoxi result = new CmsBoxi("puhdistus");
+			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","puhdistus");result.addLayer("div","ingroup filled");
 			UserDb udb = UserDb.getDb();
-			result.addPre((udb.cleanDb()?"cleaned some":"allready clean"));
+			result.addTag("pre",(udb.cleanDb()?"cleaned some":"allready clean"));
 			result.addLink("muut toiminnot", script + "/" + hook );
 
 			page.setTitle("Maintenance - UserDb");
@@ -132,11 +138,11 @@ public class ModMaintenance extends Module {
 
 		actions.add(new Action("Target Practice", "target"){public void execute(){
 
-			CmsBoxi box = new CmsBoxi("Target Practice");
+			CmsElement box = new CmsElement();box.addLayer("div","boxi2 medium3");box.addTag("h4","Target Practice");box.addLayer("div","ingroup filled");
 
 			//box.addForm(script + "/" + hook + "/" + action_hook);
 			File target = new File(datarelay.target,"target.practice");
-			box.addP("Creating file["+datarelay.target+"] - ["+target.getAbsolutePath()+"]");
+			box.addTag("p","Creating file["+datarelay.target+"] - ["+target.getAbsolutePath()+"]");
 			String result = "";
 			try{
 				if(target.createNewFile()){
@@ -152,7 +158,7 @@ public class ModMaintenance extends Module {
 				result = "error: "+ioe;
 			}
 
-			box.addP(result);
+			box.addTag("p",result);
 
 			page.setTitle("Maintenance - Target Practice");
 			page.addTop(getMenu());
@@ -163,9 +169,9 @@ public class ModMaintenance extends Module {
 		actions.add(new Action("Varmuuskopioi asetukset", "backupsettings"){public void execute(){
 			log.info("doing backup");
 
-			CmsBoxi result = new CmsBoxi("Backup");
+			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","Backup");result.addLayer("div","ingroup filled");
 			backupSettings();
-			result.addPre("hmm");
+			result.addTag("pre","hmm");
 			result.addLink("muut toiminnot", script + "/" + hook );
 
 			page.setTitle("Maintenance");
@@ -176,10 +182,11 @@ public class ModMaintenance extends Module {
 		actions.add(new Action("päivitä", "update"){public void execute(){
 			log.info("updating svn repository");
 
-			CmsBoxi result = new CmsBoxi("Päivitys");
+			//CmsBoxi result = new CmsBoxi("Päivitys");
+			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","Päivitys");result.addLayer("div","ingroup filled");
 			String r = updateRepository();
 			Utils.sleep(2000);
-			result.addPre(r);
+			result.addTag("pre",r);
 			result.addLink("muut toiminnot", script + "/" + hook );
 
 			page.setTitle("Maintenance - Logi");
@@ -263,10 +270,13 @@ public class ModMaintenance extends Module {
 	}
 
 	private void backupSettings() {
-		FileHive fh = FileHive.getFileHive();
 		for(File f: Cgicms.database_dir.listFiles()){
-			if(f.isFile())
-				fh.archiveCopy(f, false);
+			if(f.isFile()){
+				String[] temp = FileOps.readToArray(f);
+				String filename = f.getName();
+				FileOps.archive(f);
+				FileOps.write(new File(Cgicms.database_dir,filename), temp, false);
+			}
 		}
 	}
 }

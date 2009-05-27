@@ -11,8 +11,10 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import util.Logger;
+import util.Utils;
 
 /**
 append
@@ -153,8 +155,54 @@ public class FileOps {
 
 	//	public boolean delete(File file){}
 	//	public boolean exists(File file){}
-	public void archive(File file){log.fail("unimplemented"); }
-	
+	public static boolean archive(File file){
+		if(file.exists()){
+			File archive = Cgicms.archives_dir;
+			final String originalname = file.getName();
+
+			String[] files = archive.list(
+					new FilenameFilter(){public boolean accept(File dir, String name) {
+						//return name.startsWith(originalname);
+						return name.matches(originalname.replace(".", "\\.")+"_[0-9]{3}");
+					}}
+			);
+
+			String finalname = originalname+"_000";
+
+			if(files.length > 0){
+				int[] suffixes = new int[files.length];
+				int i = 0;
+				for(String name:files){
+					suffixes[i++] = Integer.parseInt(name.substring(name.lastIndexOf('_')+1));
+				}
+
+				Arrays.sort(suffixes);
+				for(int j = 0; j < 999; j++){
+					if(Arrays.binarySearch(suffixes, j) < 0){
+						finalname = originalname+"."+Utils.addLeading(j, 3);
+						break;
+					}
+				}
+			}
+
+			File dest = new File(archive,finalname);
+
+			if(!dest.exists()){
+				if(file.renameTo(dest)){
+					log.info("archive success["+originalname+"]");
+					return true;
+				}else{
+					log.info("archive failed["+originalname+"]");
+					return false;
+				}
+			}
+			log.fail("archive failed["+originalname+"] -> too many files in archive");
+		}else{
+			log.fail("no file["+file.getName()+"] found");
+		}
+		return false;
+	}
+
 	public static File[] getFiles(File dir, final String extension) { 
 		return dir.listFiles(
 				new FilenameFilter(){public boolean accept(File dir, String name){

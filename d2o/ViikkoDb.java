@@ -10,7 +10,6 @@ import util.Csv;
 import util.Logger;
 import util.Utils;
 import cms.Cgicms;
-import cms.FileHive;
 import cms.FileOps;
 
 public class ViikkoDb {
@@ -238,7 +237,7 @@ public class ViikkoDb {
 		int cur_year = now.get(Calendar.YEAR);
 		int cur_week = now.get(Calendar.WEEK_OF_YEAR);
 
-		FileHive fh = FileHive.getFileHive(db_file);
+		//FileHive fh = FileHive.getFileHive(db_file);
 		for(File _file : FileOps.getFiles(db_file,"hap")){
 			String file = _file.getName();
 			if(file.length() > 4){
@@ -253,7 +252,7 @@ public class ViikkoDb {
 				}
 				log.info("["+year+"]<["+cur_year+"]   ["+week+"]<["+cur_week+"]");
 				if(year < cur_year || week < cur_week)
-					fh.archive(file, false);
+					FileOps.archive(_file);
 			}
 
 		}

@@ -1,7 +1,6 @@
 package cms.mods;
 
 import html.CheckBoxField;
-import html.CmsBoxi;
 import html.CmsElement;
 import html.TextAreaField;
 import html.TextField;
@@ -610,11 +609,17 @@ public class ModViikko extends Module {
 
 					}else{
 						ActionLog.action(username + " - failed to modify happening ["+datarelay.post.get("otsikko")+"]");
-						CmsBoxi result = new CmsBoxi("Tapahtuman muokkaus epäonnistui");
-						result.addP("sillä: ");
+						//CmsBoxi result = new CmsBoxi();
+						CmsElement result = new CmsElement();
+						result.addLayer("div","boxi2 medium3");
+						result.addTag("h4","Tapahtuman muokkaus epäonnistui");
+						result.addLayer("div","ingroup filled");
+						result.addTag("p","sillä: ");
+						result.addLayer("pre");
 						for(String s : results){
-							result.addPre(s);
+							result.addContent(s+"\n");
 						}
+						result.up();
 						forma.setFields(datarelay.post);
 						forma.addFormTop(script + "/" + hook + "/muokkaa/"+ext);
 
@@ -669,9 +674,12 @@ public class ModViikko extends Module {
 						page.addCenter(forma.toString());
 						page.addLeft(help);
 					}else{
-						CmsBoxi box = new CmsBoxi("Muokkaus sivu");
-						box.addP("tapahtumaa ei löytynyt id["+ext+"]");
-						page.addCenter(box.toString());
+						CmsElement box = new CmsElement();
+						box.addLayer("div","boxi2 medium3");
+						box.addTag("h4","Muokkaus sivu");
+						box.addLayer("div","ingroup filled");
+						box.addTag("p","tapahtumaa ei löytynyt id["+ext+"]");
+						page.addCenter(box);
 					}				
 
 					page.setTitle("Muokkaa tapahtumaa");
@@ -683,11 +691,14 @@ public class ModViikko extends Module {
 
 				}
 			}else{
-				CmsBoxi box = new CmsBoxi("Muokkaus sivu");
+				CmsElement box = new CmsElement();
+				box.addLayer("div","boxi2 medium3");
+				box.addTag("h4","Muokkaus sivu");
+				box.addLayer("div","ingroup filled");
 				page.setTitle("Viikkoohjelma");
 				page.addTop(getMenu());
-				page.addCenter(box.toString());
-				page.addCenter(getActionLinks().toString());
+				page.addCenter(box);
+				page.addCenter(getActionLinks());
 				page.addRight(genBugreport());
 			}
 		}});
@@ -697,15 +708,19 @@ public class ModViikko extends Module {
 				if(checkField("doit")){
 					ViikkoDb db = new ViikkoDb();
 
-					CmsBoxi box = new CmsBoxi("Muokkaus sivu");
+					CmsElement box = new CmsElement();
+					box.addLayer("div","boxi2 medium3");
+					box.addTag("h4","Muokkaus sivu");
+					box.addLayer("div","ingroup filled");
+					
 					String res;
 					if((res = db.removeEntry(ext)) == null){
-						box.addP("tapahtuma tuhottu");
+						box.addTag("p","tapahtuma tuhottu");
 						box.addLink("Ok", script +"/"+ hook);
 						ActionLog.action(username+" - deleted tapahtuma ["+ext+"]");
 						pagebuilder.setRedirect(script+"/"+hook+"/");
 					}else{
-						box.addP("poisto epäonnistui id["+ext+"]:"+res);
+						box.addTag("p","poisto epäonnistui id["+ext+"]:"+res);
 						ActionLog.action(username+" - tapahtuma deletion failed ["+ext+"]");
 					}				
 
@@ -753,11 +768,14 @@ public class ModViikko extends Module {
 					page.addCenter(poista.toString());
 				}
 			}else{
-				CmsBoxi box = new CmsBoxi("Muokkaus sivu");
+				CmsElement box = new CmsElement();
+				box.addLayer("div","boxi2 medium3");
+				box.addTag("h4","Muokkaus sivu");
+				box.addLayer("div","ingroup filled");
 				page.setTitle("Viikkoohjelma");
 				page.addTop(getMenu());
-				page.addCenter(box.toString());
-				page.addCenter(getActionLinks().toString());
+				page.addCenter(box);
+				page.addCenter(getActionLinks());
 			}
 		}});
 
@@ -774,9 +792,13 @@ public class ModViikko extends Module {
 						page.addCenter(getViikkoHtml(offset,true));
 						page.addCenter("</div>");
 
-						CmsBoxi boxb = new CmsBoxi(null);
-						boxb.addTag("<p style=\"font-size:9.5px;\">");
-						boxb.addTag(getViikkoMail(offset,true));
+						//CmsBoxi boxb = new CmsBoxi(null);
+						CmsElement boxb = new CmsElement();
+						boxb.addLayer("div","boxi2 medium3");
+						boxb.addLayer("div","ingroup filled");
+						
+						boxb.addLayer("p style=\"font-size:9.5px;\"");
+						boxb.addContent(getViikkoMail(offset,true));
 
 						page.setTitle("Viikkoohjelma - esikatselu ");
 						page.addTop(getMenu());
@@ -800,8 +822,14 @@ public class ModViikko extends Module {
 						page.setTitle("esikatselu");
 						page.addCenter(p.toString());
 					}else{
-						CmsBoxi esikatselu = new CmsBoxi("error");
-						esikatselu.addP("Virhe tapahtumaa["+ext+"] ei saatu ladattua");
+						//CmsBoxi esikatselu = new CmsBoxi("error");
+						
+						CmsElement esikatselu = new CmsElement();
+						esikatselu.addLayer("div","boxi2 medium3");
+						esikatselu.addTag("h4","error");
+						esikatselu.addLayer("div","ingroup filled");
+						
+						esikatselu.addTag("p","Virhe tapahtumaa["+ext+"] ei saatu ladattua");
 						page.setTitle("esikatselu");
 						page.addTop(getMenu());
 						page.addLeft(getActionLinks().toString());
@@ -873,16 +901,24 @@ public class ModViikko extends Module {
 					}
 
 					if(result == null){
-						CmsBoxi boxi = new CmsBoxi("Postin lähetys");
-						boxi.addP("Posti lähetettiin onnistuneesti ["+datarelay.post.get("saaja")+"]");
+						//CmsBoxi boxi = new CmsBoxi("Postin lähetys");
+						CmsElement boxi = new CmsElement();
+						boxi.addLayer("div","boxi2 medium3");
+						boxi.addTag("h4","Postin lähetys");
+						boxi.addLayer("div","ingroup filled");
+						
+						boxi.addTag("p","Posti lähetettiin onnistuneesti ["+datarelay.post.get("saaja")+"]");
 						boxi.addLink("Ok", script +"/"+ hook);
 
 						page.setTitle("Cms");
 						page.addTop(getMenu());
 						page.addCenter(boxi.toString());
 					}else{
-						CmsBoxi boxi = new CmsBoxi("Postin lähetys");
-						boxi.addP("Virhe:"+result);
+						CmsElement boxi = new CmsElement();
+						boxi.addLayer("div","boxi2 medium3");
+						boxi.addTag("h4","Postin lähetys");
+						boxi.addLayer("div","ingroup filled");
+						boxi.addTag("p","Virhe:"+result);
 						boxi.addLink("Ok", script +"/"+ hook);
 
 						page.setTitle("Cms");
@@ -930,8 +966,12 @@ public class ModViikko extends Module {
 				//FileHive fh = FileHive.getFileHive();
 				FileOps.write(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false), false);
 				//				fh.storeFile(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false));
-				CmsBoxi box = new CmsBoxi("Sivujen päivitys");
-				box.addP("sivut päivitetty");
+				//CmsBoxi box = new CmsBoxi("Sivujen päivitys");
+				CmsElement box = new CmsElement();
+				box.addLayer("div","boxi2 medium3");
+				box.addTag("h4","Sivujen päivitys");
+				box.addLayer("div","ingroup filled");
+				box.addTag("p","sivut päivitetty");
 				box.addLink("Ok", script+"/"+hook);
 
 				page.setTitle("Viikkoohjelma");
@@ -980,7 +1020,10 @@ public class ModViikko extends Module {
 		actions.add(new Action("Clear old", "clearold"){public void execute(){
 			new ViikkoDb().removeOld();
 
-			CmsBoxi boxi = new CmsBoxi("jep");
+			CmsElement boxi = new CmsElement();
+			boxi.addLayer("div","boxi2 medium3");
+			boxi.addTag("h4","jep");
+			boxi.addLayer("div","ingroup filled");
 			boxi.addLink("Ok", script +"/"+ hook);
 
 			page.setTitle("Cms");

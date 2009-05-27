@@ -1362,9 +1362,10 @@ public class Renderer {
 		log.info("Generating data...");
 		if(file.parent == null){
 			log.info(" plain source");
-			String[] temp = new String[1];
-			temp[0] = post.get("data");
-			return temp;
+			//String[] temp = new String[1];
+			//temp[0] = post.get("data").split("\n");
+			//return temp;
+			return post.get("data").split("\n");
 		}else{
 			log.info(" has parent");
 			ArrayList<DataKernel> buffer2 = new ArrayList<DataKernel>();

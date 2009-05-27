@@ -1,14 +1,5 @@
 package cms.mods;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map.Entry;
-
-import util.ActionLog;
-import util.Utils;
-
 import html.CheckBoxField;
 import html.CmsElement;
 import html.ComboBoxField;
@@ -18,15 +9,21 @@ import html.SubmitField;
 import html.TextField;
 import http.FormPart;
 
-import cms.DataRelay;
-import cms.FileHive;
-import cms.FileOps;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Map.Entry;
 
+import util.ActionLog;
+import util.Utils;
+import cms.DataRelay;
+import cms.FileOps;
+import d2o.pages.BinaryFile;
 import d2o.pages.CmsFile;
 import d2o.pages.PageDb;
-import d2o.pages.TextFile;
-import d2o.pages.BinaryFile;
 import d2o.pages.TemplateFile;
+import d2o.pages.TextFile;
 import d2o.pages.Tree;
 import d2o.pages.VirtualPath;
 import d2o.render.Renderer;
@@ -445,7 +442,9 @@ public class ModPages extends Module {
 
 		}});
 
+		
 		actions.add(new Action(null, "rename"){public void execute(){
+			page.setTitle("rename file - "+ext);
 			VirtualPath path = VirtualPath.create(ext);
 			PageDb pdb = PageDb.getDb();
 
@@ -469,13 +468,14 @@ public class ModPages extends Module {
 				}else{
 					CmsFile file = pdb.getFileMeta(path);
 					CmsElement box = new CmsElement();
-					box.addLayer("div","boxi medium");
+					box.addLayer("div","boxi2 medium");
 					box.addTag("h4", "Uusi nimi");
-					box.addForm(script + "/" + hook + "/" + action_hook +"/"+ path.getUrl());
+					box.addLayer("div", "ingroup filled");
+					box.addFormTop(script + "/" + hook + "/" + action_hook +"/"+ path.getUrl());
 
 					box.addTag("label","Uusi nimi");
 					box.addField("uusinimi", file.name, true, new TextField(27));
-					box.addField("ok", "Muuta", true, new SubmitField());
+					box.addField("ok", "Muuta", true, new SubmitField(true));
 
 					if(checkFields(box.getFields())){
 						String result;
@@ -484,6 +484,8 @@ public class ModPages extends Module {
 						}else{
 							pagebuilder.setRedirect(script + "/" + hook + "/" + "file/" + path.getPath()+"/"+datarelay.post.get("uusinimi"));
 						}
+					}else{
+						page.addCenter(box);
 					}
 				}
 			}
@@ -1042,10 +1044,11 @@ public class ModPages extends Module {
 					}
 					
 					File target = new File(target_path,file.name);
-					FileHive fh = FileHive.getFileHive(target_path);
+//					FileHive fh = FileHive.getFileHive(target_path);
 
 					BinaryFile rfile = (BinaryFile)file;
-					if(!fh.storeFile(target, rfile.getData())){
+					if(!FileOps.write(target, rfile.getData(),false)){
+					//if(!fh.storeFile(target, rfile.getData())){
 						page.addCenter("could not write the file");
 					}else{
 						page.addCenter("ok");

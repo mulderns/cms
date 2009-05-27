@@ -215,8 +215,8 @@ public class ModuleLoader {
 		datarelay.modules = new ArrayList<Module>(12);
 		datarelay.modules.add(new ModMain(datarelay));
 		datarelay.modules.add(new ModViikko(datarelay));
-		datarelay.modules.add(new ModUser(datarelay));
-		datarelay.modules.add(new ModGroup(datarelay));
+//		datarelay.modules.add(new ModUser(datarelay));
+//		datarelay.modules.add(new ModGroup(datarelay));
 		datarelay.modules.add(new ModMaintenance(datarelay));
 		datarelay.modules.add(new ModOwn(datarelay));
 		datarelay.modules.add(new ModUpload(datarelay));

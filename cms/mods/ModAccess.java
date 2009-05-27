@@ -1,16 +1,17 @@
 package cms.mods;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-
-import util.ActionLog;
 import html.CheckBoxField;
-import html.CmsBoxi;
 import html.CmsElement;
 import html.PassField;
 import html.SubmitField;
 import html.TextField;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+
+import util.ActionLog;
 import cms.DataRelay;
 import d2o.GroupDb;
 import d2o.UserDb;
@@ -145,18 +146,26 @@ public class ModAccess extends Module {
 				}
 				if(!virhe_sanoma.equals("")){
 					ActionLog.action(username + " - failure in adding user ["+datarelay.post.get("tunnus")+"]");
-					CmsBoxi result = new CmsBoxi("K‰ytt‰j‰n lis‰ys ep‰onnistui");
-					result.addP("Virhe: " + virhe_sanoma);
+					//CmsBoxi result = new CmsBoxi("K‰ytt‰j‰n lis‰ys ep‰onnistui");
+					CmsElement result = new CmsElement();
+					result.addLayer("div","boxi2 medium3");
+					result.addTag("h4","K‰ytt‰j‰n lis‰ys ep‰onnistui");
+					result.addLayer("div","ingroup filled");
+					result.addTag("p","Virhe: " + virhe_sanoma);
 					box.setFields(datarelay.post);
 					page.setTitle("K‰ytt‰j‰ kohtaiset hommelit");
 					page.addTop(getMenu());
-					page.addCenter(result.toString());
-					page.addCenter(box.toString());
+					page.addCenter(result);
+					page.addCenter(box);
 
 				}else{
 					ActionLog.action(username + " - added user ["+datarelay.post.get("tunnus")+"]");
-					CmsBoxi result = new CmsBoxi("K‰ytt‰j‰n lis‰ys onnistui");
-					result.addP("K‰ytt‰j‰ ["+datarelay.post.get("tunnus")+"] list‰ttiin onnistuneesti.");
+					//CmsBoxi result = new CmsBoxi("K‰ytt‰j‰n lis‰ys onnistui");
+					CmsElement result = new CmsElement();
+					result.addLayer("div","boxi2 medium3");
+					result.addTag("h4","K‰ytt‰j‰n lis‰ys onnistui");
+					result.addLayer("div","ingroup filled");
+					result.addTag("p","K‰ytt‰j‰ ["+datarelay.post.get("tunnus")+"] list‰ttiin onnistuneesti.");
 					result.addLink("lis‰‰ lis‰‰", script + "/" + hook + "/"+action_hook);
 					result.addLink("muut toiminnot", script + "/" + hook );
 
@@ -175,7 +184,63 @@ public class ModAccess extends Module {
 			}
 		}});
 
-		actions.add(new Action("Poista k‰ytt‰j‰","poista_k"){public void execute(){
+		actions.add(new Action("Poista k‰ytt‰ji‰","poista_k"){public void execute(){
+			page.setTitle("Poista k‰ytt‰ji‰");
+			page.addTop(getMenu());
+			page.addLeft(getActionLinks());
+			page.addRight(getMenuExtra());
+
+			CmsElement nimilista = new CmsElement();
+			nimilista.addFormTop(script + "/" + hook + "/" + action_hook);
+			nimilista.addLayer("div","boxi2 medium3");
+			nimilista.addTag("h4", "Valitse poistettavat");
+			nimilista.addLayer("div","ingroup filled");
+			nimilista.addLayer("table","table5");
+			for(String user : UserDb.getNames()){
+				nimilista.addContent("<tr><td>"+user+"</td><td>");
+				nimilista.addField("del_"+user, null, true, new CheckBoxField());
+				nimilista.addContent("</td></tr>");
+			}
+
+			nimilista.addContent("<tr><td><h5 style=\"margin:0\">Confirm:</h5></td><td>");
+			nimilista.addField("confirm", "confirm", true, new CheckBoxField());
+			nimilista.addContent("</td></tr>");
+			nimilista.up();
+			nimilista.addField("submit", "poista", false, new SubmitField(true));
+
+			if(checkField("confirm")){
+				log.info("poistetaan k‰ytt‰ji‰");
+				UserDb udb = UserDb.getDb();
+				ArrayList<String> results = new ArrayList<String>();
+
+				for(Map.Entry<String, String> e : datarelay.post.entrySet()){
+					log.info(e.getKey());
+					if(!e.getKey().startsWith("del_"))
+						continue;
+					String name = e.getKey().substring(e.getKey().indexOf('_')+1);
+					log.info(" >"+name);
+					if(!udb.removeUser(name)){
+						results.add("["+name+"]...ei lˆytynyt tai saatu poistettua");
+						log.fail(" ei poistettu");
+					}else{
+						results.add("["+name+"]...poistettu");
+						log.info(" poistettu");
+					}
+				}
+
+				udb.storeDb();
+				CmsElement box = new CmsElement();
+				box.addLayer("pre");
+				for(String s: results)
+					box.addContent(s+"\n");
+				page.addCenter(box);
+				return;
+				
+			}				
+
+			
+			page.addCenter(nimilista);
+
 		}});
 
 		actions.add(null);
@@ -212,15 +277,21 @@ public class ModAccess extends Module {
 					}
 				}
 
-				CmsBoxi resultBox = new CmsBoxi("Ryhm‰n lis‰ys");
+				//CmsBoxi resultBox = new CmsBoxi("Ryhm‰n lis‰ys");
+				CmsElement resultBox = new CmsElement();
+				resultBox.addLayer("div","boxi2 medium3");
+				resultBox.addTag("h4","Ryhm‰n lis‰ys");
+				resultBox.addLayer("div","ingroup filled");
+				
 				if(res.size() > 0){
-					resultBox.addP("Virhe:");
+					resultBox.addTag("p","Virhe:");
+					
 					for(String s : res){
-						resultBox.addPre("["+s+"]");
+						resultBox.addTag("pre","["+s+"]");
 					}
 					ActionLog.action("group add fail");
 				}else{
-					resultBox.addP("Ryhm‰n ["+datarelay.post.get("r_nimi")+"] lis‰ys onnistui.");
+					resultBox.addTag("p","Ryhm‰n ["+datarelay.post.get("r_nimi")+"] lis‰ys onnistui.");
 					ActionLog.action("group add success");
 					pagebuilder.setRedirect(script+"/"+hook+"/");
 				}
@@ -280,13 +351,17 @@ public class ModAccess extends Module {
 					userdb.getUser(ext).groups = groups.toArray(new String[groups.size()]);
 					String result = userdb.storeDb();
 					if(result != null){
-						CmsBoxi failBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
-						failBox.addP("Muokkaus ep‰onnistui:"+result);
+						//CmsBoxi failBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
+						CmsElement failBox = new CmsElement();
+						failBox.addLayer("div","boxi2 medium3");
+						failBox.addTag("h4","Muokkaa k‰ytt‰j‰‰");
+						failBox.addLayer("div","ingroup filled");
+						failBox.addTag("p","Muokkaus ep‰onnistui:"+result);
 						failBox.addLink("ok", script + "/" + hook + "/" + action_hook + "/"+ext);
 
 						page.setTitle("K‰ytt‰jien hallinta");
 						page.addTop(getMenu());
-						page.addCenter(failBox.toString());
+						page.addCenter(failBox);
 					}else{
 						//						CmsBoxi successBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
 						//						successBox.addP("Muokkaus onnistui!");
@@ -305,28 +380,33 @@ public class ModAccess extends Module {
 
 					if(user != null){
 
-						CmsBoxi modifyBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
-						modifyBox.addForm(script+"/"+hook+"/"+action_hook+"/"+ext);
-						modifyBox.addTag("<table class=\"def\">\n<tr><td>");
-						modifyBox.addLabel("Tunnus");
-						modifyBox.addTag("</td><td>");
-						modifyBox.addTag(user.name);
-						modifyBox.addTag("</td></tr>\n<tr><td><h3>Ryhm‰t: </h3></td></tr>\n");
+						//CmsBoxi modifyBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
+						CmsElement modifyBox = new CmsElement();
+						modifyBox.addLayer("div","boxi2 medium3");
+						modifyBox.addTag("h4","Muokkaa k‰ytt‰j‰‰");
+						modifyBox.addLayer("div","ingroup filled");
+						modifyBox.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext);
+						modifyBox.addContent("<table class=\"def\">\n<tr><td>");
+						modifyBox.addTag("label","Tunnus:");
+						modifyBox.addContent("</td><td>");
+						modifyBox.addContent(user.name);
+						modifyBox.addContent("</td></tr>\n<tr><td><h3>Ryhm‰t: </h3></td></tr>\n");
 
 						for(String s : groupdb.getGroupNames()){
-							modifyBox.addTag("<tr><td>"+s+"</td><td>"); 
-							modifyBox.addTag("<input name=\""+s+"\" type=\"checkbox\" ");
+							modifyBox.addContent("<tr><td>"+s+"</td><td>"); 
+							modifyBox.addContent("<input name=\""+s+"\" type=\"checkbox\" ");
 							for(String group : user.groups){
 								if(s.equals(group)){
-									modifyBox.addTag("checked=checked");
+									modifyBox.addContent("checked=checked");
 									break;
 								}
 							}
-							modifyBox.addTag("/>\n</td></tr>");
+							modifyBox.addContent("/>\n</td></tr>");
 						}
-						modifyBox.addTag("</table>");
-						modifyBox.addInput(null, "lis‰‰", "submit", null);
-						modifyBox.addTag("</form>");
+						modifyBox.addContent("</table>");
+						//modifyBox.addInput(null, "lis‰‰", "submit", null);
+						modifyBox.addField(null, "lis‰‰", false, new SubmitField(true));
+						modifyBox.addContent("</form>");
 
 						page.setTitle("K‰ytt‰jien hallinta");
 						page.addTop(getMenu());
@@ -334,8 +414,12 @@ public class ModAccess extends Module {
 					}
 				}
 			}else{
-				CmsBoxi failBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
-				failBox.addP("hupsi");
+				//CmsBoxi failBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
+				CmsElement failBox = new CmsElement();
+				failBox.addLayer("div","boxi2 medium3");
+				failBox.addTag("h4","Muokkaa k‰ytt‰j‰‰");
+				failBox.addLayer("div","ingroup filled");
+				failBox.addTag("p","hupsi");
 
 				page.setTitle("K‰ytt‰jien hallinta");
 				page.addTop(getMenu());
@@ -357,7 +441,11 @@ public class ModAccess extends Module {
 
 			if(checkField("sub")){
 				log.info("muokkausta tapahtuu");
-				CmsBoxi resultBox = new CmsBoxi("Ryhmien muokkaus");
+				//CmsBoxi resultBox = new CmsBoxi("Ryhmien muokkaus");
+				CmsElement resultBox = new CmsElement();
+				resultBox.addLayer("div","boxi2 medium3");
+				resultBox.addTag("h4","Ryhmien muokkaus");
+				resultBox.addLayer("div","ingroup filled");
 				ArrayList<String> result = new ArrayList<String>();
 
 				gdb.reset(ext);
@@ -385,11 +473,11 @@ public class ModAccess extends Module {
 				}
 
 
-				resultBox.addTag("<p> n‰in:<br/>\n");
+				resultBox.addContent("<p> n‰in:<br/>\n");
 				for(String s: result){
-					resultBox.addTag(s+"<br/>\n");
+					resultBox.addContent(s+"<br/>\n");
 				}
-				resultBox.addTag(" store ep‰onnistui</p>\n");
+				resultBox.addContent(" store ep‰onnistui</p>\n");
 				page.addCenter(resultBox.toString());
 				return;
 			}

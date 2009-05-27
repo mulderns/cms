@@ -105,128 +105,6 @@ public class FileHive {
 		//return false;
 	}
 
-	public boolean archive(File file, boolean overwrite) {
-		String filename = file.getName();
-		//File archived = new File(hive_dir,filename);
-		if(file.exists()){
-			File dest;// = new File(Cgicms.archives_dir,file);
-			if(overwrite){
-				dest = new File(Cgicms.archives_dir,filename);
-				if(dest.exists()){
-					if(!dest.delete()){
-						log.fail("could not delete destination file");
-						return false;
-					}
-				}
-				file.renameTo(dest);
-				log.info("archive success["+filename+"] (overwrite)");
-				return true;
-			}
-
-			for(int i = 0; i < 1000;i++){
-				dest = new File(
-						Cgicms.archives_dir,
-						filename+"."+Utils.addLeading(i, 3)
-				);
-
-				if(!dest.exists()){
-					if(file.renameTo(dest)){
-						log.info("archive success["+filename+"]");
-						return true;
-					}else{
-						log.info("archive failed["+filename+"]");
-						return false;
-					}
-				}
-			}
-			log.fail("archive failed["+filename+"] -> too many files in archive");
-		}else{
-			log.fail("no file["+filename+"] found");
-		}
-		return false;
-	}
-/*
-	public void delete(String file) {
-		new File(hive_dir,file).delete(); 
-	}
-*/
-	// TODO: change to non-iterative renaming. instead look up the
-	// last file and so on.
-	public void archive(String file, boolean overwrite) {
-		File archived = new File(hive_dir,file);
-		if(archived.exists()){
-			File dest;// = new File(Cgicms.archives_dir,file);
-			if(overwrite){
-				dest = new File(Cgicms.archives_dir,file);
-				if(dest.exists()){
-					if(!dest.delete()){
-						log.fail("could not delete destination file");
-						return;
-					}
-				}
-				archived.renameTo(dest);
-				log.info("archive success["+file+"] (overwrite)");
-				return;
-			}
-
-			for(int i = 0; i < 1000;i++){
-				dest = new File(
-						Cgicms.archives_dir,
-						file+"."+Utils.addLeading(i, 3)
-				);
-
-				if(!dest.exists()){
-					if(archived.renameTo(dest)){
-						log.info("archive success["+file+"]");
-					}else{
-						log.info("archive failed["+file+"]");
-					}
-					return;
-				}else{
-
-				}
-			}
-			log.fail("archive failed["+file+"] -> too many files in archive");
-		}else{
-			log.fail("no file["+file+"] found");
-		}
-	}
-
-	public void archiveCopy(File file, boolean overwrite) {
-		if(file.exists()){
-			File dest;// = new File(Cgicms.archives_dir,file);
-			if(overwrite){
-				dest = new File(Cgicms.archives_dir, file.getName());
-				if(dest.exists()){
-					if(!dest.delete()){
-						log.fail("could not delete destination file");
-						return;
-					}
-				}
-
-				FileOps.write(dest, FileOps.readToArray(file), false);
-				log.info("archive success["+file+"] (overwrite)");
-				return;
-			}
-
-			for(int i = 0; i < 1000;i++){
-				dest = new File(
-						Cgicms.archives_dir,
-						file.getName()+"."+Utils.addLeading(i, 3)
-				);
-
-				if(!dest.exists()){
-					FileOps.write(dest, FileOps.readToArray(file), false);
-					return;
-				}
-			}
-			log.fail("archive failed["+file+"] -> too many files in archive");
-		}else{
-			log.fail("cant archive, no file["+file+"] found");
-		}
-	}
-
-
 	private String extractPartMeta(FormPart part) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(part.getFilename());
@@ -242,8 +120,6 @@ public class FileHive {
 	}
 
 
-	
-
 	private String generateFileName() {
 		log.info("generating filename");
 		try {
@@ -252,7 +128,6 @@ public class FileHive {
 			}
 			BufferedReader bin = new BufferedReader(new FileReader(index_file));
 
-			//ArrayList<String> files = new ArrayList<String>();
 			String line;
 			String[] temp;
 			int postfix = 0;
@@ -397,10 +272,6 @@ public class FileHive {
 		return null;
 	}
 
-	
-
-
-
 	private String[] getMeta(String file) {
 		log.info("reading metadata: "+file);
 		try{
@@ -504,9 +375,6 @@ public class FileHive {
 		}
 		return false;
 	}
-
-	
-
 
 	
 
@@ -639,6 +507,7 @@ public class FileHive {
 
 	}*/
 
+	/*
 	public boolean storeFile(File file, String data) {
 		log.info("storing file:"+file);
 		try{
@@ -659,14 +528,16 @@ public class FileHive {
 			log.fail("storeFile failed:"+ioe);
 		}
 		return false;
-	}
+	}*/
 
 	public boolean storeFile(FormPart part) {
 		log.info("storing form part");
 		String targetfile = genFileName();
 
-		if(storeFile(targetfile,part.bytes)){
-			if(storeFile((targetfile+".meta"),extractPartMeta(part))){
+		if(FileOps.write(new File(hive_dir,targetfile), part.bytes, false)){
+				//storeFile(targetfile,part.bytes)){
+			if(FileOps.write(new File(hive_dir,targetfile+".meta"), extractPartMeta(part), false)){
+					//storeFile((targetfile+".meta"),extractPartMeta(part))){
 				addToIndex(targetfile, part.getFilename());
 				return true;
 			}
@@ -674,6 +545,7 @@ public class FileHive {
 		return false;
 	}
 
+	/*
 	public boolean storeFile(String filename, ArrayList<String> data) {
 		log.info("storing file:"+filename);
 		try{
@@ -696,7 +568,9 @@ public class FileHive {
 		}
 		return false;
 
-	}
+	}*/
+	
+	/*
 	public boolean storeFile(String filename, byte[] filecontent){
 		log.info("storing file:"+filename);
 
@@ -715,6 +589,9 @@ public class FileHive {
 		}
 		return false;
 	}
+	*/
+	
+	/*
 	public boolean storeFile(String filename, String data) {
 		log.info("storing file:"+filename);
 		try{
@@ -734,7 +611,7 @@ public class FileHive {
 			log.fail("storeFile failed:"+ioe);
 		}
 		return false;
-	}
+	}*/
 
 	/*
 	public void delete(File file) {
@@ -762,3 +639,120 @@ public class FileHive {
 	
 }
 
+/**
+public boolean archive(File file, boolean overwrite) {
+		String filename = file.getName();
+		//File archived = new File(hive_dir,filename);
+		if(file.exists()){
+			File dest;// = new File(Cgicms.archives_dir,file);
+			if(overwrite){
+				dest = new File(Cgicms.archives_dir,filename);
+				if(dest.exists()){
+					if(!dest.delete()){
+						log.fail("could not delete destination file");
+						return false;
+					}
+				}
+				file.renameTo(dest);
+				log.info("archive success["+filename+"] (overwrite)");
+				return true;
+			}
+
+			for(int i = 0; i < 1000;i++){
+				dest = new File(
+						Cgicms.archives_dir,
+						filename+"."+Utils.addLeading(i, 3)
+				);
+
+				if(!dest.exists()){
+					if(file.renameTo(dest)){
+						log.info("archive success["+filename+"]");
+						return true;
+					}else{
+						log.info("archive failed["+filename+"]");
+						return false;
+					}
+				}
+			}
+			log.fail("archive failed["+filename+"] -> too many files in archive");
+		}else{
+			log.fail("no file["+filename+"] found");
+		}
+		return false;
+	}
+	// TODO: change to non-iterative renaming. instead look up the
+	// last file and so on.
+	public void archive(String file, boolean overwrite) {
+		File archived = new File(hive_dir,file);
+		if(archived.exists()){
+			File dest;// = new File(Cgicms.archives_dir,file);
+			if(overwrite){
+				dest = new File(Cgicms.archives_dir,file);
+				if(dest.exists()){
+					if(!dest.delete()){
+						log.fail("could not delete destination file");
+						return;
+					}
+				}
+				archived.renameTo(dest);
+				log.info("archive success["+file+"] (overwrite)");
+				return;
+			}
+
+			for(int i = 0; i < 1000;i++){
+				dest = new File(
+						Cgicms.archives_dir,
+						file+"."+Utils.addLeading(i, 3)
+				);
+
+				if(!dest.exists()){
+					if(archived.renameTo(dest)){
+						log.info("archive success["+file+"]");
+					}else{
+						log.info("archive failed["+file+"]");
+					}
+					return;
+				}else{
+
+				}
+			}
+			log.fail("archive failed["+file+"] -> too many files in archive");
+		}else{
+			log.fail("no file["+file+"] found");
+		}
+	}
+
+	public void archiveCopy(File file, boolean overwrite) {
+		if(file.exists()){
+			File dest;// = new File(Cgicms.archives_dir,file);
+			if(overwrite){
+				dest = new File(Cgicms.archives_dir, file.getName());
+				if(dest.exists()){
+					if(!dest.delete()){
+						log.fail("could not delete destination file");
+						return;
+					}
+				}
+
+				FileOps.write(dest, FileOps.readToArray(file), false);
+				log.info("archive success["+file+"] (overwrite)");
+				return;
+			}
+
+			for(int i = 0; i < 1000;i++){
+				dest = new File(
+						Cgicms.archives_dir,
+						file.getName()+"."+Utils.addLeading(i, 3)
+				);
+
+				if(!dest.exists()){
+					FileOps.write(dest, FileOps.readToArray(file), false);
+					return;
+				}
+			}
+			log.fail("archive failed["+file+"] -> too many files in archive");
+		}else{
+			log.fail("cant archive, no file["+file+"] found");
+		}
+	}
+*/

@@ -1,16 +1,15 @@
 package cms.mods;
 
-import java.io.File;
-import java.util.ArrayList;
-
-import html.CmsBoxi;
 import html.CmsElement;
 import html.CmsPage;
 import html.TextAreaField;
+
+import java.io.File;
+import java.util.ArrayList;
+
 import util.ActionLog;
 import util.Logger;
 import util.Utils;
-
 import cms.Cgicms;
 import cms.DataRelay;
 import cms.Mailer;
@@ -55,15 +54,17 @@ public class Module {
 		}
 
 		void execute(){
-			CmsBoxi noImplementionBox = new CmsBoxi(mod + "/" + act);
-			noImplementionBox.addP("Virheellinen toiminto ["+act+"]");
+			CmsElement noImplementionBox = new CmsElement();
+			noImplementionBox.addLayer("div","boxi2 medium3");
+			noImplementionBox.addTag("h4", mod + "/" + act);
+			noImplementionBox.addLayer("div","ingroup filled");
+			noImplementionBox.addTag("p", "Virheellinen toiminto ["+act+"]");
 
 			page.setTitle("blank");
 
 			page.addTop(getMenu());
-			page.addCenter(noImplementionBox.toString());
-			page.addCenter(getActionLinks().toString());
-			//page.addRight(genBugreport().toString());
+			page.addCenter(noImplementionBox);
+			page.addCenter(getActionLinks());
 
 		}
 	}
