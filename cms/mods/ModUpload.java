@@ -22,9 +22,7 @@ public class ModUpload extends Module {
 
 		actions.add(new Action(null, ""){public void execute(){
 			CmsElement box = new CmsElement();
-			box.addLayer("div", "boxi2 medium4");
-			box.addTag("h4", "Tiedostot");
-			box.addLayer("div", "ingroup filled");
+			box.createBox("Tiedostot", "medium4");
 			box.addLayer("table", "table5");
 			box.addSingle("colgroup");
 			box.addSingle("colgroup width=\"70\"");
@@ -42,30 +40,20 @@ public class ModUpload extends Module {
 				box.up();
 			}
 			box.up();
-			//box.addTag("a href=\""+script+"/"+hook+"/upload"+"\" class=\"list\"", "Upload");
-			//uploadBox.addLink("Upload",script+"/"+hook+"/upload");
 
 			page.setTitle("Tiedostojen huploadaus");
-			page.addTop(getMenu());
-			page.addCenter(box.toString());
-			page.addRight(genBugreport());
+			page.addCenter(box);
 			page.addLeft(getActionLinks());
 		}});
 
 		actions.add(new Action("upload", "upload"){public void execute(){
 			if(datarelay.multipart){
-				//if(datarelay.post != null && datarelay.post.size()>0){
-
-				//CmsBoxi uploadBox = new CmsBoxi("Tiedoston vastaanotto");
 				CmsElement box = new CmsElement();
-				box.addLayer("div", "boxi2 medium4");
-				box.addTag("h4", "Tiedoston vastaanotto");
-				box.addLayer("div", "ingroup filled");
+				box.createBox("Tiedoston vastaanotto", "medium4");
 				
 				box.addContent("<pre style=\"border:1px dashed #eee;background:#fefefe;color:#eee;\">");
 				box.addContent(datarelay.post.toString());
 				box.addContent("</pre>");
-
 
 				StringBuilder sb = new StringBuilder();
 
@@ -89,10 +77,10 @@ public class ModUpload extends Module {
 
 				box.addTag("p", sb.toString());
 				box.addTag("a href=\""+script+"/"+hook+"\"","list","Ok");
-				//uploadBox.addLink("Ok",script+"/"+hook);
+
 				page.setTitle("Tiedoston vastaanotto");
 				page.addTop(getMenu());
-				page.addCenter(box.toString());
+				page.addCenter(box);
 			}else{
 				CmsElement box = new CmsElement();
 				box.addLayer("form method=\"post\" action=\"" +
@@ -115,7 +103,6 @@ public class ModUpload extends Module {
 				//CmsBoxi uploadBox = new CmsBoxi("Tiedoston lähetys");
 
 				page.setTitle("Tiedoston lähetys");
-				page.addTop(getMenu());
 				page.addCenter(box);
 			}
 		}});

@@ -47,7 +47,7 @@ public class ModPages extends Module {
 
 		actions.add(new Action("Hallitse", "hallitse"){	public void execute(){
 			page.setTitle("Sivuston hallinta");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 
 			CmsElement side = new CmsElement();
 			side.addLayer("div", "boxi inv col");
@@ -167,7 +167,7 @@ public class ModPages extends Module {
 			}
 
 			page.setTitle("Sivuston hallinta - lis‰‰ malli");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 			page.addCenter(box);
 		}});
 
@@ -210,14 +210,14 @@ public class ModPages extends Module {
 
 		actions.add(new Action(null, "temprename"){public void execute(){
 			page.setTitle("Rename [/"+ext+"]");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 
 			VirtualPath path = VirtualPath.create(ext);
 			PageDb pdb = PageDb.getDb();
 
 			CmsElement box = new CmsElement();
 			box.addLayer("div", "boxi medium3");
-			box.addTag("h4","Uusi nimi");
+			box.addTag("h4","Vaihda nime‰");
 			box.addFormTop(script + "/" + hook + "/" + action_hook +"/"+ path.getUrl());
 
 			box.addTag("label","Uusi nimi");
@@ -239,7 +239,7 @@ public class ModPages extends Module {
 			VirtualPath path = VirtualPath.create(ext);
 
 			page.setTitle("Sivuston hallinta - malli ["+path.getFilename()+"]");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 
 			if(ext.equals("")){
 				//CmsBoxi box = new CmsBoxi("Hmm", "medium");
@@ -468,9 +468,7 @@ public class ModPages extends Module {
 				}else{
 					CmsFile file = pdb.getFileMeta(path);
 					CmsElement box = new CmsElement();
-					box.addLayer("div","boxi2 medium");
-					box.addTag("h4", "Uusi nimi");
-					box.addLayer("div", "ingroup filled");
+					box.createBox("Vaihda nime‰", "medium3");
 					box.addFormTop(script + "/" + hook + "/" + action_hook +"/"+ path.getUrl());
 
 					box.addTag("label","Uusi nimi");
@@ -495,7 +493,7 @@ public class ModPages extends Module {
 			VirtualPath path = VirtualPath.create(ext);
 
 			page.setTitle("Sivuston hallinta - tiedosto ["+path.getUrl()+"]");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 
 			if(ext.equals("")){
 				CmsElement box = new CmsElement();
@@ -641,7 +639,7 @@ public class ModPages extends Module {
 				}else if(action.equals("content")){
 					box = new CmsElement();
 					box.addLayer("div","boxi2 medium3");
-					box.addTag("h4", "Tuhoa tiedosto");
+					box.addTag("h4", "Vaihda mime-type‰");
 					box.addLayer("div","ingroup filled");
 					box.addFormTop(script + "/" + hook + "/" + action_hook + path.getUrl(true)+ "?action=content");
 					box.addField("content_type", file.content_type, true, new TextField());
@@ -785,7 +783,7 @@ public class ModPages extends Module {
 
 		actions.add(new Action(null, "folder"){	public void execute(){
 			page.setTitle("Sivuston hallinta - kansio [/"+ext+"]");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 
 			if(ext.equals("")){
 				//CmsBoxi box = new CmsBoxi("Hmm", "medium");
@@ -866,7 +864,7 @@ public class ModPages extends Module {
 				box.addSingle("input class=\"list\" type=\"submit\" value=\"lis‰‰\"");
 			}
 			page.setTitle("Sivuston hallinta - lis‰‰ kansio");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 			page.addCenter(box);
 		}});
 
@@ -924,7 +922,7 @@ public class ModPages extends Module {
 				pagebuilder.addHidden(" errors in fields");
 			}
 			page.setTitle("Sivuston hallinta - lis‰‰ tiedosto");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 			page.addCenter(box);
 
 			CmsElement uploadbox = new CmsElement();
@@ -946,7 +944,6 @@ public class ModPages extends Module {
 		}});
 
 		actions.add(new Action(null, "preview"){public void execute(){
-			//TODO: /preview/
 
 			VirtualPath path = VirtualPath.create(ext);
 			PageDb pdb = PageDb.getDb();
@@ -972,17 +969,7 @@ public class ModPages extends Module {
 				sb.append('\n');
 				sb.append('\n');
 				sb.append(rfile.getData());
-				/*BufferedReader bin = rfile.datasource.initRead();
-				try{
-					int i = 0;
-					while((i = bin.read())!= -1){
-						sb.append((char)i);
-					}
-					rfile.datasource.endRead(bin);
-				}catch (IOException ioe) {
-					log.fail("IOException:"+ioe);
-					rfile.datasource.endRead(bin);
-				}*/
+
 				pagebuilder.rawSend(sb.toString());
 
 
@@ -1151,7 +1138,7 @@ public class ModPages extends Module {
 				}
 				//box.addTag("a href=\""+script+"/"+hook+"/file/"+path.getPath()+filename+"\"","list","Ok");
 				page.setTitle("Tiedoston vastaanotto");
-				page.addTop(getMenu());
+				//page.addTop(getMenu());
 				page.addCenter(box.toString());
 			}else{
 
@@ -1183,7 +1170,7 @@ public class ModPages extends Module {
 				box.up();
 
 				page.setTitle("Sivuston hallinta - lis‰‰ tiedosto");
-				page.addTop(getMenu());
+				//page.addTop(getMenu());
 				page.addCenter(box);
 			}
 		}});

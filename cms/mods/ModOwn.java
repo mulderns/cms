@@ -35,9 +35,7 @@ public class ModOwn extends Module{
 		super.activate();
 		actions.add(new Action(null, ""){public void execute(){
 			page.setTitle("Omat tiedot");
-			page.addTop(getMenu());
-			page.addLeft(getActionLinks().toString());
-			page.addRight(genBugreport());
+			page.addLeft(getActionLinks());
 		}});
 
 		actions.add(new Action("Oman naamasivun muokkaus", "naama"){public void execute(){
@@ -63,15 +61,12 @@ public class ModOwn extends Module{
 					}
 					box.addTag("a href=\""+script+"/"+hook+"/"+action_hook+"/"+palat[1]+"\"", "menu", palat[0]);
 				}
-
-				page.addTop(getMenu());
 				page.addCenter(box);
 				page.addLeft(getActionLinks());
 
 			}else{
 
 				page.setTitle("Oma naama");
-				page.addTop(getMenu());
 
 				String titteli = null;//"Puheenjohtaja";//datarelay.session.getUser().getInfo("titteli");
 				String filename = null;//"naamat_"+titteli.toLowerCase()+".shtml";
@@ -126,8 +121,6 @@ public class ModOwn extends Module{
 					pdb.addFile(naamapath.getPath(), uusi);
 				}
 
-				
-				
 
 				if(checkField("_save")||checkField("_preview")){
 					CmsElement box = new CmsElement();
@@ -194,7 +187,8 @@ public class ModOwn extends Module{
 					page.addLeft(uploadbox);
 
 					CmsElement edit = new CmsElement();
-					edit.addLayer("div","boxi medium4");
+					//edit.createBox(titteli, "medium4");
+					edit.addLayer("div","boxi2 medium4");
 					edit.addTag("h4", titteli);
 					edit.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext);
 
@@ -240,14 +234,12 @@ public class ModOwn extends Module{
 					box.addTag("a href=\""+script+"/"+hook+"/"+action_hook+"/"+palat[1]+"\"", "menu", palat[0]);
 				}
 
-				page.addTop(getMenu());
 				page.addCenter(box);
 				page.addLeft(getActionLinks());
 
 			}else{
 
 				PageDb pdb = PageDb.getDb();
-//				String titteli = "Puheenjohtaja";//datarelay.session.getUser().getInfo("titteli");
 				String filename = "naamat_"+ext+".shtml";
 				VirtualPath naamapath = VirtualPath.create("/"+filename);
 				TextFile naamasivu = (TextFile)pdb.getFileMeta(naamapath);
@@ -280,22 +272,18 @@ public class ModOwn extends Module{
 				sb.append(s).append("\n");
 			}
 
-			//String motd = fh.readFile("misc.motd");
 
 
 			CmsElement box = new CmsElement();
 
 			box.addFormTop(script + "/" + hook + "/" + action_hook);
-			box.addLayer("div","boxi2 medium4");
-			box.addTag("h4", "profiilit");
-			box.addLayer("div","ingroup filled");
+			box.createBox("profiilit", "medium4");
+			
 			box.addField("naamat", sb.toString(), true, new TextAreaField(400));
-			//			box.addSingle("br");
 			box.addField("submit", "submit", true, new SubmitField(true));
 
 
 			page.setTitle("Profiilien m‰‰ritys");
-			page.addTop(getMenu());
 			page.addLeft(getActionLinks());
 			page.addCenter(box);
 
@@ -305,11 +293,8 @@ public class ModOwn extends Module{
 			if(!datarelay.env.containsKey("HTTPS")){
 				pagebuilder.setRedirect("https"+script.substring(4)+"/"+hook+"/"+action_hook);
 			}else{
-				//CmsBoxi box = new CmsBoxi("Salasanan vaihto", "medium3");
 				CmsElement box = new CmsElement();
-				box.addLayer("div","boxi2 medium3");
-				box.addTag("h4","Salasanan vaihto");
-				box.addLayer("div","ingroup filled");
+				box.createBox("Salasanan vaihto", "medium3");;
 				
 				box.addFormTop("https"+script.substring(4)+"/"+hook+"/"+action_hook);
 				box.addContent("<table class=\"table5\"><tr><td>Vanha:</td><td>");
@@ -367,38 +352,31 @@ public class ModOwn extends Module{
 
 						//CmsBoxi result = new CmsBoxi("Salasanan vaihto ep‰onnistui");
 						CmsElement result = new CmsElement();
-						result.addLayer("div","boxi2 medium3");
-						result.addTag("h4","Salasanan vaihto ep‰onnistui");
-						result.addLayer("div","ingroup filled");
+						result.createBox("Salasanan vaihto ep‰onnistui", "medium3");;
 						result.addTag("p","Virhe: " + virhe_sanoma);
 
 						page.setTitle("K‰ytt‰j‰ kohtaiset hommelit");
-						page.addTop(getMenu());
-						page.addCenter(result.toString());
-						page.addCenter(box.toString());
-						//page.addRight(genTalkback().toString());
-						//page.addRight(genBugreport().toString());
+						page.addCenter(result);
+						page.addCenter(box);
+
 					}else{
 						ActionLog.action(username + " - changed  own password");
 
-						//CmsBoxi result = new CmsBoxi("Salasanan vaihto onnistui");
 						CmsElement result = new CmsElement();
-						result.addLayer("div","boxi2 medium3");
-						result.addTag("h4","Salasanan vaihto onnistui");
-						result.addLayer("div","ingroup filled");
+						result.createBox("Salasanan vaihto onnistui", "medium3");;
+
 						result.addTag("p","Salasana vaihdettu.");
 						result.addLink("muut toiminnot", script + "/" + hook );
 
 						page.setTitle("Omat tiedot");
 						page.addTop(getMenu());
 						page.addCenter(result.toString());
-						//page.addRight(genTalkback().toString());
-						//page.addRight(genBugreport().toString());
+
 					}
 				}else{
 					page.setTitle("K‰ytt‰j‰ kohtaiset hommelit");
 					page.addTop(getMenu());
-					page.addCenter(box.toString());
+					page.addCenter(box);
 				}
 			}
 		}});
@@ -436,9 +414,7 @@ public class ModOwn extends Module{
 				log.info("got multipart");
 
 				CmsElement box = new CmsElement();
-				box.addLayer("div", "boxi2 medium4");
-				box.addTag("h4", "Tiedoston vastaanotto");
-				box.addLayer("div", "ingroup filled");
+				box.createBox("Tiedoston vastaanotto", "medium4");
 
 				StringBuilder sb = new StringBuilder();
 				PageDb pdb = PageDb.getDb();
@@ -479,8 +455,7 @@ public class ModOwn extends Module{
 				}
 				//box.addTag("a href=\""+script+"/"+hook+"/file/"+path.getPath()+filename+"\"","list","Ok");
 				page.setTitle("Tiedoston vastaanotto");
-				page.addTop(getMenu());
-				page.addCenter(box.toString());
+				page.addCenter(box);
 			}else{
 
 				CmsElement box = new CmsElement();
@@ -490,7 +465,6 @@ public class ModOwn extends Module{
 				box.addLayer("form method=\"post\" action=\"" +
 						script + "/" + hook +"/"+action_hook+"/"+ext+
 				"\" enctype=\"multipart/form-data\"");
-
 
 				box.addLayer("table","compact");
 				box.addLayer("tr");
@@ -510,7 +484,6 @@ public class ModOwn extends Module{
 				box.up();
 
 				page.setTitle("Sivuston hallinta - lis‰‰ tiedosto");
-				page.addTop(getMenu());
 				page.addCenter(box);
 			}
 		}});

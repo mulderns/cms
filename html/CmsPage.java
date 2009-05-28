@@ -66,4 +66,11 @@ public class CmsPage extends Page{
 		sb.append("</td>\n</tr>\n</table>\n</div>\n</div>");
 		return sb.toString();
 	}
+
+	public void clear() {
+		top.clear();
+		left.clear();
+		center.clear();
+		right.clear();		
+	}
 }

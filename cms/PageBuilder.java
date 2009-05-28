@@ -245,7 +245,7 @@ public class PageBuilder {
 
 	public void setCookie(String cookie_hook, String data) {
 		response.addCookie(
-				"Set-cookie: "+cookie_hook+"="+data+"; path="+script.substring(script.indexOf('/',7))+"; HttpOnly"
+				"Set-cookie: "+cookie_hook+"="+data+"; path="+script.substring(script.indexOf('/',8))+"; HttpOnly"
 		);
 	}
 

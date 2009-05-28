@@ -21,22 +21,20 @@ public class ModLogout extends Module {
 
 				//CmsBoxi goodbye = new CmsBoxi("Uloskirjaus", "medium3");
 				CmsElement goodbye = new CmsElement();
-				goodbye.addLayer("div","boxi2 medium3");
-				goodbye.addTag("h4","Uloskirjaus");
-				goodbye.addLayer("div","ingroup filled");
+				goodbye.createBox("Uloskirjaus","medium3");
 				
 				goodbye.addTag("p","Sinut on kirjailtu ulos");
 				goodbye.addLink("Kirjaudu sis‰‰n", datarelay.script );
 
+				page.clear();
 				page.setTitle("cms - logged out");
 				page.addCenter(goodbye.toString());
+				
 				//datarelay.pagebuilder.build(page);
 			}else{
 				//CmsBoxi goodbye = new CmsBoxi("Uloskirjaus", "medium3");
 				CmsElement goodbye = new CmsElement();
-				goodbye.addLayer("div","boxi2 medium3");
-				goodbye.addTag("h4","Uloskirjaus");
-				goodbye.addLayer("div","ingroup filled");
+				goodbye.createBox("Uloskirjaus","medium3");
 				
 				goodbye.addTag("p","Olet kirjautumassa ulos");
 				goodbye.addFormTop(datarelay.script + "/" + hook);
@@ -44,6 +42,7 @@ public class ModLogout extends Module {
 				//goodbye.addInput("doit", "Kyll‰!", "submit", null);
 				//goodbye.addTag("</form");
 
+				page.clear();
 				page.setTitle("cms - logging out");
 				page.addCenter(goodbye.toString());
 				//datarelay.pagebuilder.build(page);

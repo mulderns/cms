@@ -71,8 +71,8 @@ public class ModAccess extends Module {
 			}
 
 			page.setTitle("Oikeuksien hallinta");
-			page.addTop(getMenu());
-			page.addRight(getMenuExtra());
+			//page.addTop(getMenu());
+			//page.addRight(getMenuExtra());
 			page.addLeft(getActionLinks());
 			page.addCenter(box);
 		}});
@@ -154,7 +154,7 @@ public class ModAccess extends Module {
 					result.addTag("p","Virhe: " + virhe_sanoma);
 					box.setFields(datarelay.post);
 					page.setTitle("K‰ytt‰j‰ kohtaiset hommelit");
-					page.addTop(getMenu());
+					//page.addTop(getMenu());
 					page.addCenter(result);
 					page.addCenter(box);
 
@@ -172,23 +172,23 @@ public class ModAccess extends Module {
 					pagebuilder.setRedirect(script + "/" + hook + "/");
 
 					page.setTitle("K‰ytt‰j‰ kohtaiset hommelit");
-					page.addTop(getMenu());
+					//page.addTop(getMenu());
 					page.addCenter(result.toString());
 				}
 
 			}else{
 				log.info("fields not found");
 				page.setTitle("K‰ytt‰j‰ kohtaiset hommelit");
-				page.addTop(getMenu());
+				//page.addTop(getMenu());
 				page.addCenter(box.toString());
 			}
 		}});
 
 		actions.add(new Action("Poista k‰ytt‰ji‰","poista_k"){public void execute(){
 			page.setTitle("Poista k‰ytt‰ji‰");
-			page.addTop(getMenu());
+			//page.addTop(getMenu());
 			page.addLeft(getActionLinks());
-			page.addRight(getMenuExtra());
+			//page.addRight(getMenuExtra());
 
 			CmsElement nimilista = new CmsElement();
 			nimilista.addFormTop(script + "/" + hook + "/" + action_hook);
@@ -297,7 +297,7 @@ public class ModAccess extends Module {
 				}
 
 				page.setTitle("Ryhm‰ juttuja");
-				page.addTop(getMenu());
+				//page.addTop(getMenu());
 				page.addCenter(resultBox.toString());
 			}else{
 				CmsElement box = new CmsElement();
@@ -328,7 +328,7 @@ public class ModAccess extends Module {
 				box.addContent("<input class=\"list\" type=\"submit\" value=\"k‰sittele\"/>");
 
 				page.setTitle("Ryhm‰ juttuja");
-				page.addTop(getMenu());
+				//page.addTop(getMenu());
 				page.addCenter(box);
 			}
 
@@ -360,14 +360,14 @@ public class ModAccess extends Module {
 						failBox.addLink("ok", script + "/" + hook + "/" + action_hook + "/"+ext);
 
 						page.setTitle("K‰ytt‰jien hallinta");
-						page.addTop(getMenu());
+						//page.addTop(getMenu());
 						page.addCenter(failBox);
 					}else{
 						//						CmsBoxi successBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
 						//						successBox.addP("Muokkaus onnistui!");
 						//						successBox.addLink("ok", script + "/" + hook);
 						//						page.setTitle("K‰ytt‰jien hallinta");
-						//						page.addTop(getMenu());
+						//						//page.addTop(getMenu());
 						//						page.addCenter(successBox.toString());
 						pagebuilder.setRedirect(script + "/" + hook);
 					}
@@ -409,7 +409,7 @@ public class ModAccess extends Module {
 						modifyBox.addContent("</form>");
 
 						page.setTitle("K‰ytt‰jien hallinta");
-						page.addTop(getMenu());
+						//page.addTop(getMenu());
 						page.addCenter(modifyBox.toString());
 					}
 				}
@@ -422,15 +422,15 @@ public class ModAccess extends Module {
 				failBox.addTag("p","hupsi");
 
 				page.setTitle("K‰ytt‰jien hallinta");
-				page.addTop(getMenu());
+				//page.addTop(getMenu());
 				page.addCenter(failBox.toString());
 			}
 		}});
 
 		actions.add(new Action(null,"muokkaa_r"){public void execute(){
 			page.setTitle("muokkaa ryhm‰‰ - "+ext );			
-			page.addTop(getMenu());
-			page.addRight(getMenuExtra());
+			//page.addTop(getMenu());
+			//page.addRight(getMenuExtra());
 
 			GroupDb gdb = GroupDb.getDb();
 

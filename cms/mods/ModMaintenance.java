@@ -7,8 +7,10 @@ import html.TextAreaField;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.Calendar;
 
 import util.ActionLog;
+import util.Csv;
 import util.Utils;
 import cms.Cgicms;
 import cms.DataRelay;
@@ -30,29 +32,30 @@ public class ModMaintenance extends Module {
 		super.activate();
 		actions.add(new Action(null, ""){public void execute(){
 			page.setTitle("Ylläpito");
-			page.addTop(getMenu());
 			page.addLeft(getActionLinks());
 		}});
+		
 		actions.add(new Action("Puhdista vanhat istunnot", "cleanup"){public void execute(){
+			
 			log.info("doing cleanup");
 
-			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","Cleanup");result.addLayer("div","ingroup filled");
+			CmsElement result = new CmsElement();
+			result.createBox("Cleanup","medium3");
 			result.addTag("pre",clearSessions());
-			result.addLink("muut toiminnot", script + "/" + hook );
-
+			
 			page.setTitle("Maintenance");
-			page.addTop(getMenu());
-			page.addCenter(result.toString());
+			page.addCenter(result);
+			page.addLeft(getActionLinks());
 		}});
 
 		actions.add(new Action("MotD", "motd"){public void execute(){
-			//FileHive fh = FileHive.getFileHive(Cgicms.products_dir);
+
 			FlushingFile motd = new FlushingFile(new File(Cgicms.products_dir,"misc.motd"));
 			String[] data;
 			if(checkField("motd")){
 				data = datarelay.post.get("motd").split("\n");
 				motd.overwrite(data);
-				//fh.storeFile("misc.motd", datarelay.post.get("motd"));
+
 			}else{
 				data = motd.loadAll();
 			}
@@ -62,22 +65,18 @@ public class ModMaintenance extends Module {
 				sb.append(s).append("\n");
 			}
 
-			//String motd = fh.readFile("misc.motd");
 
 
 			CmsElement box = new CmsElement();
-			box.addLayer("div","boxi2 medium3");
-			box.addTag("h4","Message of the day");
-			box.addLayer("div","ingroup filled");
+			box.createBox("Message of the day","medium3");
 			box.addFormTop(script + "/" + hook + "/" + action_hook);
 			box.addField("motd", sb.toString(), true, new TextAreaField(50,10));
 			box.addContent("<br/>");
 			box.addField(null,"submit", false, new SubmitField(true));
-			//box.addInput(null, "submit", "submit", null);
 
 			page.setTitle("Maintenance - Message of the day");
-			page.addTop(getMenu());
-			page.addCenter(box.toString());
+			page.addCenter(box);
+			page.addLeft(getActionLinks());
 
 		}});
 
@@ -86,16 +85,17 @@ public class ModMaintenance extends Module {
 		actions.add(new Action("näytä logi", "viewlog"){public void execute(){
 			log.info("viewing log");
 
-			CmsElement result = new CmsElement();result.addLayer("div","boxi2");result.addTag("h4","Logi");result.addLayer("div","ingroup filled");
-			result.addTag("pre",getActionLog());
-			result.addLink("lataa logi", script + "/" + hook + "/downlog");
-			result.addLink("arkistoi logi", script + "/" + hook + "/archlog");
-			result.addLink("muut toiminnot", script + "/" + hook );
-
+			CmsElement result = new CmsElement();
+			result.createBox("Logi");
+			
+			result.addTag("pre style=\"font-size:12.5px\"",getActionLog());
+			//result.addLink("lataa logi", script + "/" + hook + "/downlog");
+			//result.addLink("arkistoi logi", script + "/" + hook + "/archlog");
+			//result.addLink("muut toiminnot", script + "/" + hook );
 
 			page.setTitle("Maintenance - Logi");
-			page.addTop(getMenu());
-			page.addCenter(result.toString());
+			page.addCenter(result);
+			page.addLeft(getActionLinks());
 		}});
 
 		actions.add(new Action("lataa logi", "downlog"){public void execute(){
@@ -111,36 +111,103 @@ public class ModMaintenance extends Module {
 
 		actions.add(new Action("arkistoi logi", "archlog"){public void execute(){
 			log.info("archiving log");
-
-//			FileHive fh = FileHive.getFileHive();
 			FileOps.archive(new File(Cgicms.logbooks_dir,"actionlog"));
 
-			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","Logi");result.addLayer("div","ingroup filled");
+			CmsElement result = new CmsElement();
+			result.createBox("Logi", "medium3");
 			result.addTag("p","joo");
 			result.addLink("ok", script + "/" + hook );
 
 			page.setTitle("Maintenance - Logi");
-			page.addTop(getMenu());
-			page.addCenter(result.toString());
+			page.addCenter(result);
 		}});
+
+		actions.add(null);
+
+		actions.add(new Action("näytä kävijät", "viewaccess"){public void execute(){
+			log.info("viewing log");
+
+			CmsElement result = new CmsElement();
+			
+			CmsElement prototable = new CmsElement();
+			prototable.addLayer("table style=\"font-size:8.5px\"","table5");
+			prototable.addSingle("colgroup width=\"100\"");
+			prototable.addSingle("colgroup width=\"200\"");
+			prototable.addSingle("colgroup width=\"100\"");
+			prototable.addSingle("colgroup");
+			prototable.addSingle("colgroup width=\"100\"");
+			
+			result.createBox("Kävijälogi");
+			result.addElementOpen(new CmsElement(prototable));
+
+			boolean parillinen = true;
+			int week = 0;
+			Calendar cal = Calendar.getInstance();
+			cal.setFirstDayOfWeek(Calendar.MONDAY);
+			
+			try{
+				for(String line : FileOps.readToArray(new File("..","ticker.info.dat"))){
+					String[] fields = Csv.decode(line);
+					parillinen = !parillinen;
+
+					cal.setTimeInMillis(Long.parseLong(fields[0]));
+					int old_week = week;
+					if((week = cal.get(Calendar.DAY_OF_YEAR))!= old_week){
+						result.up();
+						result.addLayer("div","ingroup filled");
+						result.addElementOpen(new CmsElement(prototable));
+					}
+					
+					result.addContent(
+							"<tr style=\"background-color:"+(parillinen ? "lightYellow":"white")+"\"><td>"+
+							Utils.addLeading(cal.get(Calendar.DATE),2) + "." +
+							Utils.addLeading((cal.get(Calendar.MONTH)+1),2) + "."+
+							" " +
+							Utils.addLeading(cal.get(Calendar.HOUR_OF_DAY),2) + ":" +
+							Utils.addLeading(cal.get(Calendar.MINUTE),2)+
+							"</td><td>"+fields[1]+"</td><td>"+fields[2]+"</td><td>"+
+							"<div style=\"overflow:hidden;height:10px\">"+fields[3]+"</div>"+
+							"</td><td>"+
+							"<div style=\"overflow:hidden;height:10px\">"+fields[4]+"</div>"+
+							"</td></tr>"
+					);
+
+
+				}
+			}catch (Exception e) {
+				result.addLayer("pre");
+				result.addContent("exception occurred: "+e+"\n");
+				for(StackTraceElement trc: e.getStackTrace()){
+					result.addContent(" "+trc.toString()+"\n");
+				}
+			}
+
+			page.clear();
+			page.addTop(result);
+			
+			page.setTitle("Maintenance - Logi");
+
+		}});
+
 		actions.add(null);
 
 		actions.add(new Action("puhdista käyttäjäkanta", "cleanuserdb"){public void execute(){
-			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","puhdistus");result.addLayer("div","ingroup filled");
+			CmsElement result = new CmsElement();
+			result.createBox("puhdistus","medium3");
 			UserDb udb = UserDb.getDb();
 			result.addTag("pre",(udb.cleanDb()?"cleaned some":"allready clean"));
-			result.addLink("muut toiminnot", script + "/" + hook );
+			//result.addLink("muut toiminnot", script + "/" + hook );
 
 			page.setTitle("Maintenance - UserDb");
-			page.addTop(getMenu());
-			page.addCenter(result.toString());
+			page.addCenter(result);
+			page.addLeft(getActionLinks());
 		}});
 
 		actions.add(new Action("Target Practice", "target"){public void execute(){
 
-			CmsElement box = new CmsElement();box.addLayer("div","boxi2 medium3");box.addTag("h4","Target Practice");box.addLayer("div","ingroup filled");
-
-			//box.addForm(script + "/" + hook + "/" + action_hook);
+			CmsElement box = new CmsElement();
+			box.createBox("Target Practice","medium4");
+			
 			File target = new File(datarelay.target,"target.practice");
 			box.addTag("p","Creating file["+datarelay.target+"] - ["+target.getAbsolutePath()+"]");
 			String result = "";
@@ -161,37 +228,40 @@ public class ModMaintenance extends Module {
 			box.addTag("p",result);
 
 			page.setTitle("Maintenance - Target Practice");
-			page.addTop(getMenu());
-			page.addCenter(box.toString());
+			page.addCenter(box);
+			page.addLeft(getActionLinks());
 
 		}});
 
 		actions.add(new Action("Varmuuskopioi asetukset", "backupsettings"){public void execute(){
 			log.info("doing backup");
 
-			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","Backup");result.addLayer("div","ingroup filled");
+			CmsElement result = new CmsElement();
+			result.createBox("Backup", "medium3");
+			
 			backupSettings();
-			result.addTag("pre","hmm");
-			result.addLink("muut toiminnot", script + "/" + hook );
+			result.addTag("pre","backupSettings()");
+			//result.addLink("muut toiminnot", script + "/" + hook );
 
 			page.setTitle("Maintenance");
-			page.addTop(getMenu());
-			page.addCenter(result.toString());
+			page.addCenter(result);
+			page.addLeft(getActionLinks());
 		}});
 
 		actions.add(new Action("päivitä", "update"){public void execute(){
 			log.info("updating svn repository");
 
-			//CmsBoxi result = new CmsBoxi("Päivitys");
-			CmsElement result = new CmsElement();result.addLayer("div","boxi2 medium3");result.addTag("h4","Päivitys");result.addLayer("div","ingroup filled");
+			CmsElement result = new CmsElement();
+			result.createBox("Päivitys","medium4");
+			
 			String r = updateRepository();
 			Utils.sleep(2000);
 			result.addTag("pre",r);
-			result.addLink("muut toiminnot", script + "/" + hook );
+			//result.addLink("muut toiminnot", script + "/" + hook );
 
 			page.setTitle("Maintenance - Logi");
-			page.addTop(getMenu());
-			page.addCenter(result.toString());
+			page.addCenter(result);
+			page.addLeft(getActionLinks());
 		}});
 	}
 

@@ -209,7 +209,11 @@ public class Module {
 	public void execute(){
 		pagebuilder = datarelay.pagebuilder;
 		page = datarelay.page;
-
+		
+		page.addTop(getMenu());
+		page.addRight(getMenuExtra());
+		page.addRight(genBugreport());
+		
 		mod = datarelay.mod;
 		act = datarelay.act;
 		ext = datarelay.ext;
@@ -218,7 +222,7 @@ public class Module {
 		
 		log.info(mod+"/"+act+" ["+ext+"]");
 		log.info(hook + " executing");
-		checkTalk();
+//		checkTalk();
 		checkBug();
 
 		for(Action action : actions){

@@ -8,7 +8,6 @@ import java.util.Stack;
 public class CmsElement {
 
 	String intag;
-	//String data;
 	String style_class;
 	Type type;
 	ArrayList<CmsElement> children;
@@ -16,6 +15,17 @@ public class CmsElement {
 	ArrayList<Field> fields;
 
 
+	public CmsElement(CmsElement clone){
+		intag = clone.intag;
+		style_class = clone.style_class;
+		type = clone.type;
+		children = new ArrayList<CmsElement>(clone.children);
+		layers = new Stack<CmsElement>();
+		layers.addAll(clone.layers);
+		
+		fields = new ArrayList<Field>(clone.fields);
+	}
+	
 	public CmsElement(){
 		this(Type.normal);
 		fields = new ArrayList<Field>();
@@ -63,6 +73,17 @@ public class CmsElement {
 	
 	public void addElement(CmsElement element){
 		layers.peek().add(element);
+	}
+	
+	public void addElementOpen(CmsElement element){
+		layers.peek().add(element);
+		
+		Stack<CmsElement> a = element.layers;
+		for(CmsElement e : a){
+			layers.push(e);
+		}
+		
+		
 	}
 
 	public void addLayer(String intag, String style_class) {
@@ -198,6 +219,17 @@ public class CmsElement {
 		single,
 		normal,
 		content
+	}
+
+
+	public void createBox(String tittle) {
+		createBox(tittle,"");
+	}
+	public void createBox(String tittle, String style_class) {
+		addLayer("div", "boxi2 "+style_class);
+		if(tittle != null)
+			addTag("h4", null, tittle);
+		addLayer("div", "ingroup filled");
 	}
 
 
