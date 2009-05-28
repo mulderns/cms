@@ -3,15 +3,16 @@ package html;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Stack;
 
 public class CmsElement {
-
 	String intag;
 	String style_class;
 	Type type;
+
+	CmsElement parent;
+	CmsElement current;
+
 	ArrayList<CmsElement> children;
-	Stack<CmsElement> layers;
 	ArrayList<Field> fields;
 
 
@@ -19,29 +20,41 @@ public class CmsElement {
 		intag = clone.intag;
 		style_class = clone.style_class;
 		type = clone.type;
-		children = new ArrayList<CmsElement>(clone.children);
-		layers = new Stack<CmsElement>();
-		layers.addAll(clone.layers);
+
+		parent = null;
 		
-		fields = new ArrayList<Field>(clone.fields);
+		if(clone.current == clone)
+			current = this;
+
+		if(clone.children != null){
+			children = new ArrayList<CmsElement>(clone.children.size());
+			for(CmsElement e: clone.children){
+				CmsElement temp = new CmsElement(e);
+				temp.parent = this;
+				if(temp.current != null){
+					current = temp.current;
+				}
+				children.add(temp);
+			}
+		}
+		
+		if(clone.fields != null){
+			fields = new ArrayList<Field>(clone.fields);
+		}
+
 	}
-	
+
 	public CmsElement(){
 		this(Type.normal);
+		current = this;
 		fields = new ArrayList<Field>();
 	}
 
 	CmsElement(Type type){
 		this.type = type;
-		//intag = "";
-		if(type.equals(Type.single)||type.equals(Type.content)){
-
-		}else{
+		if(!(type.equals(Type.single)||type.equals(Type.content))){
 			children = new ArrayList<CmsElement>();
-			layers = new Stack<CmsElement>();
-			layers.push(this);
 		}
-
 	}
 
 	public CmsElement(String intag, String style_class) {
@@ -57,74 +70,74 @@ public class CmsElement {
 
 	public void addForm(String action) {
 		CmsElement temp = new CmsElement(Type.form, action);
-		//layers.add(arg0, arg1)
-		layers.peek().add(temp);
-		layers.push(temp);
+		current.add(temp);
+		current = temp;
 	}
-	
+
 	public void addFormTop(String action_url) {
-		//CmsElement temp = new CmsElement(, null);
 		this.intag = "form action=\""+action_url+"\" accept-charset=\"ISO-8859-1\" method=\"POST\" target=\"_self\"";
 	}
 
 	private void add(CmsElement element) {
-		children.add(element);		
+		children.add(element);
+		element.parent = this;
 	}
-	
+
 	public void addElement(CmsElement element){
-		layers.peek().add(element);
+		current.add(element);
 	}
-	
+
 	public void addElementOpen(CmsElement element){
-		layers.peek().add(element);
-		
-		Stack<CmsElement> a = element.layers;
-		for(CmsElement e : a){
-			layers.push(e);
+		current.add(element);
+		if(element.current != null){
+			current = element.current;
+		}else{
+			System.err.println("element.current == @null");
 		}
-		
-		
 	}
 
 	public void addLayer(String intag, String style_class) {
 		CmsElement temp = new CmsElement(intag, style_class);
-		layers.peek().add(temp);
-		layers.push(temp);
+		current.add(temp);
+		if(current != this)
+			current.current = null;
+		current = temp;
+		temp.current = current;
 	}
 
 
 	public void addLink(String intag, String style_class, String href, String label) {
 		CmsElement temp = new CmsElement("a "+intag+" href=\""+href+"\"", style_class);
 		temp.addSource(label);
-		layers.peek().add(temp);
+		current.add(temp);
 	}
-	
+
 	public void addLink(String label, String url) {
 		addLink(null,"list",url,label);		
 	}
-	
+
 	public void addTag(String intag, String style_class, String content) {
 		CmsElement temp = new CmsElement(intag, style_class);
 		temp.addSource(content);
-		layers.peek().add(temp);
+		current.add(temp);
 	}
-	
+
 	public void addTag(String intag, String content) {
 		CmsElement temp = new CmsElement(intag, style_class);
 		temp.addSource(content);
-		layers.peek().add(temp);
+		current.add(temp);
 	}
 
 	private void addSource(String content) {
-		layers.peek().add(new CmsElement(Type.content, content));
+		current.add(new CmsElement(Type.content, content));
 	}
-	
+
 	public void addContent(String content) {
 		addSource(content);		
 	}
 
 	public void addSingle(String intag) {
-		layers.peek().add(new CmsElement(Type.single, intag));
+		current.add(new CmsElement(Type.single, intag));
 	}
 
 	public void addLayer(String intag) {
@@ -132,21 +145,21 @@ public class CmsElement {
 	}
 
 	public void up() {
-		if(layers.size() > 1)
-			layers.pop();
+		if(current.parent != null)
+			current = current.parent;
 	}
-	
+
 	public void up(int i) {
 		while(i-- > 0)
-			if(layers.size() > 1)
-				layers.pop();
+			if(current.parent != null)
+				current = current.parent;
 	}
-	
+
 
 	public void addField(String name, String value, boolean checked,
 			CmsField fieldt) {
 		Field temp = new Field(name, value, checked, fieldt);
-		layers.peek().add(temp);
+		current.add(temp);
 		fields.add(temp);
 	}
 
@@ -181,7 +194,7 @@ public class CmsElement {
 		return sb.toString();
 	}
 	public StringBuilder toString(StringBuilder sb, String space){
-		
+
 		if(type.equals(Type.normal)){
 			if(intag == null){
 				for(CmsElement e : children){
@@ -231,9 +244,4 @@ public class CmsElement {
 			addTag("h4", null, tittle);
 		addLayer("div", "ingroup filled");
 	}
-
-
-
-
-
 }

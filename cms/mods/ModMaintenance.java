@@ -1,8 +1,10 @@
 package cms.mods;
 
 import html.CmsElement;
+import html.FileField;
 import html.SubmitField;
 import html.TextAreaField;
+import http.FormPart;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -34,15 +36,15 @@ public class ModMaintenance extends Module {
 			page.setTitle("Ylläpito");
 			page.addLeft(getActionLinks());
 		}});
-		
+
 		actions.add(new Action("Puhdista vanhat istunnot", "cleanup"){public void execute(){
-			
+
 			log.info("doing cleanup");
 
 			CmsElement result = new CmsElement();
 			result.createBox("Cleanup","medium3");
 			result.addTag("pre",clearSessions());
-			
+
 			page.setTitle("Maintenance");
 			page.addCenter(result);
 			page.addLeft(getActionLinks());
@@ -87,7 +89,7 @@ public class ModMaintenance extends Module {
 
 			CmsElement result = new CmsElement();
 			result.createBox("Logi");
-			
+
 			result.addTag("pre style=\"font-size:12.5px\"",getActionLog());
 			//result.addLink("lataa logi", script + "/" + hook + "/downlog");
 			//result.addLink("arkistoi logi", script + "/" + hook + "/archlog");
@@ -127,16 +129,15 @@ public class ModMaintenance extends Module {
 		actions.add(new Action("näytä kävijät", "viewaccess"){public void execute(){
 			log.info("viewing log");
 
-			CmsElement result = new CmsElement();
-			
 			CmsElement prototable = new CmsElement();
 			prototable.addLayer("table style=\"font-size:8.5px\"","table5");
 			prototable.addSingle("colgroup width=\"100\"");
 			prototable.addSingle("colgroup width=\"200\"");
 			prototable.addSingle("colgroup width=\"100\"");
 			prototable.addSingle("colgroup");
-			prototable.addSingle("colgroup width=\"100\"");
-			
+			prototable.addSingle("colgroup");
+
+			CmsElement result = new CmsElement();
 			result.createBox("Kävijälogi");
 			result.addElementOpen(new CmsElement(prototable));
 
@@ -144,7 +145,7 @@ public class ModMaintenance extends Module {
 			int week = 0;
 			Calendar cal = Calendar.getInstance();
 			cal.setFirstDayOfWeek(Calendar.MONDAY);
-			
+			page.clear();
 			try{
 				for(String line : FileOps.readToArray(new File("..","ticker.info.dat"))){
 					String[] fields = Csv.decode(line);
@@ -153,11 +154,11 @@ public class ModMaintenance extends Module {
 					cal.setTimeInMillis(Long.parseLong(fields[0]));
 					int old_week = week;
 					if((week = cal.get(Calendar.DAY_OF_YEAR))!= old_week){
-						result.up();
+						result.up(3);
 						result.addLayer("div","ingroup filled");
 						result.addElementOpen(new CmsElement(prototable));
 					}
-					
+
 					result.addContent(
 							"<tr style=\"background-color:"+(parillinen ? "lightYellow":"white")+"\"><td>"+
 							Utils.addLeading(cal.get(Calendar.DATE),2) + "." +
@@ -169,22 +170,26 @@ public class ModMaintenance extends Module {
 							"<div style=\"overflow:hidden;height:10px\">"+fields[3]+"</div>"+
 							"</td><td>"+
 							"<div style=\"overflow:hidden;height:10px\">"+fields[4]+"</div>"+
-							"</td></tr>"
+							"</td></tr>\n"
 					);
-
 
 				}
 			}catch (Exception e) {
-				result.addLayer("pre");
-				result.addContent("exception occurred: "+e+"\n");
+				page.addCenter("<pre>");
+				page.addCenter("exception occurred: "+e+"\n");
 				for(StackTraceElement trc: e.getStackTrace()){
-					result.addContent(" "+trc.toString()+"\n");
+					page.addCenter(" "+trc.toString()+"\n");
 				}
+//				result.addLayer("pre");
+//				result.addContent("exception occurred: "+e+"\n");
+//				for(StackTraceElement trc: e.getStackTrace()){
+//					result.addContent(" "+trc.toString()+"\n");
+//				}
 			}
 
-			page.clear();
-			page.addTop(result);
 			
+			page.addTop(result);
+
 			page.setTitle("Maintenance - Logi");
 
 		}});
@@ -207,7 +212,7 @@ public class ModMaintenance extends Module {
 
 			CmsElement box = new CmsElement();
 			box.createBox("Target Practice","medium4");
-			
+
 			File target = new File(datarelay.target,"target.practice");
 			box.addTag("p","Creating file["+datarelay.target+"] - ["+target.getAbsolutePath()+"]");
 			String result = "";
@@ -238,7 +243,7 @@ public class ModMaintenance extends Module {
 
 			CmsElement result = new CmsElement();
 			result.createBox("Backup", "medium3");
-			
+
 			backupSettings();
 			result.addTag("pre","backupSettings()");
 			//result.addLink("muut toiminnot", script + "/" + hook );
@@ -248,12 +253,14 @@ public class ModMaintenance extends Module {
 			page.addLeft(getActionLinks());
 		}});
 
+		actions.add(null);
+		
 		actions.add(new Action("päivitä", "update"){public void execute(){
 			log.info("updating svn repository");
 
 			CmsElement result = new CmsElement();
 			result.createBox("Päivitys","medium4");
-			
+
 			String r = updateRepository();
 			Utils.sleep(2000);
 			result.addTag("pre",r);
@@ -263,6 +270,79 @@ public class ModMaintenance extends Module {
 			page.addCenter(result);
 			page.addLeft(getActionLinks());
 		}});
+
+		actions.add(new Action("Build info", "build"){public void execute(){
+			ClassLoader cl = this.getClass().getClassLoader();
+			java.io.InputStream in = cl.getResourceAsStream("extra/cgicms.build.number");
+			StringBuilder sb = new StringBuilder();
+			try{
+				int i = 0;
+				while((i = in.read())!= -1){
+					sb.append((char)i);
+				}
+				in.close();
+			}catch (IOException e) {
+				sb.append(" - IOException ["+e+"] -");
+			}
+			
+			page.addCenter("<pre>"+sb.toString()+"</pre>");
+			page.addLeft(getActionLinks());
+		}});
+
+		actions.add(new Action("Upload update", "uploadate"){public void execute(){
+			if(datarelay.multipart){
+
+
+				if(datarelay.files.length==0){
+					page.addCenter("error:no file");
+					page.addLeft(getActionLinks());
+				}
+
+				if(datarelay.files.length==1){
+					FormPart p = datarelay.files[0];
+					if(!p.getFilename().equals("Cgicms.jar")){
+						page.addCenter("error:name");
+						page.addLeft(getActionLinks());
+						return;
+					}
+					log.info("writing jar");
+					if(FileOps.write(new File("Cgicms.jar"), p.bytes, false)){
+						log.info("wrote jar");
+						page.addCenter("wrote jar");
+						page.addLeft(getActionLinks());
+					}else{
+						page.addCenter("error:could not write jar");
+						log.fail("jar could not be written");
+						page.addLeft(getActionLinks());
+					}
+				}
+			}else{
+				CmsElement box = new CmsElement();
+				box.addLayer("form method=\"post\" action=\"" +
+						script + "/" + hook +"/"+action_hook+
+				"\" enctype=\"multipart/form-data\"");
+				box.addLayer("div", "boxi2 medium3");
+				box.addTag("h4", "Tiedoston lähetys");
+				box.addLayer("div", "ingroup filled");
+				box.addLayer("table", "table5");
+				box.addSingle("colgroup");
+				box.addSingle("colgroup width=\"70\"");
+
+				box.addLayer("tr");
+				box.addTag("td","Tiedosto:");
+				box.addLayer("td");
+				box.addField("tiedosto", null, true, new FileField());
+				box.up(2);
+				box.addLayer("tr");
+				box.addTag("td colspan=\"2\"", "<input class=\"list\" style=\"width:100%;cursor:pointer;\" type=\"submit\" value=\"lähetä\">");
+				//CmsBoxi uploadBox = new CmsBoxi("Tiedoston lähetys");
+
+				page.setTitle("Tiedoston lähetys");
+				page.addCenter(box);
+				page.addLeft(getActionLinks());
+			}
+		}});
+
 	}
 
 	@Override

@@ -119,7 +119,7 @@ public class Deploy {
 		System.out.println("converting database");
 
 		File input = new File(Cgicms.database_dir, "users.cms");
-		File output = new File(Cgicms.database_dir, "output");
+		//File output = new File(Cgicms.database_dir, "output");
 
 		FlushingFile db = new FlushingFile(input);
 		System.out.println("loading file:"+input);
@@ -130,7 +130,7 @@ public class Deploy {
 		}else{
 			System.out.println("could not rename old file");
 		}
-		output = new File(Cgicms.database_dir, "users.cms");
+		File output = new File(Cgicms.database_dir, "users.cms");
 
 		String[] result_lines = new String[source_lines.length];
 
@@ -172,7 +172,6 @@ public class Deploy {
 			String salt = Hasher.getSalt();
 			fout.write("\""+name+"\""+linesep);
 			fout.write("\""+name+"\",\""+Hasher.hashWithSalt(pass, salt)+"\",\""+salt+"\",\"root\""+linesep);
-			//fout.flush();
 			fout.close();
 			System.out.println("wrote "+output);
 

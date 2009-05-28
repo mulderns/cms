@@ -40,8 +40,7 @@ public class ModOwn extends Module{
 
 		actions.add(new Action("Oman naamasivun muokkaus", "naama"){public void execute(){
 			FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
-			String[] data = new String[1];
-			data = naamaprofiilit.loadAll();
+			String[] data = naamaprofiilit.loadAll();
 
 			if(ext == ""){
 				page.setTitle("Valitse naama");
@@ -213,8 +212,8 @@ public class ModOwn extends Module{
 
 			if(ext == ""){
 				FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
-				String[] data = new String[1];
-				data = naamaprofiilit.loadAll();
+				 
+				String[] data = naamaprofiilit.loadAll();
 				
 				page.setTitle("Valitse naama");
 
@@ -385,8 +384,7 @@ public class ModOwn extends Module{
 			VirtualPath path = VirtualPath.create("/res/");
 			
 			FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
-			String[] data = new String[1];
-			data = naamaprofiilit.loadAll();
+			String[] data = naamaprofiilit.loadAll();
 
 			String titteli = null;
 			

@@ -74,8 +74,6 @@ public class ActionLog {
 			} catch (IOException ioe){
 				//log.severe("could not write actionlog:"+ioe);
 			}
-		}else{
-			//log.info("nothing to write");
 		}
 	}
 

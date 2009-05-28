@@ -443,14 +443,14 @@ public class Renderer {
 
 			log.info("reading data [");
 			StringBuilder data = new StringBuilder();
-			data.append(file.getData());
+			data.append(kastrate(file.getData()));
 
 			log.info("            ]");
 
 			edit.addField("data", data.toString(), true, new TextAreaField(500));
 
 		}else{
-			ArrayList<DataKernel> cloud = mineData(file.getData());
+			ArrayList<DataKernel> cloud = mineData(kastrate(file.getData()));
 			if(cloud != null){
 				log.info("mined data");
 				int i = 0;
@@ -465,7 +465,7 @@ public class Renderer {
 				edit.addTag("pre","parent template could not be found ["+file.parent+"]");
 				edit.addLayer("pre");
 
-				edit.addContent(file.getData());
+				edit.addContent(kastrate(file.getData()));
 				edit.up();
 
 				return edit;
@@ -478,6 +478,29 @@ public class Renderer {
 		return edit;
 	}
 
+
+	private String kastrate(String data) {
+		if(data == null)
+			return null;
+
+		StringBuilder sb = new StringBuilder();
+		
+		int last = 0;
+		for(int i = 0 ; i < data.length(); i++){
+			if(data.charAt(i) == '<'){
+				sb.append(data.substring(last, i)).append("&lt;");
+				last = i+1;
+			}else if(data.charAt(i) == '>'){
+				sb.append(data.substring(last, i)).append("&gt;");
+				last = i+1;
+			}
+		}
+
+		if(last < data.length()-1)
+			sb.append(data.substring(last));
+
+		return sb.toString();
+	}
 
 	public String generateHtml(TextFile file) {
 		log.info("Generating html...");
@@ -660,7 +683,8 @@ public class Renderer {
 					file.datasource.endRead(bin);
 					while(data.parent != null)
 						data = data.parent;
-					data.addFile(new Kernel((file.parent==null?"null":file.parent),Kernel.Type.file));
+					//data.addFile(new Kernel((file.parent==null?"null":file.parent),Kernel.Type.file)); //redundant null check
+					data.addFile(new Kernel(file.parent,Kernel.Type.file));
 					return data;
 				}
 			}
@@ -1259,7 +1283,7 @@ public class Renderer {
 
 		int alku = 0;
 
-		DataKernel kernel = new DataKernel("~"); 
+		DataKernel kernel;// = new DataKernel("~"); 
 
 		StringBuilder buffer = new StringBuilder();
 

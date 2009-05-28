@@ -358,7 +358,6 @@ public class Cgicms {
 		}else if(Collections.binarySearch(arguments, "--convert") >= 0){
 			// --hash prints out the hash of args[1]
 			new Deploy(this).upgradeUserDB();
-			//bootSmack("")
 			return;
 
 		}else if(

@@ -443,9 +443,8 @@ public class ModAccess extends Module {
 				log.info("muokkausta tapahtuu");
 				//CmsBoxi resultBox = new CmsBoxi("Ryhmien muokkaus");
 				CmsElement resultBox = new CmsElement();
-				resultBox.addLayer("div","boxi2 medium3");
-				resultBox.addTag("h4","Ryhmien muokkaus");
-				resultBox.addLayer("div","ingroup filled");
+				resultBox.createBox("Ryhmien muokkaus", "medium3");
+
 				ArrayList<String> result = new ArrayList<String>();
 
 				gdb.reset(ext);
@@ -461,7 +460,7 @@ public class ModAccess extends Module {
 						mod = field.substring(0, limit);
 						act = field.substring(limit+1);
 					}else{
-						mod = field.substring(0);
+						mod = field;
 					}
 					log.info(" m["+mod+"] a["+act+"]");
 					result.add(mod+"/"+act+(gdb.push(ext,mod,act) ? " ok" : " fail"));
