@@ -163,16 +163,6 @@ public class PageBuilder {
 		}
 	}
 
-	/** superPlug(tm) extrafine craftsmanship!
-	 * 
-	 * @param string
-	 * @return
-	 */ 
-	/*
-	private String superPlug(String string) {
-		return string.replace('\'', '"');
-	}*/
-
 	public void buildCode(String text){
 		if(out_state.pure){
 			try{

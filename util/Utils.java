@@ -26,13 +26,13 @@ public final class Utils {
 	public static final String mapToQueryString(HashMap<String, String> map){
 		StringBuilder sb = new StringBuilder();
 		Entry<String, String> entry;
-		
+
 		for (Iterator<Entry<String, String>> iter = map.entrySet().iterator(); iter.hasNext();){
 			entry = iter.next();
 			if(!entry.getKey().equals(""))
 				sb.append(entry.getKey()+"="+entry.getValue()+"&");
 		}
-		
+
 		return sb.toString();
 	}
 
@@ -45,7 +45,7 @@ public final class Utils {
 		}
 		return null;
 	}
-	
+
 	public static String urlDecode(String text) {
 		try{
 			return URLDecoder.decode(text, "ISO-8859-1");
@@ -54,7 +54,7 @@ public final class Utils {
 		}
 		return null;
 	}
-	
+
 	public static String urlDecodeText(final String in){
 		//StringBuilder out = new StringBuilder(in.length());
 		final StringBuilder out = new StringBuilder();
@@ -213,24 +213,24 @@ public final class Utils {
 		long micro = 1000L;
 		long milli = 1000000L;
 		long sec = 1000000000L;
-		
+
 		long secs=0, millis=0, micros=0;
-		
+
 		while(time >= sec){
 			time -= sec;
 			secs++;
 		}
-		
+
 		while(time >= milli){
 			time -= milli;
 			millis++;
 		}
-		
+
 		while(time >= micro){
 			time -= micro;
 			micros++;
 		}
-		
+
 		StringBuilder sb = new StringBuilder();
 		if(secs > 0)
 			sb.append(secs+"s ");
@@ -258,11 +258,26 @@ public final class Utils {
 	}
 
 
-	public static String removeBrakes(String id) {
-		id = id.replace('\n', ' ');
-		id = id.replace('\r', ' ');
-		id = id.replace('\f', ' ');
-		return id;
-	}
+	public static String removeBrakes(String data) {
+		if(data == null)
+			return null;
 
+		StringBuilder sb = new StringBuilder();
+
+		int last = 0;
+		for(int i = 0 ; i < data.length(); i++){
+			if(
+					data.charAt(i) == '\n' || 
+					data.charAt(i) == '\r' ||
+					data.charAt(i) == '\f' 
+			){
+				sb.append(data.substring(last, i)).append(" ");
+				last = i+1;
+			}
+
+			if(last < data.length()-1)
+				sb.append(data.substring(last));
+		}
+		return sb.toString();
+	}
 }

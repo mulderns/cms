@@ -79,7 +79,7 @@ public class ModUpload extends Module {
 				box.addTag("a href=\""+script+"/"+hook+"\"","list","Ok");
 
 				page.setTitle("Tiedoston vastaanotto");
-				page.addTop(getMenu());
+				//page.addTop(getMenu());
 				page.addCenter(box);
 			}else{
 				CmsElement box = new CmsElement();

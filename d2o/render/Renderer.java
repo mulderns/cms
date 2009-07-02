@@ -94,11 +94,11 @@ public class Renderer {
 					TextFile file = (TextFile)pdb.getFileMeta(VirtualPath.create(target));
 					if(file != null){
 						Kernel structure = getFile(file);
-						log.info("apuva : "+structure.toString());
+						//log.info("apuva : "+structure.toString());
 						structure = infuse(structure, new Kernel(), from);
 						metakernel.id = "";
 						metakernel.add(new Kernel(structure.toHtml(),Kernel.Type.code));
-						log.info("apuva : "+structure.toHtml());
+						//log.info("apuva : "+structure.toHtml());
 					}else{
 						metakernel.id = "";
 						metakernel.add(new Kernel("<!-- file not found: "+target+" -->",Kernel.Type.code));
@@ -174,7 +174,7 @@ public class Renderer {
 				}
 
 				brew.addContent(m.getLabel()+":");
-				brew.addField(parentid+m.id, extractData(cloud, m.id, parentid).data, true, new TextAreaField(height));
+				brew.addField(parentid+m.id, kastrate(extractData(cloud, m.id, parentid).data), true, new TextAreaField(height));
 			}
 
 			@Override
@@ -450,7 +450,7 @@ public class Renderer {
 			edit.addField("data", data.toString(), true, new TextAreaField(500));
 
 		}else{
-			ArrayList<DataKernel> cloud = mineData(kastrate(file.getData()));
+			ArrayList<DataKernel> cloud = mineData(file.getData());
 			if(cloud != null){
 				log.info("mined data");
 				int i = 0;
@@ -465,7 +465,7 @@ public class Renderer {
 				edit.addTag("pre","parent template could not be found ["+file.parent+"]");
 				edit.addLayer("pre");
 
-				edit.addContent(kastrate(file.getData()));
+				edit.addContent(file.getData());
 				edit.up();
 
 				return edit;
@@ -496,7 +496,30 @@ public class Renderer {
 			}
 		}
 
-		if(last < data.length()-1)
+		if(last < data.length())
+			sb.append(data.substring(last));
+
+		return sb.toString();
+	}
+
+	private String kastrate2(String data) {
+		if(data == null)
+			return null;
+
+		StringBuilder sb = new StringBuilder();
+		
+		int last = 0;
+		for(int i = 0 ; i < data.length(); i++){
+			if(data.charAt(i) == '«'){
+				sb.append(data.substring(last, i)).append("&#171");
+				last = i+1;
+			}else if(data.charAt(i) == '»'){
+				sb.append(data.substring(last, i)).append("&#187;");
+				last = i+1;
+			}
+		}
+
+		if(last < data.length())
 			sb.append(data.substring(last));
 
 		return sb.toString();
@@ -520,11 +543,11 @@ public class Renderer {
 		log.info("1st get gutted file");
 		Kernel structure = getFile(file);
 		// infuse the file -> cloud
-		log.info("gutts: "+structure.toString());
+		//log.info("gutts: "+structure.toString());
 
 		log.info("1st infuse");
 		Kernel cloud = infuse(structure, new Kernel(), path);
-		log.info("fusion: "+cloud.toString());
+		//log.info("fusion: "+cloud.toString());
 		// if file has parent
 		parent = structure.getParentName();
 
@@ -532,10 +555,10 @@ public class Renderer {
 			log.info("gut lap");
 			// gut the parent
 			structure = getCachedTemplate(parent);
-			log.info("gutts: "+structure.toString());
+			//log.info("gutts: "+structure.toString());
 			// infuse cloud and parent -> new cloud
 			cloud = infuse(structure, cloud, path);
-			log.info("fusion: "+cloud.toString());
+			//log.info("fusion: "+cloud.toString());
 			// if parent has parent
 			parent = structure.getParentName();
 		}
@@ -1459,7 +1482,7 @@ public class Renderer {
 					}
 				}
 				if(!found){
-					buffer3.add(new DataKernel(key, entry.getValue().replace("»", "&#187;").replace("«", "&#171")));
+					buffer3.add(new DataKernel(key, kastrate2(entry.getValue())));
 				}
 			}
 

@@ -9,7 +9,9 @@ import http.FormPart;
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashSet;
 
 import util.ActionLog;
 import util.Csv;
@@ -129,12 +131,29 @@ public class ModMaintenance extends Module {
 		actions.add(new Action("näytä kävijät", "viewaccess"){public void execute(){
 			log.info("viewing log");
 
+
+
+			FlushingFile ff = new FlushingFile(new File(Cgicms.products_dir,"misc.botlist"));
+
+			if(ext.contentEquals("bots")){
+				if(checkField("botlist")){
+					String data = datarelay.post.get("botlist");
+					ff.overwrite(data);
+				}
+			}
+
+
+			String[] botlist = ff.loadAll();
+			if(botlist == null){
+				botlist = new String[0];
+			}
+
 			CmsElement prototable = new CmsElement();
 			prototable.addLayer("table style=\"font-size:8.5px\"","table5");
-			prototable.addSingle("colgroup width=\"100\"");
+			prototable.addSingle("colgroup width=\"20\"");
+			prototable.addSingle("colgroup width=\"50\"");
 			prototable.addSingle("colgroup width=\"200\"");
-			prototable.addSingle("colgroup width=\"100\"");
-			prototable.addSingle("colgroup");
+			prototable.addSingle("colgroup width=\"120\"");
 			prototable.addSingle("colgroup");
 
 			CmsElement result = new CmsElement();
@@ -143,33 +162,77 @@ public class ModMaintenance extends Module {
 
 			boolean parillinen = true;
 			int week = 0;
+			int kavija = 0;
+
+			HashSet<String> day_bots = new HashSet<String>();
+			HashSet<String> day_visitors = new HashSet<String>();
+
+			ArrayList<Paiva> days = new ArrayList<Paiva>();
+
 			Calendar cal = Calendar.getInstance();
 			cal.setFirstDayOfWeek(Calendar.MONDAY);
 			page.clear();
 			try{
 				for(String line : FileOps.readToArray(new File("..","ticker.info.dat"))){
 					String[] fields = Csv.decode(line);
-					parillinen = !parillinen;
 
 					cal.setTimeInMillis(Long.parseLong(fields[0]));
 					int old_week = week;
 					if((week = cal.get(Calendar.DAY_OF_YEAR))!= old_week){
+
+						days.add(new Paiva(old_week,day_visitors.size(),day_bots.size()));
+
+						if(day_bots.size() > 0){
+							result.addContent("<tr style=\"background-color:#eee\"><td colspan=\"6\">bots["+day_bots.size()+"]: ");
+							for(String s : day_bots){
+								result.addContent(s+" , ");
+							}
+							day_bots.clear();
+							result.addContent(
+									"</td></tr>"
+							);
+						}
 						result.up(3);
+						result.addContent("<h4>"+
+								Utils.addLeading(cal.get(Calendar.DATE),2) + "." +
+								Utils.addLeading((cal.get(Calendar.MONTH)+1),2) + "."		
+								+"</h4>"
+						);
 						result.addLayer("div","ingroup filled");
 						result.addElementOpen(new CmsElement(prototable));
+						kavija = 1;
+						day_visitors.clear();
 					}
 
+					boolean skip = false;
+					for(String s : botlist){
+						if(s.length()>0){
+							if(fields[3].endsWith(s)){
+								skip = true;
+								day_bots.add(s);
+								break;
+							}
+						}
+					}
+					if(skip)
+						continue;
+
+					if(day_visitors.contains(fields[2]))
+						continue;
+
+					day_visitors.add(fields[2]);
+
+					parillinen = !parillinen;
 					result.addContent(
-							"<tr style=\"background-color:"+(parillinen ? "lightYellow":"white")+"\"><td>"+
-							Utils.addLeading(cal.get(Calendar.DATE),2) + "." +
-							Utils.addLeading((cal.get(Calendar.MONTH)+1),2) + "."+
-							" " +
+							"<tr"+ (parillinen ? " style=\"background-color:lightYellow\"":"")+"><td>"+(kavija++)+"</td><td>"+
 							Utils.addLeading(cal.get(Calendar.HOUR_OF_DAY),2) + ":" +
 							Utils.addLeading(cal.get(Calendar.MINUTE),2)+
-							"</td><td>"+fields[1]+"</td><td>"+fields[2]+"</td><td>"+
-							"<div style=\"overflow:hidden;height:10px\">"+fields[3]+"</div>"+
+							"</td><td>"+fields[1]+"</td>"
+							/*<td>"+fields[2]+"</td>"*/+
+							"<td>"+truncate(fields[3]) +
+							//"<div style=\"height:10px\">"+truncate(fields[3])+"</div>"+
 							"</td><td>"+
-							"<div style=\"overflow:hidden;height:10px\">"+fields[4]+"</div>"+
+							"<div style=\"overflow:hidden;height:12px\">"+fields[4]+"</div>"+
 							"</td></tr>\n"
 					);
 
@@ -180,18 +243,68 @@ public class ModMaintenance extends Module {
 				for(StackTraceElement trc: e.getStackTrace()){
 					page.addCenter(" "+trc.toString()+"\n");
 				}
-//				result.addLayer("pre");
-//				result.addContent("exception occurred: "+e+"\n");
-//				for(StackTraceElement trc: e.getStackTrace()){
-//					result.addContent(" "+trc.toString()+"\n");
-//				}
+				//				result.addLayer("pre");
+				//				result.addContent("exception occurred: "+e+"\n");
+				//				for(StackTraceElement trc: e.getStackTrace()){
+				//					result.addContent(" "+trc.toString()+"\n");
+				//				}
 			}
 
-			
+
 			page.addTop(result);
+			page.addTop("<br/>");
+
+			days.remove(0);
+
+			CmsElement graphs = new CmsElement();
+			graphs.createBox("Graphs");
+			graphs.addLayer("table style=\"font-size:8.5px\"","table5");
+			graphs.addLayer("tr");
+			for(Paiva p : days){
+				graphs.addTag("td style=\"vertical-align:bottom;\"",
+						"<div style=\"" +
+						"background-color:#458372;width:5px;float:right;" +
+						"height:"+p.visitors +"px;"+
+						"\"></div>"
+				);
+				graphs.addTag("td style=\"vertical-align:bottom;\"",
+						"<div style=\"" +
+						"background-color:#d79742;width:5px;" +
+						"height:"+p.bots +"px;" +
+						"font-size:0px;"+
+						"\"></div>"
+				);
+			}
+			graphs.up();
+
+			graphs.addLayer("tr");
+			for(Paiva p : days){
+				graphs.addTag("td colspan=\"2\" style=\"background-color:#fafafa;text-align:center\"",
+						Integer.toString(p.visitors)
+				);
+
+			}
+
+			page.addTop(graphs);
+
+			CmsElement stuff = new CmsElement();
+			stuff.createBox("Botlist","medium3");
+
+			stuff.addFormTop(script+"/"+hook+"/"+action_hook+"/bots");
+			StringBuilder bots = new StringBuilder();
+			for(String s : botlist)
+				bots.append(s).append("\n");
+			stuff.addField("botlist", bots.toString(), true, new TextAreaField(200));
+			stuff.addField("submit","submit",false,new SubmitField(true));
+
+			page.addCenter(stuff);
 
 			page.setTitle("Maintenance - Logi");
 
+		}
+
+		private String truncate(String source) {
+			return source.substring(source.lastIndexOf('.', source.lastIndexOf('.')-1)+1);
 		}});
 
 		actions.add(null);
@@ -254,7 +367,7 @@ public class ModMaintenance extends Module {
 		}});
 
 		actions.add(null);
-		
+
 		actions.add(new Action("päivitä", "update"){public void execute(){
 			log.info("updating svn repository");
 
@@ -284,7 +397,7 @@ public class ModMaintenance extends Module {
 			}catch (IOException e) {
 				sb.append(" - IOException ["+e+"] -");
 			}
-			
+
 			page.addCenter("<pre>"+sb.toString()+"</pre>");
 			page.addLeft(getActionLinks());
 		}});
@@ -428,6 +541,18 @@ public class ModMaintenance extends Module {
 				FileOps.write(new File(Cgicms.database_dir,filename), temp, false);
 			}
 		}
+	}
+}
+
+class Paiva{
+	int date;
+	int visitors;
+	int bots;
+
+	Paiva(int date, int visitors, int bots){
+		this.date = date;
+		this.visitors = visitors;
+		this.bots = bots;
 	}
 }
 
