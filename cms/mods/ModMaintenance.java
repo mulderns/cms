@@ -69,8 +69,6 @@ public class ModMaintenance extends Module {
 				sb.append(s).append("\n");
 			}
 
-
-
 			CmsElement box = new CmsElement();
 			box.createBox("Message of the day","medium3");
 			box.addFormTop(script + "/" + hook + "/" + action_hook);
@@ -254,7 +252,9 @@ public class ModMaintenance extends Module {
 			page.addTop(result);
 			page.addTop("<br/>");
 
-			days.remove(0);
+			if(days.size() > 0){
+				days.remove(0);
+			}
 
 			CmsElement graphs = new CmsElement();
 			graphs.createBox("Graphs");

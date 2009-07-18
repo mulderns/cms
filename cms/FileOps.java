@@ -166,7 +166,9 @@ public class FileOps {
 						return name.matches(originalname.replace(".", "\\.")+"_[0-9]{3}");
 					}}
 			);
-
+			log.info("archive["+file.getName()+"]");
+			log.info(Arrays.toString(files));
+			
 			String finalname = originalname+"_000";
 
 			if(files.length > 0){
@@ -179,12 +181,13 @@ public class FileOps {
 				Arrays.sort(suffixes);
 				for(int j = 0; j < 999; j++){
 					if(Arrays.binarySearch(suffixes, j) < 0){
-						finalname = originalname+"."+Utils.addLeading(j, 3);
+						finalname = originalname+"_"+Utils.addLeading(j, 3);
 						break;
 					}
 				}
 			}
-
+			log.info("finalname = "+finalname);
+			
 			File dest = new File(archive,finalname);
 
 			if(!dest.exists()){
@@ -195,8 +198,10 @@ public class FileOps {
 					log.info("archive failed["+originalname+"]");
 					return false;
 				}
+			}else{
+				log.info("file exists");
+				log.fail("archive failed["+originalname+"] -> too many files in archive");
 			}
-			log.fail("archive failed["+originalname+"] -> too many files in archive");
 		}else{
 			log.fail("no file["+file.getName()+"] found");
 		}
