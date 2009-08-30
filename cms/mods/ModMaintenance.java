@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashSet;
+import java.util.Map;
 
 import util.ActionLog;
 import util.Csv;
@@ -305,6 +306,11 @@ public class ModMaintenance extends Module {
 
 		private String truncate(String source) {
 			return source.substring(source.lastIndexOf('.', source.lastIndexOf('.')-1)+1);
+			/*int i;
+			if((i = source.lastIndexOf('.')) == -1 || (i = source.lastIndexOf('.', i-1)) == -1){
+				return source;
+			}
+			return source.substring(i+1);*/
 		}});
 
 		actions.add(null);
@@ -454,6 +460,36 @@ public class ModMaintenance extends Module {
 				page.addCenter(box);
 				page.addLeft(getActionLinks());
 			}
+		}});
+		
+		actions.add(new Action("Environment info", "env_info"){public void execute(){
+			log.info("env info");
+			page.setTitle("Maintenance");
+			page.addLeft(getActionLinks());
+			
+			//getProperties() 
+			//	getenv() 
+			
+			CmsElement result = new CmsElement();
+			result.createBox("Env");
+			result.addLayer("pre style=\"font-size:12.5px;\"");
+			
+			
+			for(Map.Entry<String,String> e : System.getenv().entrySet()){
+				result.addContent("["+e.getKey()+"] -> ["+e.getValue()+"]\n");
+			}
+			page.addCenter(result);
+			page.addCenter("<br/>");
+			
+			CmsElement result2 = new CmsElement();
+			result2.createBox("Properties");
+			result2.addLayer("pre style=\"font-size:12.5px;\"");
+			
+			for(Map.Entry<Object,Object> e : System.getProperties().entrySet()){
+				result2.addContent("["+(String)e.getKey()+"] -> ["+(String)e.getValue()+"]\n");
+			}
+			page.addCenter(result2);
+
 		}});
 
 	}

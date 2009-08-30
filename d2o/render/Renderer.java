@@ -1,27 +1,27 @@
 package d2o.render;
 
-import html.*;
+import html.CmsElement;
+import html.ComboBoxField;
+import html.TextAreaField;
+import html.TextField;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Stack;
+import java.util.ArrayDeque;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
+import util.Logger;
+import util.Utils;
 import d2o.pages.CmsFile;
 import d2o.pages.PageDb;
 import d2o.pages.TemplateFile;
 import d2o.pages.TextFile;
 import d2o.pages.VirtualPath;
-
-import util.Logger;
-
-import util.Utils;
 
 public class Renderer {
 	private static boolean created = false;
@@ -1043,7 +1043,8 @@ public class Renderer {
 
 		ArrayList<MetaKernel> storm = new ArrayList<MetaKernel>();
 
-		Stack<MetaKernel> parents = new Stack<MetaKernel>();
+		ArrayDeque<MetaKernel> parents = new ArrayDeque<MetaKernel>();
+		//Stack<MetaKernel> parents = new Stack<MetaKernel>();
 
 		MetaKernel kernel = new MetaKernel("~");
 
@@ -1074,9 +1075,9 @@ public class Renderer {
 
 					case 0:	//lopputagi (dynaamiselle)
 						//log.info("  /d");
-						if(!parents.empty()){
+						if(!parents.isEmpty()){
 							kernel = parents.pop();
-							if(parents.empty()){
+							if(parents.isEmpty()){
 								storm.add(kernel);
 							}else{
 								parents.peek().add(kernel);
@@ -1092,7 +1093,7 @@ public class Renderer {
 					default : //normi tagit
 						//log.info("  n");
 						kernel = new MetaKernel(intag);
-					if(!parents.empty()){
+					if(!parents.isEmpty()){
 						//log.info("  -> ["+parents.peek().id+"]");
 						parents.peek().add(kernel);
 					}else{
@@ -1138,7 +1139,7 @@ public class Renderer {
 		boolean doublepoint = false;
 		boolean end = false;
 
-		Stack<MetaKernel> open = new Stack<MetaKernel>();
+		//Stack<MetaKernel> open = new Stack<MetaKernel>();
 
 		int alku = 0;
 
@@ -1302,7 +1303,7 @@ public class Renderer {
 		boolean opencontent = false;
 		boolean doublepoint = false;
 
-		Stack<DataKernel> open = new Stack<DataKernel>();
+		ArrayDeque<DataKernel> open = new ArrayDeque<DataKernel>();
 
 		int alku = 0;
 
@@ -1346,7 +1347,7 @@ public class Renderer {
 						//log.info(Utils.genSpace(i)+"\\");
 						if(open.peek().id.equals(data.substring(alku, i))){
 							DataKernel temp = open.pop();
-							if(open.empty()){
+							if(open.isEmpty()){
 								cloud.add(temp);
 							}else{
 								open.peek().add(temp);
