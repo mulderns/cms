@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.ArrayDeque;
+import util.StackWrap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
@@ -1043,7 +1043,7 @@ public class Renderer {
 
 		ArrayList<MetaKernel> storm = new ArrayList<MetaKernel>();
 
-		ArrayDeque<MetaKernel> parents = new ArrayDeque<MetaKernel>();
+		StackWrap<MetaKernel> parents = new StackWrap<MetaKernel>();
 		//Stack<MetaKernel> parents = new Stack<MetaKernel>();
 
 		MetaKernel kernel = new MetaKernel("~");
@@ -1070,7 +1070,7 @@ public class Renderer {
 						//log.info("  d");
 						kernel = new MetaKernel();
 						kernel.id = intag;
-						parents.add(kernel);
+						parents.push(kernel);
 						break;
 
 					case 0:	//lopputagi (dynaamiselle)
@@ -1303,7 +1303,7 @@ public class Renderer {
 		boolean opencontent = false;
 		boolean doublepoint = false;
 
-		ArrayDeque<DataKernel> open = new ArrayDeque<DataKernel>();
+		StackWrap<DataKernel> open = new StackWrap<DataKernel>();
 
 		int alku = 0;
 

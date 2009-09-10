@@ -1414,6 +1414,9 @@ public class ModViikko extends Module {
 		return sb.toString();
 	}
 
-
+	public boolean blind_update(){
+		ActionLog.action("updating week, blind");
+		return FileOps.write(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false), false);
+	}
 }
 

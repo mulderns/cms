@@ -112,7 +112,7 @@ public class UserDb {
 			for(int i = 1; i < raw.length; i++){
 				//System.err.println("* "+raw[i]);
 				users.add(new UserDbRecord(Csv.decode(raw[i])));
-				
+
 			}
 			state.touch();
 		}
@@ -228,7 +228,7 @@ public class UserDb {
 		}
 		return null;
 	}
-	
+
 
 	public String getSalt(String name) {
 		for(UserDbRecord user : users){
@@ -304,6 +304,19 @@ public class UserDb {
 
 	}
 
-
-
+	/** Gets user info for user 'name' from file if
+	 *  available.
+	 * @param name
+	 * @return User info in UserInfoRecord object
+	 */
+	public UserInfoRecord getUserInfo(String name){
+		
+	}
+	
+	public boolean saveUserInfo(String name, UserInfoRecord record){
+		
+	}
+	
 }
+
+

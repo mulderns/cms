@@ -160,7 +160,7 @@ public class ModMaintenance extends Module {
 			result.addElementOpen(new CmsElement(prototable));
 
 			boolean parillinen = true;
-			int week = 0;
+			int day = 0;
 			int kavija = 0;
 
 			HashSet<String> day_bots = new HashSet<String>();
@@ -176,10 +176,10 @@ public class ModMaintenance extends Module {
 					String[] fields = Csv.decode(line);
 
 					cal.setTimeInMillis(Long.parseLong(fields[0]));
-					int old_week = week;
-					if((week = cal.get(Calendar.DAY_OF_YEAR))!= old_week){
+					int old_day = day;
+					if((day = cal.get(Calendar.DAY_OF_YEAR))!= old_day){
 
-						days.add(new Paiva(old_week,day_visitors.size(),day_bots.size()));
+						days.add(new Paiva(old_day,day_visitors.size(),day_bots.size()));
 
 						if(day_bots.size() > 0){
 							result.addContent("<tr style=\"background-color:#eee\"><td colspan=\"6\">bots["+day_bots.size()+"]: ");
@@ -253,38 +253,87 @@ public class ModMaintenance extends Module {
 			page.addTop(result);
 			page.addTop("<br/>");
 
+			int day_of_week = 0;
 			if(days.size() > 0){
 				days.remove(0);
+				if(days.size() > 0){
+					int date = days.get(0).date;
+					cal.set(Calendar.DAY_OF_YEAR, date);
+					day_of_week = cal.get(Calendar.DAY_OF_WEEK);
+				}
 			}
 
 			CmsElement graphs = new CmsElement();
 			graphs.createBox("Graphs");
-			graphs.addLayer("table style=\"font-size:8.5px\"","table5");
+			graphs.addLayer("table style=\"font-size:8.5px;width:auto;\"","table5");
 			graphs.addLayer("tr");
+
+			switch (day_of_week) {
+			case Calendar.MONDAY:
+				day_of_week = 0;
+				break;
+			case Calendar.TUESDAY:
+				day_of_week = 1;
+				break;
+			case Calendar.WEDNESDAY:
+				day_of_week = 2;
+				break;
+			case Calendar.THURSDAY:
+				day_of_week = 3;
+				break;
+			case Calendar.FRIDAY:
+				day_of_week = 4;
+				break;
+			case Calendar.SATURDAY:
+				day_of_week = 5;
+				break;
+			case Calendar.SUNDAY:
+				day_of_week = 6;
+				break;
+
+			}
+
+
+			for(int i = 0; i < day_of_week; i++){
+				graphs.addTag("td style=\"vertical-align:bottom;\"","&nbsp;");
+			}
+
 			for(Paiva p : days){
+				if(day_of_week++ == 7){
+					day_of_week = 1;
+					graphs.up();
+					graphs.addLayer("tr");
+				}
 				graphs.addTag("td style=\"vertical-align:bottom;\"",
 						"<div style=\"" +
-						"background-color:#458372;width:5px;float:right;" +
+						"background-color:#458372;width:5px;" +
 						"height:"+p.visitors +"px;"+
-						"\"></div>"
-				);
-				graphs.addTag("td style=\"vertical-align:bottom;\"",
+						"\"></div>"+
+
 						"<div style=\"" +
 						"background-color:#d79742;width:5px;" +
 						"height:"+p.bots +"px;" +
 						"font-size:0px;"+
 						"\"></div>"
+
 				);
+				//				graphs.addTag("td style=\"vertical-align:bottom;\"",
+				//						"<div style=\"" +
+				//						"background-color:#d79742;width:5px;" +
+				//						"height:"+p.bots +"px;" +
+				//						"font-size:0px;"+
+				//						"\"></div>"
+				//				);
 			}
 			graphs.up();
 
-			graphs.addLayer("tr");
-			for(Paiva p : days){
-				graphs.addTag("td colspan=\"2\" style=\"background-color:#fafafa;text-align:center\"",
-						Integer.toString(p.visitors)
-				);
-
-			}
+			//			graphs.addLayer("tr");
+			//			for(Paiva p : days){
+			//				graphs.addTag("td colspan=\"2\" style=\"background-color:#fafafa;text-align:center\"",
+			//						Integer.toString(p.visitors)
+			//				);
+			//
+			//			}
 
 			page.addTop(graphs);
 
@@ -461,30 +510,30 @@ public class ModMaintenance extends Module {
 				page.addLeft(getActionLinks());
 			}
 		}});
-		
+
 		actions.add(new Action("Environment info", "env_info"){public void execute(){
 			log.info("env info");
 			page.setTitle("Maintenance");
 			page.addLeft(getActionLinks());
-			
+
 			//getProperties() 
 			//	getenv() 
-			
+
 			CmsElement result = new CmsElement();
 			result.createBox("Env");
 			result.addLayer("pre style=\"font-size:12.5px;\"");
-			
-			
+
+
 			for(Map.Entry<String,String> e : System.getenv().entrySet()){
 				result.addContent("["+e.getKey()+"] -> ["+e.getValue()+"]\n");
 			}
 			page.addCenter(result);
 			page.addCenter("<br/>");
-			
+
 			CmsElement result2 = new CmsElement();
 			result2.createBox("Properties");
 			result2.addLayer("pre style=\"font-size:12.5px;\"");
-			
+
 			for(Map.Entry<Object,Object> e : System.getProperties().entrySet()){
 				result2.addContent("["+(String)e.getKey()+"] -> ["+(String)e.getValue()+"]\n");
 			}

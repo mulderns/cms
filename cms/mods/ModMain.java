@@ -30,12 +30,12 @@ public class ModMain extends Module {
 			}
 			etu.up(2);
 			etu.addSingle("br");
-			etu.createBox("Huom! - Ev‰steet", "medium4");
+			/*etu.createBox("Huom! - Ev‰steet", "medium4");
 			etu.addTag("p", null, 
 					"Jos joudut kirjautumaan uudelleen joka toiminnolla,"+
 					" selaimesi ev‰steet eiv‰t ole p‰‰ll‰."
 			);
-			etu.up(2);
+			etu.up(2);*/
 			
 			etu.createBox("Beta","medium4");
 			etu.addTag("p", null, 

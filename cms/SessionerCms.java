@@ -276,6 +276,12 @@ public class SessionerCms {
 					"</ul>"+
 					"</form>"+
 					"</div>"+
+					
+					"<div class=\"boxi\">"+
+					//"<h4>Ev‰steet</h4>" +
+					"<p>Jos joudut kirjautumaan uudelleen joka toiminnolla, selaimesi ev‰steet eiv‰t ole p‰‰ll‰.</p>" +
+					"</div>"+
+										
 					"</div>"
 			);
 			datarelay.pagebuilder.bake();

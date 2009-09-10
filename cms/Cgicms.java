@@ -26,6 +26,7 @@ import cms.access.Session;
 import cms.ext.FeedBacker;
 import cms.ext.Help;
 import cms.mods.ModUpload;
+import cms.mods.ModViikko;
 
 /**
  *  tää on nyt se ite pää juttu jossa on mahtavia
@@ -287,6 +288,23 @@ public class Cgicms {
 			pagebuilder = new PageBuilder(this);
 			datarelay.pagebuilder = pagebuilder;
 			new FeedBacker(datarelay);
+			ActionLog.write();
+
+		}else if(Collections.binarySearch(arguments, "--update") >= 0){
+			// read input from cgi-environment
+			datarelay = new DataRelay();
+			datarelay.env = new HashMap<String,String>(System.getenv());
+			request = new HttpRequest(datarelay);//initHttpRequest();
+
+			//authentication & sessions
+			log.info("proceeding to update week");
+			pagebuilder = new PageBuilder(this);
+			datarelay.pagebuilder = pagebuilder;
+			
+			if(!new ModViikko(datarelay).blind_update()){
+				ActionLog.error("update failed");
+			}
+			
 			ActionLog.write();
 
 		}else if(Collections.binarySearch(arguments, "--apua") >= 0){

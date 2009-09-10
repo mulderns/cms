@@ -235,10 +235,10 @@ public class ModAccess extends Module {
 					box.addContent(s+"\n");
 				page.addCenter(box);
 				return;
-				
+
 			}				
 
-			
+
 			page.addCenter(nimilista);
 
 		}});
@@ -282,10 +282,10 @@ public class ModAccess extends Module {
 				resultBox.addLayer("div","boxi2 medium3");
 				resultBox.addTag("h4","Ryhm‰n lis‰ys");
 				resultBox.addLayer("div","ingroup filled");
-				
+
 				if(res.size() > 0){
 					resultBox.addTag("p","Virhe:");
-					
+
 					for(String s : res){
 						resultBox.addTag("pre","["+s+"]");
 					}
@@ -338,79 +338,173 @@ public class ModAccess extends Module {
 		}});
 
 		actions.add(new Action(null,"muokkaa_k"){public void execute(){
-			if(!ext.equals("")){
-				if(datarelay.post != null && datarelay.post.size() != 0){
-					GroupDb groupdb = GroupDb.getDb();
-					UserDb userdb = UserDb.getDb();
-					ArrayList<String> groups = new ArrayList<String>();
-					for(String s : datarelay.post.keySet()){
-						if(groupdb.groupExists(s)){
-							groups.add(s);
-						}
-					}
-					userdb.getUser(ext).groups = groups.toArray(new String[groups.size()]);
-					String result = userdb.storeDb();
-					if(result != null){
-						//CmsBoxi failBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
-						CmsElement failBox = new CmsElement();
-						failBox.addLayer("div","boxi2 medium3");
-						failBox.addTag("h4","Muokkaa k‰ytt‰j‰‰");
-						failBox.addLayer("div","ingroup filled");
-						failBox.addTag("p","Muokkaus ep‰onnistui:"+result);
-						failBox.addLink("ok", script + "/" + hook + "/" + action_hook + "/"+ext);
 
-						page.setTitle("K‰ytt‰jien hallinta");
-						//page.addTop(getMenu());
-						page.addCenter(failBox);
+
+
+			if(!ext.equals("")){
+				if(datarelay.query.containsKey("sana")){
+					/** ################### */
+
+					CmsElement submenu = new CmsElement();
+					submenu.addLink(null, "menu", script+"/"+hook+"/"+action_hook+"/"+ext, "takaisin");
+
+					page.addLeft(submenu);	
+					
+					CmsElement box = new CmsElement();
+					box.createBox("Vaihda k‰ytt‰j‰n ["+ext+"] salasana", "medium3");;
+
+					box.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext+"?sana");
+					box.addContent("<table class=\"table5\"><tr><td>Uusi:</td><td>");
+					box.addField("uusi", null, true, new TextField(-1));
+					box.addContent("</td></tr></table");
+					box.addContent("<input type=\"submit\" value=\"vaihda\" class=\"list\">");
+					box.addContent("</form>");				
+
+					if(checkFields(box.getFields())){
+						log.info("fields found");
+
+						String virhe_sanoma = "";
+
+						UserDb udb = UserDb.getDb();
+						udb.loadDb();
+
+						//String salt = udb.getSalt(ext);
+						//String current_hash = udb.getPass(ext);//datarelay.session.getUser().getPass();
+
+						if(datarelay.post.get("uusi").length() < 4){				
+							virhe_sanoma = "Salasanan tulee olla v‰hint‰‰n 4 merkki‰";
+						}else if(ext.equals(datarelay.post.get("uusi"))){
+							virhe_sanoma = "Salasana ei voi olla sama kuin tunnus";
+						}else{
+
+
+
+							if(udb.hasUser(ext)){
+								//if(!udb.getPass(username).equals(Hasher.hash(datarelay.post.get("vanha")))){
+
+								if(!udb.changePass(ext, datarelay.post.get("uusi"))){
+									ActionLog.error("changePass failed -changes");
+									virhe_sanoma = "error error *piip* *puup* (user not found)";
+								}else
+									if(udb.storeDb() != null){
+										ActionLog.error("changePass failed -store");
+										virhe_sanoma = "could not store database";
+									}
+							}
+							//virhe_sanoma = datarelay.manager.changePass(username,datarelay.post.get("vanha"), datarelay.post.get("uusi"));
+						}
+						if(!virhe_sanoma.equals("")){
+							ActionLog.action(username + " - failure in changing password for["+ext+"]");
+
+							//CmsBoxi result = new CmsBoxi("Salasanan vaihto ep‰onnistui");
+							CmsElement result = new CmsElement();
+							result.createBox("Salasanan vaihto ep‰onnistui", "medium3");;
+							result.addTag("p","Virhe: " + virhe_sanoma);
+
+							page.setTitle("K‰ytt‰j‰ kohtaiset hommelit");
+							page.addCenter(result);
+							page.addCenter(box);
+
+						}else{
+							ActionLog.action(username + " - changed  own password");
+
+							CmsElement result = new CmsElement();
+							result.createBox("Salasanan vaihto onnistui", "medium3");;
+
+							result.addTag("p","Salasana vaihdettu.");
+							result.addLink("muut toiminnot", script + "/" + hook );
+
+							page.setTitle("Omat tiedot");
+							page.addCenter(result.toString());
+
+						}
+						/** ################### */
+
 					}else{
-						//						CmsBoxi successBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
-						//						successBox.addP("Muokkaus onnistui!");
-						//						successBox.addLink("ok", script + "/" + hook);
-						//						page.setTitle("K‰ytt‰jien hallinta");
-						//						//page.addTop(getMenu());
-						//						page.addCenter(successBox.toString());
-						pagebuilder.setRedirect(script + "/" + hook);
+						page.addCenter(box);
 					}
 
 				}else{
-					UserDb userdb = UserDb.getDb();
-					UserDbRecord user = userdb.getUser(ext);
 
-					GroupDb groupdb = GroupDb.getDb();
+					CmsElement submenu = new CmsElement();
+					submenu.addLink(null, "menu", script+"/"+hook+"/"+action_hook+"/"+ext+"?sana", "muuta salasana");
+					submenu.addLink(null, "menu", script+"/"+hook+"/", "takaisin");
 
-					if(user != null){
-
-						//CmsBoxi modifyBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
-						CmsElement modifyBox = new CmsElement();
-						modifyBox.addLayer("div","boxi2 medium3");
-						modifyBox.addTag("h4","Muokkaa k‰ytt‰j‰‰");
-						modifyBox.addLayer("div","ingroup filled");
-						modifyBox.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext);
-						modifyBox.addContent("<table class=\"def\">\n<tr><td>");
-						modifyBox.addTag("label","Tunnus:");
-						modifyBox.addContent("</td><td>");
-						modifyBox.addContent(user.name);
-						modifyBox.addContent("</td></tr>\n<tr><td><h3>Ryhm‰t: </h3></td></tr>\n");
-
-						for(String s : groupdb.getGroupNames()){
-							modifyBox.addContent("<tr><td>"+s+"</td><td>"); 
-							modifyBox.addContent("<input name=\""+s+"\" type=\"checkbox\" ");
-							for(String group : user.groups){
-								if(s.equals(group)){
-									modifyBox.addContent("checked=checked");
-									break;
-								}
+					page.addLeft(submenu);					
+					
+					if(datarelay.post != null && datarelay.post.size() != 0){
+						GroupDb groupdb = GroupDb.getDb();
+						UserDb userdb = UserDb.getDb();
+						ArrayList<String> groups = new ArrayList<String>();
+						for(String s : datarelay.post.keySet()){
+							if(groupdb.groupExists(s)){
+								groups.add(s);
 							}
-							modifyBox.addContent("/>\n</td></tr>");
 						}
-						modifyBox.addContent("</table>");
-						//modifyBox.addInput(null, "lis‰‰", "submit", null);
-						modifyBox.addField(null, "lis‰‰", false, new SubmitField(true));
-						modifyBox.addContent("</form>");
+						userdb.getUser(ext).groups = groups.toArray(new String[groups.size()]);
+						String result = userdb.storeDb();
+						if(result != null){
+							//CmsBoxi failBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
+							CmsElement failBox = new CmsElement();
+							failBox.addLayer("div","boxi2 medium3");
+							failBox.addTag("h4","Muokkaa k‰ytt‰j‰‰");
+							failBox.addLayer("div","ingroup filled");
+							failBox.addTag("p","Muokkaus ep‰onnistui:"+result);
+							failBox.addLink("ok", script + "/" + hook + "/" + action_hook + "/"+ext);
 
-						page.setTitle("K‰ytt‰jien hallinta");
-						//page.addTop(getMenu());
-						page.addCenter(modifyBox.toString());
+							page.setTitle("K‰ytt‰jien hallinta");
+							//page.addTop(getMenu());
+							page.addCenter(failBox);
+						}else{
+							//						CmsBoxi successBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
+							//						successBox.addP("Muokkaus onnistui!");
+							//						successBox.addLink("ok", script + "/" + hook);
+							//						page.setTitle("K‰ytt‰jien hallinta");
+							//						//page.addTop(getMenu());
+							//						page.addCenter(successBox.toString());
+							pagebuilder.setRedirect(script + "/" + hook);
+						}
+
+					}else{
+						UserDb userdb = UserDb.getDb();
+						UserDbRecord user = userdb.getUser(ext);
+
+						GroupDb groupdb = GroupDb.getDb();
+
+						if(user != null){
+
+							//CmsBoxi modifyBox = new CmsBoxi("Muokkaa k‰ytt‰j‰‰");
+							CmsElement modifyBox = new CmsElement();
+							modifyBox.addLayer("div","boxi2 medium3");
+							modifyBox.addTag("h4","Muokkaa k‰ytt‰j‰‰");
+							modifyBox.addLayer("div","ingroup filled");
+							modifyBox.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext);
+							modifyBox.addContent("<table class=\"def\">\n<tr><td>");
+							modifyBox.addTag("label","Tunnus:");
+							modifyBox.addContent("</td><td>");
+							modifyBox.addContent(user.name);
+							modifyBox.addContent("</td></tr>\n<tr><td><h3>Ryhm‰t: </h3></td></tr>\n");
+
+							for(String s : groupdb.getGroupNames()){
+								modifyBox.addContent("<tr><td>"+s+"</td><td>"); 
+								modifyBox.addContent("<input name=\""+s+"\" type=\"checkbox\" ");
+								for(String group : user.groups){
+									if(s.equals(group)){
+										modifyBox.addContent("checked=checked");
+										break;
+									}
+								}
+								modifyBox.addContent("/>\n</td></tr>");
+							}
+							modifyBox.addContent("</table>");
+							//modifyBox.addInput(null, "lis‰‰", "submit", null);
+							modifyBox.addField(null, "lis‰‰", false, new SubmitField(true));
+							modifyBox.addContent("</form>");
+
+							page.setTitle("K‰ytt‰jien hallinta");
+							//page.addTop(getMenu());
+							page.addCenter(modifyBox.toString());
+						}
 					}
 				}
 			}else{
