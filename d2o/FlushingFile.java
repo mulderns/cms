@@ -19,6 +19,7 @@ public class FlushingFile {
 	private final Logger log;
 
 	private final File flush_file;
+	private long last_modified;
 	//private long original_modified;
 
 	//private ArrayList<FlushingRecord> records;
@@ -211,6 +212,8 @@ public class FlushingFile {
 				}
 			}
 
+			last_modified = flush_file.lastModified();
+			
 			BufferedReader bin = new BufferedReader(
 					new InputStreamReader(
 							new FileInputStream(flush_file), "ISO-8859-1")
@@ -294,5 +297,9 @@ public class FlushingFile {
 			log.fail("ioexception while closing stream");
 		}
 		return false;
+	}
+	
+	public final long getLastModified(){
+		return last_modified;
 	}
 }

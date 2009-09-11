@@ -2,16 +2,15 @@ package d2o;
 
 import java.io.File;
 import java.util.ArrayList;
-
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 
-import cms.Cgicms;
-import cms.access.User;
-
 import util.Logger;
 import util.TriState;
+import cms.Cgicms;
+import cms.access.User;
 
 public class GroupDb {
 	private final String linesep = System.getProperty("line.separator");
@@ -176,6 +175,19 @@ public class GroupDb {
 		return temp;
 	}
 
+	public String[] getGroupNames(boolean sort) {
+//		ArrayList<String> groups = new ArrayList<String>(Arrays.asList(getGroupNames()));
+//		Collections.sort(groups, new Comparator<String>(){
+//			public int compare(String o1, String o2) {
+//				return o1.compareTo(o2);
+//			}			
+//		});
+//		return groups.toArray(new String[0]);
+		ArrayList<String> groups = new ArrayList<String>(Arrays.asList(getGroupNames()));
+		Collections.sort(groups);
+		return groups.toArray(new String[0]);
+	}
+	
 	public String toString(){
 		StringBuilder sb =  new StringBuilder();
 		for(GroupRule rule : groups){

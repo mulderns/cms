@@ -290,9 +290,6 @@ public class UserDb {
 	}
 
 
-
-
-
 	public String toString(){
 		StringBuilder sb = new StringBuilder();
 		for(UserDbRecord ur: users){
@@ -310,11 +307,17 @@ public class UserDb {
 	 * @return User info in UserInfoRecord object
 	 */
 	public UserInfoRecord getUserInfo(String name){
+		FlushingDb idb = new FlushingDb("userinfo");
 		
+		return new UserInfoRecord(idb.get(name));
 	}
 	
 	public boolean saveUserInfo(String name, UserInfoRecord record){
+		FlushingDb idb = new FlushingDb("userinfo");
 		
+		idb.add(name,record.toArray());
+				
+		return false;
 	}
 	
 }
