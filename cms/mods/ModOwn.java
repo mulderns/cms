@@ -6,9 +6,11 @@ import html.HiddenField;
 import html.PassField;
 import html.SubmitField;
 import html.TextAreaField;
+import html.TextField;
 import http.FormPart;
 
 import java.io.File;
+import java.util.HashMap;
 
 import util.ActionLog;
 import util.Hasher;
@@ -16,6 +18,7 @@ import cms.Cgicms;
 import cms.DataRelay;
 import d2o.FlushingFile;
 import d2o.UserDb;
+import d2o.UserInfoRecord;
 import d2o.pages.BinaryFile;
 import d2o.pages.CmsFile;
 import d2o.pages.PageDb;
@@ -36,210 +39,328 @@ public class ModOwn extends Module{
 		actions.add(new Action(null, ""){public void execute(){
 			page.setTitle("Omat tiedot");
 			page.addLeft(getActionLinks());
+			UserDb udb = UserDb.getDb();
+			UserInfoRecord userinfo = udb.getUserInfo(username);
+			if(userinfo != null){
+				CmsElement infobox = new CmsElement();
+				infobox.createBox("user info");
+				infobox.addLayer("pre style=\"font-size:12.5px\"");
+				infobox.addContent("nimi: "+ userinfo.full_name +"\n");
+				infobox.addContent("sähköposti: "+userinfo.email +"\n");
+				infobox.addContent("puhelin: "+userinfo.phone +"\n");
+				page.addCenter(infobox);
+			}else{
+				page.addCenter("null");
+			}
 		}});
 
-		actions.add(new Action("Oman naamasivun muokkaus", "naama"){public void execute(){
-			FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
-			String[] data = naamaprofiilit.loadAll();
+		actions.add(new Action("Muokkaa yhteystietoja", "tiedot"){public void execute(){
 
-			if(ext == ""){
-				page.setTitle("Valitse naama");
 
-				CmsElement box = new CmsElement();
-				box.addLayer("div","boxi medium4");
-				box.addTag("h4", "Valitse naama");
-				box.addLayer("div","side5");
 
-				for(String s : data){
-					if(s.length()<2)
-						continue;
-					String[] palat = util.Csv.decode(s);
-					if(palat.length < 2){
-						box.addTag("pre", "error");
-						continue;
-					}
-					box.addTag("a href=\""+script+"/"+hook+"/"+action_hook+"/"+palat[1]+"\"", "menu", palat[0]);
+			CmsElement box = new CmsElement();
+			box.addFormTop(script+"/"+hook+"/"+action_hook);
+			box.addLayer("div","boxi2 medium4");
+			box.addTag("h4", "Lisää käyttäjä");
+			box.addLayer("div","ingroup filled");
+			box.addLayer("table", "table5");
+
+			box.addLayer("tr");
+			box.addTag("td","<label>Nimi:</label><br/>(etu suku)");
+			box.addLayer("td");
+			box.addField("full_name",null,false,new TextField(30));
+			box.up(2);
+
+			box.addLayer("tr");
+			box.addTag("td","<label>Kännykkä:</label>");
+			box.addLayer("td");
+			box.addField("phone",null,false,new TextField(30));
+			box.up(2);
+
+			box.addLayer("tr");
+			box.addTag("td","<label>Sähköposti:</label>");
+			box.addLayer("td");
+			box.addField("email",null,false,new TextField(30));
+			box.up(2);
+			box.up(1);
+			box.addField("sub", "Tallenna", false, new SubmitField(true));
+
+
+			if((datarelay.post != null) && (
+					datarelay.post.containsKey("full_name") || 
+					datarelay.post.containsKey("phone") ||
+					datarelay.post.containsKey("email")
+			)){
+				UserDb udb = UserDb.getDb();
+				UserInfoRecord record = udb.getUserInfo(username);
+				if(record == null){
+					record = new UserInfoRecord();
+				}
+				if(datarelay.post.get("full_name").trim().length()>0)
+					record.full_name = datarelay.post.get("full_name").trim();
+
+				if(datarelay.post.get("phone").trim().length()>0)
+					record.phone = datarelay.post.get("phone").trim();
+
+				if(datarelay.post.get("email").trim().length()>0)
+					record.email = datarelay.post.get("email").trim();
+				udb.saveUserInfo(username, record);
+
+			}else{			
+
+				UserDb udb = UserDb.getDb();
+
+				UserInfoRecord record = udb.getUserInfo(username);
+				if(record != null){
+					HashMap<String, String> loaded = new HashMap<String, String>();
+					loaded.put("full_name", record.full_name);
+					loaded.put("phone", record.phone);
+					loaded.put("email", record.email);
+
+					box.setFields(loaded);
 				}
 				page.addCenter(box);
 				page.addLeft(getActionLinks());
+			}
 
-			}else{
+		}});
 
-				page.setTitle("Oma naama");
+		actions.add(new Action("Oman naamasivun muokkaus", "naama"){public void execute(){
+			//			FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
+			//			String[] data = naamaprofiilit.loadAll();
+			//
+			//			if(ext == ""){
+			//				page.setTitle("Valitse naama");
+			//
+			//				CmsElement box = new CmsElement();
+			//				box.addLayer("div","boxi medium4");
+			//				box.addTag("h4", "Valitse naama");
+			//				box.addLayer("div","side5");
+			//
+			//				for(String s : data){
+			//					if(s.length()<2)
+			//						continue;
+			//					String[] palat = util.Csv.decode(s);
+			//					if(palat.length < 2){
+			//						box.addTag("pre", "error");
+			//						continue;
+			//					}
+			//					box.addTag("a href=\""+script+"/"+hook+"/"+action_hook+"/"+palat[1]+"\"", "menu", palat[0]);
+			//				}
+			//				page.addCenter(box);
+			//				page.addLeft(getActionLinks());
+			//
+			//			}else{
 
-				String titteli = null;//"Puheenjohtaja";//datarelay.session.getUser().getInfo("titteli");
-				String filename = null;//"naamat_"+titteli.toLowerCase()+".shtml";
-				String clean = null;
+			page.setTitle("Oma naama-sivun muokkaus");
 
-				for(String s : data){
-					if(s.length()<2)
-						continue;
-					String[] palat = util.Csv.decode(s);
-					if(palat.length < 2){
-						pagebuilder.addHidden("error["+s+"]");
-						continue;
-					}
-					if(palat[1].equals(ext)){
-						titteli = palat[0];
-						filename = "naamat_"+palat[1]+".shtml";
-						clean = palat[1];
-						break;
-					}
-				}
+			UserDb udb = UserDb.getDb();
 
-				if(titteli == null){
-					page.addCenter("<pre>error: no profile["+ext+"] found</pre>");
+			UserInfoRecord userinfo = udb.getUserInfo(username);
+
+			if(userinfo == null){
+
+				CmsElement box = new CmsElement();
+				box.createBox("virhe");
+				box.addTag("p","käyttäjätietoja ei saatu ladattua");
+				page.addCenter(box);
+				return;
+			}
+			if(userinfo.file.length()==0 || userinfo.tittle.length()==0){
+				CmsElement box = new CmsElement();
+				box.createBox("virhe");
+				box.addTag("p","käyttäjätietoja ei ole määritetty");
+				page.addCenter(box);
+				return;
+
+			}
+
+			String titteli = userinfo.tittle;//"Puheenjohtaja";//datarelay.session.getUser().getInfo("titteli");
+			String clean = userinfo.file;//"naamat_"+titteli.toLowerCase()+".shtml";
+			String filename = "naamat_"+clean+".shtml";
+
+//			for(String s : data){
+//				if(s.length()<2)
+//					continue;
+//				String[] palat = util.Csv.decode(s);
+//				if(palat.length < 2){
+//					pagebuilder.addHidden("error["+s+"]");
+//					continue;
+//				}
+//				if(palat[1].equals(ext)){
+//					titteli = palat[0];
+//					filename = "naamat_"+palat[1]+".shtml";
+//					clean = palat[1];
+//					break;
+//				}
+//			}
+
+			if(titteli == null){
+				page.addCenter("<pre>error: no profile["+ext+"] found</pre>");
+				return;
+			}
+
+			PageDb pdb = PageDb.getDb();
+			log.info("filename["+filename+"] ");
+
+			VirtualPath naamapath = VirtualPath.create("/"+filename);
+			log.info("path["+naamapath.toString()+"] "+naamapath.getFilename());
+
+			TextFile naamasivu;
+			if(!pdb.fileExists(naamapath)){
+				log.info("creating file stub for "+ext);
+				naamasivu = new TextFile(filename);
+				naamasivu.content_type = "text/html";
+				naamasivu.parent = "oma_naama";
+				naamasivu.setData("");
+
+				if(pdb.addFile("/", naamasivu)!=null){
+					page.addCenter("<pre>error: could not add file["+filename+"] to db</pre>");
 					return;
 				}
 
-				PageDb pdb = PageDb.getDb();
-				log.info("filename["+filename+"] ");
+			}else{
+				naamasivu = (TextFile)pdb.getFileMeta(naamapath);
+			}
+			if(naamasivu == null){
+				TextFile uusi = new TextFile(filename);
+				uusi.parent = "oma_naama";
+				pdb.addFile(naamapath.getPath(), uusi);
+			}
 
-				VirtualPath naamapath = VirtualPath.create("/"+filename);
-				log.info("path["+naamapath.toString()+"] "+naamapath.getFilename());
 
-				TextFile naamasivu;
-				if(!pdb.fileExists(naamapath)){
-					log.info("creating file stub for "+ext);
-					naamasivu = new TextFile(filename);
-					naamasivu.content_type = "text/html";
-					naamasivu.parent = "oma_naama";
-					naamasivu.setData("");
+			if(checkField("_save")||checkField("_preview")){
+				CmsElement box = new CmsElement();
+				do{
+					Renderer r = Renderer.getRenderer();
+					CmsFile oldfile = pdb.getFileMeta(naamapath);
 
-					if(pdb.addFile("/", naamasivu)!=null){
-						page.addCenter("<pre>error: could not add file["+filename+"] to db</pre>");
-						return;
+					box.addLayer("div","boxi");
+					box.addTag("h4", "Tallennus");
+
+					log.info("saving file");
+
+					if(oldfile == null){
+						box.addTag("pre","Virhe: could not load oldfile");
+						break;
 					}
 
-				}else{
-					naamasivu = (TextFile)pdb.getFileMeta(naamapath);
-				}
-				if(naamasivu == null){
-					TextFile uusi = new TextFile(filename);
-					uusi.parent = "oma_naama";
-					pdb.addFile(naamapath.getPath(), uusi);
-				}
+					log.info("got oldfile");
+					TextFile file = (TextFile)oldfile;
+					file.setData(r.genData(datarelay.post, file));
+					file.relativePath = naamapath;
 
+					if(!pdb.updateData(file)){
+						box.addTag("pre","error - file data could not be updated");
+						break;
+					}
 
-				if(checkField("_save")||checkField("_preview")){
-					CmsElement box = new CmsElement();
-					do{
-						Renderer r = Renderer.getRenderer();
-						CmsFile oldfile = pdb.getFileMeta(naamapath);
+					log.info("update data["+file.name+"] successfull");
+					ActionLog.action("Updated ["+file.relativePath.getUrl()+"]" );
+					if(checkField("_preview")){
+						pagebuilder.setRedirect(script+"/"+hook+"/esikatsele/"+ext);
+					}else{
+						pagebuilder.setRedirect(script+"/"+hook+"/"+action_hook);
+					}
 
-						box.addLayer("div","boxi");
-						box.addTag("h4", "Tallennus");
+				}while(false);
+				page.addCenter(box);
 
-						log.info("saving file");
+			}else{
+				CmsElement side = new CmsElement();
+				side.addLayer("div","boxi inv col");
+				side.addLayer("div","boxi medium");
+				side.up();
+				side.addLink("upload", script + "/" + hook + "/" + action_hook +"?action=upload" );
+				//page.addLeft(side);
 
-						if(oldfile == null){
-							box.addTag("pre","Virhe: could not load oldfile");
-							break;
-						}
+				CmsElement uploadbox = new CmsElement();
+				side.addLayer("div","boxi inv col");
+				uploadbox.addLayer("div","boxi2 medium");
+				uploadbox.addTag("h4","Uploadaa kuvatiedosto");
 
-						log.info("got oldfile");
-						TextFile file = (TextFile)oldfile;
-						file.setData(r.genData(datarelay.post, file));
-						file.relativePath = naamapath;
+				uploadbox.addLayer("div", "ingroup filled");
+				uploadbox.addLayer("form method=\"post\" action=\"" +
+						script + "/" + hook +"/upload/"+ext+"\" enctype=\"multipart/form-data\"");
+				uploadbox.addLayer("table","table5 compact");
+				uploadbox.addLayer("tr");
+				//					uploadbox.addTag("td style=\"text-align:right;\"","Tiedosto");
+				uploadbox.addLayer("td");
+				uploadbox.addField("file", null, true, new FileField());
+				uploadbox.up(3);
+				uploadbox.addSingle("input value=\"lähetä\" type=\"submit\" class=\"list\"");
+				uploadbox.up();
+				//					page.addCenter(uploadbox);
+				page.addLeft(uploadbox);
 
-						if(!pdb.updateData(file)){
-							box.addTag("pre","error - file data could not be updated");
-							break;
-						}
+				CmsElement edit = new CmsElement();
+				//edit.createBox(titteli, "medium4");
+				edit.addLayer("div","boxi2 medium4");
+				edit.addTag("h4", titteli);
+				edit.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext);
 
-						log.info("update data["+file.name+"] successfull");
-						ActionLog.action("Updated ["+file.relativePath.getUrl()+"]" );
-						if(checkField("_preview")){
-							pagebuilder.setRedirect(script+"/"+hook+"/esikatsele/"+ext);
-						}else{
-							pagebuilder.setRedirect(script+"/"+hook+"/"+action_hook);
-						}
+				Renderer r = Renderer.getRenderer();
+				edit.addContent(r.generateEditPage(naamasivu).toString());
 
-					}while(false);
-					page.addCenter(box);
+				edit.addLayer("table");
+				edit.addLayer("tr");
+				edit.addTag("td","<input name=\"_save\" value=\"tallenna\" type=\"submit\" class=\"list\"/>");
+				edit.addTag("td","<input name=\"_preview\" value=\"esikatsele\" type=\"submit\" class=\"list\"/>");
+				edit.up(2);
+				edit.addField("titteli", titteli, true, new HiddenField());
+				edit.addField("filename", clean, true, new HiddenField());
+				edit.addField("_lastmodified", Long.toString(naamasivu.lastModified), true, new HiddenField());
 
-				}else{
-					CmsElement side = new CmsElement();
-					side.addLayer("div","boxi inv col");
-					side.addLayer("div","boxi medium");
-					side.up();
-					side.addLink("upload", script + "/" + hook + "/" + action_hook +"?action=upload" );
-					//page.addLeft(side);
-					
-					CmsElement uploadbox = new CmsElement();
-					side.addLayer("div","boxi inv col");
-					uploadbox.addLayer("div","boxi2 medium");
-					uploadbox.addTag("h4","Uploadaa kuvatiedosto");
-
-					uploadbox.addLayer("div", "ingroup filled");
-					uploadbox.addLayer("form method=\"post\" action=\"" +
-							script + "/" + hook +"/upload/"+ext+"\" enctype=\"multipart/form-data\"");
-					uploadbox.addLayer("table","table5 compact");
-					uploadbox.addLayer("tr");
-//					uploadbox.addTag("td style=\"text-align:right;\"","Tiedosto");
-					uploadbox.addLayer("td");
-					uploadbox.addField("file", null, true, new FileField());
-					uploadbox.up(3);
-					uploadbox.addSingle("input value=\"lähetä\" type=\"submit\" class=\"list\"");
-					uploadbox.up();
-//					page.addCenter(uploadbox);
-					page.addLeft(uploadbox);
-
-					CmsElement edit = new CmsElement();
-					//edit.createBox(titteli, "medium4");
-					edit.addLayer("div","boxi2 medium4");
-					edit.addTag("h4", titteli);
-					edit.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext);
-
-					Renderer r = Renderer.getRenderer();
-					edit.addContent(r.generateEditPage(naamasivu).toString());
-
-					edit.addLayer("table");
-					edit.addLayer("tr");
-					edit.addTag("td","<input name=\"_save\" value=\"tallenna\" type=\"submit\" class=\"list\"/>");
-					edit.addTag("td","<input name=\"_preview\" value=\"esikatsele\" type=\"submit\" class=\"list\"/>");
-					edit.up(2);
-					edit.addField("titteli", titteli, true, new HiddenField());
-					edit.addField("filename", clean, true, new HiddenField());
-					edit.addField("_lastmodified", Long.toString(naamasivu.lastModified), true, new HiddenField());
-
-					page.addCenter(edit);
-				}
+				page.addCenter(edit);
 			}
+		
 		}});
 
 		actions.add(new Action(null, "esikatsele"){public void execute(){
 
-			if(ext == ""){
-				FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
-				 
-				String[] data = naamaprofiilit.loadAll();
-				
-				page.setTitle("Valitse naama");
-
-				CmsElement box = new CmsElement();
-				box.addLayer("div","boxi medium4");
-				box.addTag("h4", "Valitse naama");
-				box.addLayer("div","side5");
-
-				for(String s : data){
-					if(s.length()<2)
-						continue;
-					String[] palat = util.Csv.decode(s);
-					if(palat.length < 2){
-						box.addTag("pre", "error");
-						continue;
-					}
-					box.addTag("a href=\""+script+"/"+hook+"/"+action_hook+"/"+palat[1]+"\"", "menu", palat[0]);
-				}
-
-				page.addCenter(box);
-				page.addLeft(getActionLinks());
-
-			}else{
+//			if(ext == ""){
+//				//FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
+//
+//				//String[] data = naamaprofiilit.loadAll();
+//
+//				page.setTitle("Valitse naama");
+//
+//				CmsElement box = new CmsElement();
+//				box.addLayer("div","boxi medium4");
+//				box.addTag("h4", "Valitse naama");
+//				box.addLayer("div","side5");
+//
+//				for(String s : data){
+//					if(s.length()<2)
+//						continue;
+//					String[] palat = util.Csv.decode(s);
+//					if(palat.length < 2){
+//						box.addTag("pre", "error");
+//						continue;
+//					}
+//					box.addTag("a href=\""+script+"/"+hook+"/"+action_hook+"/"+palat[1]+"\"", "menu", palat[0]);
+//				}
+//
+//				page.addCenter(box);
+//				page.addLeft(getActionLinks());
+//
+//			}else{
 
 				PageDb pdb = PageDb.getDb();
-				String filename = "naamat_"+ext+".shtml";
+				UserDb udb = UserDb.getDb();
+				
+				UserInfoRecord userinfo = udb.getUserInfo(username);
+				
+				if(userinfo == null){
+					page.addCenter("userinfo not found");
+					return;
+				}
+				if(userinfo.file.length() == 0){
+					page.addCenter("insufficient userinfo");
+					return;
+				}
+				
+				String filename = "naamat_"+userinfo.file+".shtml";
 				VirtualPath naamapath = VirtualPath.create("/"+filename);
 				TextFile naamasivu = (TextFile)pdb.getFileMeta(naamapath);
 				if(naamasivu == null){
@@ -252,7 +373,7 @@ public class ModOwn extends Module{
 				String data = renderer.generateHtml(naamasivu);
 
 				pagebuilder.rawSend(data);
-			}
+			
 		}});
 
 		actions.add(new Action("Profiilien määritys", "profiilit"){public void execute(){
@@ -277,7 +398,7 @@ public class ModOwn extends Module{
 
 			box.addFormTop(script + "/" + hook + "/" + action_hook);
 			box.createBox("profiilit", "medium4");
-			
+
 			box.addField("naamat", sb.toString(), true, new TextAreaField(400));
 			box.addField("submit", "submit", true, new SubmitField(true));
 
@@ -294,7 +415,7 @@ public class ModOwn extends Module{
 			}else{
 				CmsElement box = new CmsElement();
 				box.createBox("Salasanan vaihto", "medium3");;
-				
+
 				box.addFormTop("https"+script.substring(4)+"/"+hook+"/"+action_hook);
 				box.addContent("<table class=\"table5\"><tr><td>Vanha:</td><td>");
 				box.addField("vanha", null, true, new PassField(-1));
@@ -379,15 +500,15 @@ public class ModOwn extends Module{
 				}
 			}
 		}});
-		
+
 		actions.add(new Action(null, "upload"){public void execute(){
 			VirtualPath path = VirtualPath.create("/res/");
-			
+
 			FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
 			String[] data = naamaprofiilit.loadAll();
 
 			String titteli = null;
-			
+
 			for(String s : data){
 				if(s.length()<2)
 					continue;
@@ -401,12 +522,12 @@ public class ModOwn extends Module{
 					break;
 				}
 			}
-			
+
 			if(titteli == null){
 				page.addCenter("<pre>error: no profile found</pre>");
 				return;
 			}
-			
+
 			if(datarelay.multipart){
 
 				log.info("got multipart");
@@ -421,7 +542,7 @@ public class ModOwn extends Module{
 					log.info("files length == 0");
 					sb.append("Virhe: Tiedosto yli 10 megaa, tyhjä, tai jotain muuta");
 				}
-				
+
 
 				for(FormPart p: datarelay.files){
 					log.info("form part");
@@ -429,7 +550,7 @@ public class ModOwn extends Module{
 					String postfix = p.getFilename().substring(p.getFilename().lastIndexOf(".")+1);
 					String filename = "naamat_"+ext+"."+postfix;
 
-	
+
 					CmsFile file;
 					if(p.getContentType().startsWith("text")){
 						TextFile temp =  new TextFile(filename);

@@ -114,6 +114,11 @@ public class FlushingFile {
 		return "append failed";
 	}
 
+	public final String append(final String line, long last_modified) {
+		//TODO:
+		return append(line);
+	}
+	
 	public final String overwrite(final String[] lines) {
 		if(lines == null)
 			return "null data to write";
@@ -152,6 +157,12 @@ public class FlushingFile {
 		return "overwrite failed";
 	}
 
+	public String overwrite(String[] lines, long lmod) {
+		//TODO:
+		return overwrite(lines);
+		
+	}
+	
 	public final String overwrite(final String line) {
 		if(line == null)
 			return "null data to write";
@@ -302,4 +313,6 @@ public class FlushingFile {
 	public final long getLastModified(){
 		return last_modified;
 	}
+
+
 }

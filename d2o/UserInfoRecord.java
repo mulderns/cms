@@ -7,7 +7,8 @@ public class UserInfoRecord {
 
 	public String tittle;
 	public Boolean hallituksessa;
-	public String tiedosto;
+	public Boolean toimari;
+	public String file;
 
 	UserInfoRecord(String[] parts) {
 		full_name = parts[0];
@@ -16,28 +17,37 @@ public class UserInfoRecord {
 		tittle = parts[3];
 		if (parts[4].equals("h")) {
 			hallituksessa = true;
-		} else if (parts[4].equals("t")) {
+		} else{
 			hallituksessa = false;
-		} else {
-			hallituksessa = null;
 		}
-		tiedosto = parts[5];
+		if(parts[5].equals("t")){
+			toimari = true;
+		}else{
+			toimari = false;
+		}
+		file = parts[6];
+	}
+
+	public UserInfoRecord(){
+		this("","","","",false,false,"");
 	}
 
 	public UserInfoRecord(String full_name, String phone, String email,
-			String tittle, Boolean hallituksessa, String tiedosto) {
+			String tittle, boolean hallituksessa, boolean toimari, String tiedosto) {
 		this.full_name = full_name;
 		this.phone = phone;
 		this.email = email;
 		this.tittle = tittle;
 		this.hallituksessa = hallituksessa;
-		this.tiedosto = tiedosto;
+		this.toimari = toimari;
+		this.file = tiedosto;
 	}
 
 	public String[] toArray() {
 		String[] output = { full_name, phone, email, tittle,
-				(hallituksessa == null ? "-" : (hallituksessa ? "h" : "t")),
-				tiedosto };
+				(hallituksessa? "h" : "-"),
+				(toimari? "t" : "-"),
+				file };
 		return output;
 	}
 

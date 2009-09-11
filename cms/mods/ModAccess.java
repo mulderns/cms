@@ -8,11 +8,13 @@ import html.TextField;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 import util.ActionLog;
 import util.Hasher;
 import cms.DataRelay;
+import cms.Mailer;
 import d2o.GroupDb;
 import d2o.UserDb;
 import d2o.UserDbRecord;
@@ -88,7 +90,7 @@ public class ModAccess extends Module {
 			box.addLayer("div","boxi2 medium3");
 			box.addTag("h4", "Lis‰‰ k‰ytt‰j‰");
 			box.addLayer("div","ingroup filled");
-			box.addLayer("table", "def");
+			box.addLayer("table", "table5");
 
 			box.addLayer("tr");
 			box.addTag("td","<b>Tunnus:</b>");
@@ -108,7 +110,7 @@ public class ModAccess extends Module {
 
 			box.up(2);
 			box.addLayer("div","ingroup filled");
-			box.addLayer("table", "def");
+			box.addLayer("table", "table5");
 
 			box.addLayer("tr");
 			box.addTag("td","Nimi<br/>(etu suku):");
@@ -134,7 +136,7 @@ public class ModAccess extends Module {
 
 			box.up(2);
 			box.addLayer("div","ingroup filled");
-			box.addLayer("table", "def");
+			box.addLayer("table", "table5");
 
 			box.addLayer("tr");
 			box.addTag("td","Hallituksessa:");
@@ -166,7 +168,7 @@ public class ModAccess extends Module {
 
 			box.up(2);
 			box.addLayer("div","ingroup filled");
-			box.addLayer("table", "def");
+			box.addLayer("table", "table5");
 
 			box.addLayer("tr");
 			box.addTag("td","<h3>Ryhm‰t: </h3>");
@@ -181,7 +183,7 @@ public class ModAccess extends Module {
 
 			box.up(1);
 			//			box.addLayer("div","ingroup filled");
-			//			box.addLayer("table", "def");
+			//			box.addLayer("table", "table5");
 			box.addField("sub", "Lis‰‰", false, new SubmitField(true));
 
 
@@ -215,9 +217,9 @@ public class ModAccess extends Module {
 					}
 
 					if(virhe_sanoma.length()==0){
-						
+
 						//create user account
-						
+
 						ArrayList<String> groups = new ArrayList<String>();
 						for(String key :datarelay.post.keySet()){
 							if(
@@ -242,10 +244,10 @@ public class ModAccess extends Module {
 								virhe_sanoma = temp;
 							}
 						}
-						
+
 						if(virhe_sanoma.equals("")){
 							//collect user info
-							
+
 							String full_name = datarelay.post.get("full_name");
 							String phone = datarelay.post.get("phone");
 							String email = datarelay.post.get("email");
@@ -253,17 +255,21 @@ public class ModAccess extends Module {
 							String toimari = datarelay.post.get("toimari");
 							String titteli = datarelay.post.get("titteli");
 							String tiedosto = datarelay.post.get("tiedosto");
-							
-							Boolean hallitus = null;
-							
+
+							boolean hallitus = false;
+							boolean toimar = false;
+
 							if(hallituksessa.equalsIgnoreCase("true"));{
 								hallitus = true;
-								if(toimari.equalsIgnoreCase("true")){
-									hallitus = false;
-								}
 							}
-							
-							UserInfoRecord uinfo = new UserInfoRecord(full_name,phone,email,titteli,hallitus,tiedosto);
+							if(toimari.equalsIgnoreCase("true")){
+								toimar = true;
+							}
+
+
+							UserInfoRecord uinfo = new UserInfoRecord(
+									full_name,phone,email,titteli,hallitus,toimar,tiedosto
+							);
 							if(!udb.saveUserInfo(tunnus, uinfo)){
 								virhe_sanoma = "k‰ytt‰j‰ tietojen tallennus ei onnistunut";
 							}
@@ -274,8 +280,8 @@ public class ModAccess extends Module {
 				}
 
 				//  (create key)
-				
-				
+
+
 				//store
 
 				/**
@@ -584,12 +590,195 @@ public class ModAccess extends Module {
 					}else{
 						page.addCenter(box);
 					}
+				}else if(datarelay.query.containsKey("reset")){
+
+					if(datarelay.post != null && checkField("reset")){
+						CmsElement box = new CmsElement();
+						box.createBox("resetoi salasana");
+						
+						UserDb udb = UserDb.getDb();
+						udb.changePass(ext, Hasher.hashWithSalt(Long.toOctalString(System.nanoTime()), Hasher.getSalt()));
+						UserInfoRecord userinfo = udb.getUserInfo(ext);
+						//TODO:
+						String message = "t‰ll‰ avaimella p‰‰set sis‰‰n muokkaamaan salasanaa : ";
+						
+						Mailer.sendMail("TKrT-Cms", userinfo.email, "salasana resetoitu", message);
+						
+						page.addCenter(box);
+						
+					}else{
+						CmsElement box = new CmsElement();
+						box.createBox("resetoi salasana");
+						box.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext+"?reset");
+						box.addTag("p", "resetoidaan salasana ja luodaan avain jolla" +
+						" voi loggautua sis‰‰n" );
+
+
+
+						UserDb udb = UserDb.getDb();
+						UserInfoRecord userinfo = udb.getUserInfo(ext);
+						if(userinfo != null){
+							box.addTag("p", "avain l‰hetet‰‰n osoitteseen:" );
+							box.addTag("pre", userinfo.email );
+						}
+						box.addField("reset", "Reset", false, new SubmitField(true));
+						page.addCenter(box);
+					}
+					
+
+				}else if(datarelay.query.containsKey("info")){
+					CmsElement box = new CmsElement();
+					box.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext+"?info");
+
+					box.addLayer("div","boxi2 medium3");
+					box.addTag("h4", "Lis‰‰ k‰ytt‰j‰");
+					box.addLayer("div","ingroup filled");
+					box.addLayer("table", "table5");
+
+					box.addLayer("tr");
+					box.addTag("td","Nimi<br/>(etu suku):");
+					box.addLayer("td");
+					box.addField("full_name",null,false,new TextField(30));
+					box.up(2);
+
+					box.addLayer("tr");
+					box.addTag("td","K‰nnykk‰:");
+					box.addLayer("td");
+					box.addField("phone",null,false,new TextField(30));
+					box.up(2);
+
+					box.addLayer("tr");
+					box.addTag("td","S‰hkˆposti:");
+					box.addLayer("td");
+					box.addField("email",null,false,new TextField(30));
+					box.up(2);
+
+					box.up(2);
+					box.addLayer("div","ingroup filled");
+					box.addLayer("table", "table5");
+
+					box.addLayer("tr");
+					box.addTag("td","Hallituksessa:");
+					box.addLayer("td");
+					box.addField("hallituksessa",null,false,new CheckBoxField(true));
+					box.up(2);
+
+					box.addLayer("tr");
+					box.addTag("td","Toimari:");
+					box.addLayer("td");
+					box.addField("toimari",null,false,new CheckBoxField(false));
+					box.up(2);
+
+					box.addLayer("tr");
+					box.addTag("td","Titteli:");
+					box.addLayer("td");
+					box.addField("titteli",null,false,new TextField(20));
+					box.up(2);
+
+					box.addLayer("tr");
+					box.addTag("td","Tiedosto:");
+					box.addLayer("td");
+					box.addField("tiedosto",null,false,new TextField(20));
+					box.up(3);
+
+					box.addField("sub", "Lis‰‰", false, new SubmitField(true));
+
+					UserDb udb = UserDb.getDb();
+
+					if(datarelay.post != null){
+
+						/** §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§ */
+
+						if(checkFields(box.getFields())){
+							log.info("fields found");
+
+							String virhe_sanoma = "";
+
+							//check name availability
+							String tunnus = ext;
+
+							if(udb.getUser(tunnus)== null){
+								virhe_sanoma = "tunnusta ei lˆytynyt";
+							}else{
+
+								//collect user info
+
+								String full_name = datarelay.post.get("full_name");
+								String phone = datarelay.post.get("phone");
+								String email = datarelay.post.get("email");
+								String hallituksessa = datarelay.post.get("hallituksessa");
+								String toimari = datarelay.post.get("toimari");
+								String titteli = datarelay.post.get("titteli");
+								String tiedosto = datarelay.post.get("tiedosto");
+
+								boolean hallitus = false;
+								boolean toimar = false;
+
+								if(hallituksessa != null){
+									hallitus = true;
+								}
+								if(toimari != null){
+									toimar = true;
+								}
+
+
+								UserInfoRecord uinfo = new UserInfoRecord(
+										full_name,phone,email,titteli,hallitus,toimar,tiedosto
+								);
+								if(!udb.saveUserInfo(tunnus, uinfo)){
+									virhe_sanoma = "k‰ytt‰j‰ tietojen tallennus ei onnistunut";
+								}
+
+							}
+
+							if(!virhe_sanoma.equals("")){
+								ActionLog.action(username + " - failure in adding user ["+datarelay.post.get("tunnus")+"]");
+								//CmsBoxi result = new CmsBoxi("K‰ytt‰j‰n lis‰ys ep‰onnistui");
+								CmsElement result = new CmsElement();
+								result.addLayer("div","boxi2 medium3");
+								result.addTag("h4","K‰ytt‰j‰n lis‰ys ep‰onnistui");
+								result.addLayer("div","ingroup filled");
+								result.addTag("p","Virhe: " + virhe_sanoma);
+								box.setFields(datarelay.post);
+								page.setTitle("K‰ytt‰j‰ kohtaiset hommelit");
+								//page.addTop(getMenu());
+								page.addCenter(result);
+								page.addCenter(box);
+							}
+						}
+						/** §§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§§ */
+
+
+					}else{
+
+						UserInfoRecord record = udb.getUserInfo(ext);
+						if(record != null){
+							HashMap<String, String> loaded = new HashMap<String, String>();
+							loaded.put("full_name", record.full_name);
+							loaded.put("phone", record.phone);
+							loaded.put("email", record.email);
+							if(record.hallituksessa)
+								loaded.put("hallituksessa", "on");
+							if(record.toimari)
+								loaded.put("toimari", "on");
+							loaded.put("titteli", record.tittle);
+							loaded.put("tiedosto", record.file);
+
+							box.setFields(loaded);
+						}
+
+
+						page.addCenter(box);
+					}
+
 
 				}else{
 
 					CmsElement submenu = new CmsElement();
 					submenu.addLink(null, "menu", script+"/"+hook+"/"+action_hook+"/"+ext+"?sana", "muuta salasana");
+					submenu.addLink(null, "menu", script+"/"+hook+"/"+action_hook+"/"+ext+"?info", "muokkaa k‰ytt‰j‰ tietoja");
 					submenu.addLink(null, "menu", script+"/"+hook+"/", "takaisin");
+					submenu.addLink(null, "menu", script+"/"+hook+"/"+action_hook+"/"+ext+"?reset", "resetoi salasana");
 
 					page.addLeft(submenu);					
 
@@ -640,7 +829,7 @@ public class ModAccess extends Module {
 							modifyBox.addTag("h4","Muokkaa k‰ytt‰j‰‰");
 							modifyBox.addLayer("div","ingroup filled");
 							modifyBox.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext);
-							modifyBox.addContent("<table class=\"def\">\n<tr><td>");
+							modifyBox.addContent("<table class=\"table5\">\n<tr><td>");
 							modifyBox.addTag("label","Tunnus:");
 							modifyBox.addContent("</td><td>");
 							modifyBox.addContent(user.name);

@@ -27,6 +27,7 @@ import cms.ext.FeedBacker;
 import cms.ext.Help;
 import cms.mods.ModUpload;
 import cms.mods.ModViikko;
+import d2o.KeyManager;
 
 /**
  *  tää on nyt se ite pää juttu jossa on mahtavia
@@ -307,6 +308,24 @@ public class Cgicms {
 			
 			ActionLog.write();
 
+		}else if(Collections.binarySearch(arguments, "--reset") >= 0){
+			// read input from cgi-environment
+			datarelay = new DataRelay();
+			datarelay.env = new HashMap<String,String>(System.getenv());
+			request = new HttpRequest(datarelay);//initHttpRequest();
+
+			// more initialization			
+			pagebuilder = new PageBuilder(this);
+			datarelay.pagebuilder = pagebuilder;
+			
+			//authentication & sessions
+			log.info("validating key");
+
+			KeyManager keymanager = new KeyManager(this,datarelay);
+			keymanager.doStuff();
+			
+			ActionLog.write();
+			
 		}else if(Collections.binarySearch(arguments, "--apua") >= 0){
 
 			// read input from cgi-environment

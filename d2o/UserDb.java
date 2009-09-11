@@ -24,6 +24,9 @@ public class UserDb {
 	private TriState state;
 	private static boolean created = false;
 	private static UserDb present;
+	
+	private static FlushingDb idb;
+	private static boolean info_loaded = false;
 
 	public static UserDb getDb() {
 		if(created){
@@ -307,17 +310,27 @@ public class UserDb {
 	 * @return User info in UserInfoRecord object
 	 */
 	public UserInfoRecord getUserInfo(String name){
-		FlushingDb idb = new FlushingDb("userinfo");
+		if(!info_loaded){
+			loadInfo();
+		}
 		
-		return new UserInfoRecord(idb.get(name));
+		if(idb.pol(name))		
+			return new UserInfoRecord(idb.get(name));
+		return null;
 	}
 	
-	public boolean saveUserInfo(String name, UserInfoRecord record){
-		FlushingDb idb = new FlushingDb("userinfo");
+	private void loadInfo() {
+		idb = new FlushingDb("userinfo");
 		
-		idb.add(name,record.toArray());
-				
-		return false;
+		info_loaded = true;
+	}
+
+	public boolean saveUserInfo(String name, UserInfoRecord record){
+		if(!info_loaded){
+			loadInfo();
+		}
+		return idb.put(name,record.toArray());
+		
 	}
 	
 }
