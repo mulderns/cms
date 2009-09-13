@@ -16,7 +16,6 @@ public class KeyManager {
 
 	FlushingDb keydb;
 
-
 	public KeyManager(){
 		log = new Logger("KeyManager");
 	}
@@ -29,10 +28,25 @@ public class KeyManager {
 	}
 
 	public String createKey(long validity){
-
-		return null;
+		String seed = System.nanotime()+username;
+		Utils.sleep(100);
+		String key;
+		do{
+			key = Hasher.hashWithSalt(seed, Hasher.getSalt());
+		} while(keydb.pol(key));
+		KeyRecord record = new KeyRecord(username, validity, key);
+		keydb.put(key, record);
+		return key;
 	}
 
+	public boolean checkKey(String key){
+		return keydb.pol(key);
+	}
+	
+	public boolean useKey(String key){
+		//TODO:
+	}
+	
 	public void doStuff() {
 		if(
 				!restoreSession() && 
@@ -48,7 +62,13 @@ public class KeyManager {
 			// TODO Auto-generated method stub			
 		}
 
-
+		if(session.delete){
+			log.info("delete session");
+			session.remove();
+		}else{
+			log.info("store session");
+			session.store();
+		}
 
 	}
 
@@ -89,20 +109,15 @@ public class KeyManager {
 	}
 
 	public boolean createSession() {
+		log.info("look for key in query string");
+		if(!(datarelay.query != null && datarelay.query.length > 0)){
+			return false;
+		}
 		
 		//TODO:
-		log.info("looking for login info in post");
-		if(!(datarelay.post != null && datarelay.post.containsKey("name"))){
-			return false;
-		}
 
-		log.info("login name found");
-		String login_name = datarelay.post.get("name");
-		String login_pass;
-		if((login_pass = datarelay.post.get("pass")) == null){
-			return false;
-		}
-		log.info("login pass found");
+		//?af0a580ce0d908835e6ea026c78a5f3c9cd0df2b
+		
 		UserLoader loader = new UserLoader(login_name);
 
 
@@ -126,16 +141,8 @@ public class KeyManager {
 			return false;
 		}
 
-		if(!loader.getPass().equals(login_pass)){
-			log.info("authentication failed");
-			ActionLog.error("login error");
-			datarelay.pagebuilder.addMessage("wrong name / pass");
-			return false;
-		}
-
 		log.info("auth passed");
-		//loader.loadGroups();
-		//loader.loadInfo();
+
 		User user = loader.getUser();
 
 		session = new Session(datarelay, cookie_hook, user);
@@ -146,7 +153,6 @@ public class KeyManager {
 	}
 
 	public void doLogin() {
-		//System.err.println("err3");
 		String https = datarelay.env.get("HTTPS");
 		String uri = datarelay.env.get("REQUEST_URI");
 		if(uri == null){
