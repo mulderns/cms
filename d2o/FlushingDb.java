@@ -2,6 +2,7 @@ package d2o;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -155,6 +156,11 @@ public class FlushingDb {
 
 		lmod = dbfile.getLastModified();
 		loaded = true;
+		
+		log.info("loaded userinfo:");
+		for(FlushingRecord r : records.values()){
+			log.info(Arrays.toString(r.data));
+		}
 		return true;
 	}
 

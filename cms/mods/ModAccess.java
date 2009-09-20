@@ -262,13 +262,12 @@ public class ModAccess extends Module {
 							boolean hallitus = false;
 							boolean toimar = false;
 
-							if(hallituksessa.equalsIgnoreCase("true"));{
+							if(toimari != null && hallituksessa.equalsIgnoreCase("true"));{
 								hallitus = true;
 							}
-							if(toimari.equalsIgnoreCase("true")){
+							if(toimari != null && toimari.equalsIgnoreCase("true")){
 								toimar = true;
 							}
-
 
 							UserInfoRecord uinfo = new UserInfoRecord(
 									full_name,phone,email,titteli,hallitus,toimar,tiedosto

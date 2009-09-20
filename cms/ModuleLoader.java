@@ -224,6 +224,7 @@ public class ModuleLoader {
 		datarelay.modules.add(new ModLogout(datarelay));
 		//datarelay.modules.add(new ModTest(datarelay));
 		datarelay.modules.add(new ModAccess(datarelay));
+		datarelay.modules.add(new ModHallitus(datarelay));
 	}
 }
 

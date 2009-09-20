@@ -147,7 +147,9 @@ public class Module {
 	
 	protected String getMenuExtra(){
 		StringBuilder sb = new StringBuilder();
-		
+		if(GroupDb.checkAccess(datarelay.session.getUser(), "hallitus" ,"")){
+			sb.append("<a class=\"menu\" href=\"" + script + "/hallitus\">Hallitus</a>\n");
+		}
 		if(GroupDb.checkAccess(datarelay.session.getUser(), "oikeudet" ,"")){
 			sb.append("<a class=\"menu\" href=\"" + script + "/oikeudet\">Oikeuksien hallinta</a>\n");
 		}

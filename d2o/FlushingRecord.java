@@ -1,6 +1,6 @@
 package d2o;
 
-import java.util.Arrays;
+
 
 
 public class FlushingRecord {
@@ -15,7 +15,10 @@ public class FlushingRecord {
 	public FlushingRecord(String[] fields){
 		id = fields[0];
 		if(fields.length > 1){
-			data = Arrays.copyOfRange(fields,1,fields.length);
+			data = new String[fields.length-1];
+			System.err.println("#### [FlushingRecord] : f.l["+fields.length+"] d.l["+data.length+"]");
+			System.arraycopy(fields, 1, data, 0, fields.length-1);
+			//data = Arrays.copyOfRange(fields,1,fields.length);
 		}
 
 	}
