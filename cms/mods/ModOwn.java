@@ -5,7 +5,6 @@ import html.FileField;
 import html.HiddenField;
 import html.PassField;
 import html.SubmitField;
-import html.TextAreaField;
 import html.TextField;
 import http.FormPart;
 
@@ -376,7 +375,7 @@ public class ModOwn extends Module{
 			
 		}});
 
-		actions.add(new Action("Profiilien m‰‰ritys", "profiilit"){public void execute(){
+		/*actions.add(new Action("Profiilien m‰‰ritys", "profiilit"){public void execute(){
 
 			FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
 			String[] data = new String[1];
@@ -408,6 +407,7 @@ public class ModOwn extends Module{
 			page.addCenter(box);
 
 		}});
+		*/
 
 		actions.add(new Action("Vaihda salasana", "salasana"){public void execute(){
 			if(!datarelay.env.containsKey("HTTPS")){

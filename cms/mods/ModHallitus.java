@@ -48,9 +48,14 @@ public class ModHallitus extends Module {
 			Collections.sort(infos, new Comparator<UserInfoRecord>(){
 				public int compare(UserInfoRecord o1, UserInfoRecord o2) {
 					if(o1.hallituksessa && !o2.hallituksessa)
-						return 1;
-					if(!o1.hallituksessa && o2.hallituksessa)
 						return -1;
+					if(!o1.hallituksessa && o2.hallituksessa)
+						return 1;
+					if(!o1.toimari && o2.toimari)
+						return -1;
+					if(o1.toimari && !o2.toimari)
+						return 1;
+					
 					return o1.full_name.compareTo(o2.full_name);
 				}
 			}); 
