@@ -95,10 +95,8 @@ public final class Utils {
 		return count;
 	}
 
-	//@SuppressWarnings("static-access")
 	public static boolean sleep(final long time){
 		try {
-			//Thread.currentThread();
 			Thread.sleep(time);
 		} catch (InterruptedException e) {
 			return false;
@@ -245,6 +243,17 @@ public final class Utils {
 		return sb.toString();
 	}
 
+	public static final long calculateLongTime(int d, int h, int min, int sec){
+		long result = 0;
+		
+		result  = sec *    1000;
+		result += min *   60000;
+		result += h   * 3600000;
+		result += d   *86400000;
+		
+		return result;
+	}
+	
 
 	public static final String genSpace(int i) {
 		if(i <= 0)

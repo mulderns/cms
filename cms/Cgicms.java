@@ -27,7 +27,6 @@ import cms.ext.FeedBacker;
 import cms.ext.Help;
 import cms.mods.ModUpload;
 import cms.mods.ModViikko;
-import d2o.KeyManager;
 
 /**
  *  tää on nyt se ite pää juttu jossa on mahtavia
@@ -309,19 +308,40 @@ public class Cgicms {
 			ActionLog.write();
 
 		}else if(Collections.binarySearch(arguments, "--reset") >= 0){
-			// read input from cgi-environment
-			datarelay = new DataRelay();
-			datarelay.env = new HashMap<String,String>(System.getenv());
-			request = new HttpRequest(datarelay);//initHttpRequest();
+			if((main_props = loadProperties(main_props_file)) == null){
+				log.fail("loading properties failed");
+				return;
+			}
+			if(!checkProperties(main_props)){
+				log.fail("not all properties set in properties file");
+				return;
+			}
+			if(main_props.get("script_file").contains("localhost")){
+				Logger.setEnableSystemOut(true);
+			}
 
-			// more initialization			
+			datarelay = new DataRelay();
+			datarelay.script = getScriptFile();
+			//datarelay.target = getRelativePath();
+			datarelay.res = getResRoot();
+			datarelay.env = new HashMap<String,String>(System.getenv());
+			group_hook = "cms";
+			request = new HttpRequest(datarelay);//initHttpRequest();
 			pagebuilder = new PageBuilder(this);
 			datarelay.pagebuilder = pagebuilder;
-			
+
+			pagebuilder.addHeadTag(	
+					"<link rel=\"shortcut icon\" href=\""+
+					main_props.get("res_root")
+					+"./res/favicon.png\"/>"
+			);
+
+			log.info("proceeding to sessions");
+		
 			//authentication & sessions
 			log.info("validating key");
 
-			KeyManager keymanager = new KeyManager(this,datarelay);
+			KeyManager keymanager = new KeyManager(datarelay);
 			keymanager.doStuff();
 			
 			ActionLog.write();

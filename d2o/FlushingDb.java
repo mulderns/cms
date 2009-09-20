@@ -1,7 +1,9 @@
 package d2o;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 import util.Csv;
 import util.Logger;
@@ -117,11 +119,29 @@ public class FlushingDb {
 			return false;
 		}
 
-		store();
+		
 		//TODO:
-		return false;
+		if(records.remove(key)==null){
+			log.fail("record not found");
+			return false;
+		}
+		return store();
 	}
 
+	public List<String[]> all(){
+		if (!loaded)
+			if(!load()){
+				log.fail("could not load dbfile["+source+"]");
+				return null;
+			}
+		
+		ArrayList<String[]> all = new ArrayList<String[]>();
+		for(FlushingRecord r :records.values()){
+			all.add(r.data);
+		}
+		return all;
+	}
+	
 	private boolean load() {
 		if (loaded)
 			return false;

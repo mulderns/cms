@@ -13,9 +13,12 @@ import java.util.Map;
 
 import util.ActionLog;
 import util.Hasher;
+import util.Utils;
 import cms.DataRelay;
+import cms.KeyManager;
 import cms.Mailer;
 import d2o.GroupDb;
+import d2o.KeyRecord;
 import d2o.UserDb;
 import d2o.UserDbRecord;
 import d2o.UserInfoRecord;
@@ -504,9 +507,77 @@ public class ModAccess extends Module {
 		actions.add(new Action("Poista ryhm‰","poista_r"){public void execute(){
 		}});
 
+		actions.add(null);
+
+		actions.add(new Action("N‰yt‰ avaimet","keys"){public void execute(){
+			page.setTitle("Avaimet");
+
+			if(!ext.equals("")){
+				if(datarelay.query.containsKey("del")){
+					if(datarelay.post != null && datarelay.post.containsKey("doit")){
+						String user = ext;
+						int removed = 0;
+						KeyManager keymanager = new KeyManager(datarelay);
+						if(user.trim().length()>0){
+							for(KeyRecord record : keymanager.getKeys()){
+								if(record.username.equalsIgnoreCase(user)){
+									if(keymanager.deleteKey(record.key)){
+										removed++;
+									}else{
+										removed+=100;
+									}
+								}
+							}
+						}
+						CmsElement box = new CmsElement();
+						box.createBox("removed","medium3");
+						box.addTag("p", "removed "+removed+" keys");
+						
+						page.addCenter(box);
+						page.addLeft(getActionLinks());
+						return;
+					}else{
+						CmsElement box = new CmsElement();
+						box.createBox("really remove keys for user["+ext+"]?","medium3");
+						box.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext+"?del");
+						box.addField("doit", "doit", true, new CheckBoxField(false));
+						box.addField("submit", "doit", false, new SubmitField(true));
+						page.addCenter(box);
+						page.addLeft(getActionLinks());
+						return;
+					}
+				}
+			}
+			CmsElement box = new CmsElement();
+			box.createBox("Avaimet");
+			KeyManager keymanager = new KeyManager(datarelay);
+			box.addLayer("table","table5");
+			box.addLayer("tr");
+			box.addTag("td", "username");
+			box.addTag("td", "key");
+			box.addTag("td", "validity");
+			box.addTag("td", "used");
+			box.up();
+			for(KeyRecord record : keymanager.getKeys()){
+				box.addLayer("tr");
+				box.addTag("td",record.username);
+				box.addTag("td",record.key);
+				box.addTag("td",Utils.longTimeToString(record.validity-System.currentTimeMillis()));
+				box.addTag("td",(record.used?"used":"unused"));
+				box.addLayer("td");
+				//box.addLink("delete", script+"/"+hook+"/"+action_hook+"/"+record.username+"?del");
+				box.addLink("", "but", script+"/"+hook+"/"+action_hook+"/"+record.username+"?del", "delete");
+				//but
+				
+				box.up();
+				//box.addTag("td","<a href=\""+script+"/"+hook+"/"+action_hook+"/"+record.username+"?del\">del</a>");
+				box.up();
+			}
+			page.addLeft(getActionLinks());
+			page.addCenter(box);
+		}});
+
 		actions.add(new Action(null,"muokkaa_k"){public void execute(){
-
-
 
 			if(!ext.equals("")){
 				if(datarelay.query.containsKey("sana")){
@@ -595,17 +666,24 @@ public class ModAccess extends Module {
 					if(datarelay.post != null && checkField("reset")){
 						CmsElement box = new CmsElement();
 						box.createBox("resetoi salasana");
-						
+
 						UserDb udb = UserDb.getDb();
 						udb.changePass(ext, Hasher.hashWithSalt(Long.toOctalString(System.nanoTime()), Hasher.getSalt()));
 						UserInfoRecord userinfo = udb.getUserInfo(ext);
 						//TODO:
 						String message = "t‰ll‰ avaimella p‰‰set sis‰‰n muokkaamaan salasanaa : ";
-						
-						Mailer.sendMail("TKrT-Cms", userinfo.email, "salasana resetoitu", message);
-						
+
+						KeyManager km = new KeyManager();
+						String key = km.createKey(ext, System.currentTimeMillis() + Utils.calculateLongTime(2, 0, 0, 0));
+
+						if(userinfo != null){
+							Mailer.sendMail("TKrT-Cms", userinfo.email, "salasana resetoitu", message);
+						}else{
+							box.addTag("p", "avain:");
+							box.addTag("pre style=\"font-size:12.5px\"", key );
+						}
 						page.addCenter(box);
-						
+
 					}else{
 						CmsElement box = new CmsElement();
 						box.createBox("resetoi salasana");
@@ -624,7 +702,7 @@ public class ModAccess extends Module {
 						box.addField("reset", "Reset", false, new SubmitField(true));
 						page.addCenter(box);
 					}
-					
+
 
 				}else if(datarelay.query.containsKey("info")){
 					CmsElement box = new CmsElement();

@@ -6,7 +6,6 @@ import html.SubmitField;
 import html.TextAreaField;
 import http.FormPart;
 
-import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -420,24 +419,39 @@ public class ModMaintenance extends Module {
 			page.addCenter(result);
 			page.addLeft(getActionLinks());
 		}});
-
-		actions.add(null);
-
-		actions.add(new Action("päivitä", "update"){public void execute(){
-			log.info("updating svn repository");
+		
+		actions.add(new Action("Varmuuskopioi kaikki", "backupall"){public void execute(){
+			log.info("doing full backup");
 
 			CmsElement result = new CmsElement();
-			result.createBox("Päivitys","medium4");
+			result.createBox("Backup", "medium3");
 
-			String r = updateRepository();
-			Utils.sleep(2000);
-			result.addTag("pre",r);
+			backupAll();
+			result.addTag("pre","backupSettings()");
 			//result.addLink("muut toiminnot", script + "/" + hook );
 
-			page.setTitle("Maintenance - Logi");
+			page.setTitle("Maintenance");
 			page.addCenter(result);
 			page.addLeft(getActionLinks());
 		}});
+
+		actions.add(null);
+
+//		actions.add(new Action("päivitä", "update"){public void execute(){
+//			log.info("updating svn repository");
+//
+//			CmsElement result = new CmsElement();
+//			result.createBox("Päivitys","medium4");
+//
+//			String r = updateRepository();
+//			Utils.sleep(2000);
+//			result.addTag("pre",r);
+//			//result.addLink("muut toiminnot", script + "/" + hook );
+//
+//			page.setTitle("Maintenance - Logi");
+//			page.addCenter(result);
+//			page.addLeft(getActionLinks());
+//		}});
 
 		actions.add(new Action("Build info", "build"){public void execute(){
 			ClassLoader cl = this.getClass().getClassLoader();
@@ -549,29 +563,29 @@ public class ModMaintenance extends Module {
 		super.execute();
 	}
 
-	private String updateRepository() {
-		StringBuilder sb = new StringBuilder();
-		try{
-			Process update = Runtime.getRuntime().exec("sh paivita_sivut.sh");
-			BufferedInputStream bes = new BufferedInputStream(update.getErrorStream());
-			BufferedInputStream bis = new BufferedInputStream(update.getInputStream());
-			int read;
-			while((read = bes.read()) != -1){
-				sb.append((char)read);
-			}
-			while((read = bis.read()) != -1){
-				sb.append((char)read);
-			}
-			bis.close();
-			bes.close();
-			sb.append("\n process exit value: ").append(update.exitValue());
-		}catch(IOException ioe){
-			sb.append(ioe.toString());
-		}catch(Exception e){
-			sb.append(e.toString());
-		}
-		return sb.toString();
-	}
+//	private String updateRepository() {
+//		StringBuilder sb = new StringBuilder();
+//		try{
+//			Process update = Runtime.getRuntime().exec("sh paivita_sivut.sh");
+//			BufferedInputStream bes = new BufferedInputStream(update.getErrorStream());
+//			BufferedInputStream bis = new BufferedInputStream(update.getInputStream());
+//			int read;
+//			while((read = bes.read()) != -1){
+//				sb.append((char)read);
+//			}
+//			while((read = bis.read()) != -1){
+//				sb.append((char)read);
+//			}
+//			bis.close();
+//			bes.close();
+//			sb.append("\n process exit value: ").append(update.exitValue());
+//		}catch(IOException ioe){
+//			sb.append(ioe.toString());
+//		}catch(Exception e){
+//			sb.append(e.toString());
+//		}
+//		return sb.toString();
+//	}
 
 	private String getActionLog() {
 		FileHive filehive = FileHive.getFileHive(Cgicms.database_dir);
@@ -626,6 +640,10 @@ public class ModMaintenance extends Module {
 				FileOps.write(new File(Cgicms.database_dir,filename), temp, false);
 			}
 		}
+	}
+	
+	private void backupAll(){
+		//TODO: backup all
 	}
 }
 
