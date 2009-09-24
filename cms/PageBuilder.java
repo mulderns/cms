@@ -118,6 +118,8 @@ public class PageBuilder {
 				log.info("baking e["+encoding+"] rcs["+response.getCharset()+"]");
 				try{
 					if(redirect){
+						if(response.cookieSet())
+						bwriter.write(response.getCookie()+"\n");
 						bwriter.write("Location: "+redirect_location+"\n\n");
 						bwriter.close();
 						out_state.touch();
@@ -236,6 +238,12 @@ public class PageBuilder {
 	public void setCookie(String cookie_hook, String data) {
 		response.addCookie(
 				"Set-cookie: "+cookie_hook+"="+data+"; path="+script.substring(script.indexOf('/',8))+"; HttpOnly"
+		);
+	}
+	
+	public void setCookie(String cookie_hook, String data, String path) {
+		response.addCookie(
+				"Set-cookie: "+cookie_hook+"="+data+"; path="+path+"; HttpOnly"
 		);
 	}
 

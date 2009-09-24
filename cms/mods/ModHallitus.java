@@ -28,6 +28,7 @@ public class ModHallitus extends Module {
 			page.setTitle("Etusivu");
 			//page.addCenter(etu);
 			page.addLeft(getActionLinks());
+			pagebuilder.setRedirect(script+"/"+hook+"/"+"yhteys");
 		}});
 
 		actions.add(new Action("Yhteystiedot","yhteys"){public void execute(){

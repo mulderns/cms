@@ -345,6 +345,9 @@ public class Cgicms {
 			keymanager.doStuff();
 			
 			ActionLog.write();
+			//Deploy deploy = new Deploy(this);
+			//deploy.dumpEnv("env.dump");
+			log.info("____________________________________________");
 			
 		}else if(Collections.binarySearch(arguments, "--apua") >= 0){
 

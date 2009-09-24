@@ -670,33 +670,48 @@ public class ModAccess extends Module {
 						udb.changePass(ext, Hasher.hashWithSalt(Long.toOctalString(System.nanoTime()), Hasher.getSalt()));
 						UserInfoRecord userinfo = udb.getUserInfo(ext);
 						//TODO:
-						String message = "t‰ll‰ avaimella p‰‰set sis‰‰n muokkaamaan salasanaa : ";
+						String message = 
+							"T‰ll‰ avaimella p‰‰set sis‰‰n muokkaamaan salasanaa : \n" +
+							"https://www.students.tut.fi/cgi-bin/cgiwrap/tkrt/reset.cgi?";
 
 						KeyManager km = new KeyManager();
 						String key = km.createKey(ext, System.currentTimeMillis() + Utils.calculateLongTime(2, 0, 0, 0));
 
-						if(userinfo != null){
-							Mailer.sendMail("TKrT-Cms", userinfo.email, "salasana resetoitu", message);
+						message = message.concat(key);
+						if(datarelay.post.containsKey("spostiin") && userinfo != null){
+							String result;
+							result = Mailer.sendMail("TKrT-Cms", userinfo.email, "Salasanasi on resetoitu", message);
+							if(result == null){
+								box.addTag("p", "avain l‰hetettiin onnistuneesti");
+								box.addTag("pre style=\"font-size:12.5px;\"", message);
+								
+							}else{
+								box.addTag("p", "virhe: "+ result);
+							}
 						}else{
 							box.addTag("p", "avain:");
 							box.addTag("pre style=\"font-size:12.5px\"", key );
 						}
+						box.addLink("Continue", script+"/"+hook+"/");
+						page.addLeft(getActionLinks());
 						page.addCenter(box);
 
 					}else{
 						CmsElement box = new CmsElement();
-						box.createBox("resetoi salasana");
+						box.createBox("resetoi salasana", "medium3");
 						box.addFormTop(script+"/"+hook+"/"+action_hook+"/"+ext+"?reset");
 						box.addTag("p", "resetoidaan salasana ja luodaan avain jolla" +
-						" voi loggautua sis‰‰n" );
-
-
+						" voi loggautua sis‰‰n." );
 
 						UserDb udb = UserDb.getDb();
 						UserInfoRecord userinfo = udb.getUserInfo(ext);
 						if(userinfo != null){
-							box.addTag("p", "avain l‰hetet‰‰n osoitteseen:" );
-							box.addTag("pre", userinfo.email );
+							box.addTag("p", "Jos haluat, avain l‰hetet‰‰n osoitteseen:" );
+							box.addTag("pre style=\"font-size:12.5px;\"", userinfo.email );
+							box.addLayer("label");
+							box.addContent("l‰het‰ avain s‰hkˆpostiin");
+							box.addField("spostiin", "spostiin", false, new CheckBoxField(false));
+							box.up();
 						}
 						box.addField("reset", "Reset", false, new SubmitField(true));
 						page.addCenter(box);

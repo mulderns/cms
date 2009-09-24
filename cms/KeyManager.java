@@ -11,6 +11,7 @@ import cms.access.User;
 import cms.access.UserLoader;
 import d2o.FlushingDb;
 import d2o.KeyRecord;
+import d2o.UserDb;
 
 public class KeyManager {
 
@@ -32,7 +33,7 @@ public class KeyManager {
 		this.datarelay = datarelay;
 		cookie_hook = "tkrt_cms-reset";
 		this.log = datarelay.log;
-		log.info("sessioner init");
+		log.info("KeyManager init");
 	}
 
 	public String createKey(String username, long validity){
@@ -58,15 +59,19 @@ public class KeyManager {
 		}
 		return records.toArray(new KeyRecord[0]);
 	}
-	
+
 	public boolean useKey(String key){
-		//TODO: failure check
+		if(!keydb.pol(key)){
+			return false;
+		}
+
 		KeyRecord record = new KeyRecord(keydb.get(key));
+		if(record.used)
+			return false;
 		record.used = true;
-		keydb.mod(key, record.toArray());
-		return true;
+		return keydb.mod(key, record.toArray());
 	}
-	
+
 	public boolean deleteKey(String key){
 		return keydb.del(key);
 	}
@@ -77,6 +82,23 @@ public class KeyManager {
 				!createSession() 
 		){
 			//fail
+			datarelay.pagebuilder.setTitle("cms - reset password");
+			datarelay.pagebuilder.addHeadTag(
+					"<link type=\"text/css\" href=\""+
+					datarelay.res + "login.css\" rel=\"stylesheet\"/>"
+			);
+			datarelay.pagebuilder.build(
+					"<div class=\"content\" style=\"text-align:center;\">"+
+					"<div class=\"boxi\">"+
+
+					"<h4 style=\"background-color:#D44232\">error</h4>"+
+					"<p>no valid key found</p>" +
+
+					"</div>"+
+					"</div>"
+			);
+			datarelay.pagebuilder.bake();
+			
 			ActionLog.error("mishap at the keymanager");
 			return;
 		}else{
@@ -89,6 +111,8 @@ public class KeyManager {
 
 		}
 
+		log.info(" but now - session.delete["+session.delete+"]");
+		
 		if(session.delete){
 			log.info("delete session");
 			session.remove();
@@ -102,8 +126,10 @@ public class KeyManager {
 
 	public boolean restoreSession() {
 		log.info("trying to restore session");
-		if(!(datarelay.cookie != null && datarelay.cookie.containsKey(cookie_hook)))
+		if(!(datarelay.cookie != null && datarelay.cookie.containsKey(cookie_hook))){
+			log.info("cookie == "+(datarelay.cookie==null?"@null":"found")+", or no content");
 			return false;
+		}
 
 		log.info("got sesid");
 		String sID = datarelay.cookie.get(cookie_hook);
@@ -138,6 +164,7 @@ public class KeyManager {
 	public boolean createSession() {
 		log.info("look for key in query string");
 		if(!(datarelay.query != null && datarelay.query.size() > 0)){
+			log.info("null || empty");
 			return false;
 		}
 
@@ -155,6 +182,10 @@ public class KeyManager {
 		}
 
 		KeyRecord record = new KeyRecord(keydb.get(key));
+		if(record.used){
+			log.info("key used");
+			return false;
+		}
 		String login_name = record.username;
 		Cgicms.group_hook="cms";
 		UserLoader loader = new UserLoader(login_name);
@@ -177,21 +208,109 @@ public class KeyManager {
 		}
 
 
+		String path = datarelay.env.get("SCRIPT_NAME"); 
+		if(path == null){
+			log.fail("scrip_name not found in env");
+			ActionLog.error("scrip_name not found in env");
+			return false;
+		}
+
 		User user = loader.getUser();
 
 		session = new Session(datarelay, cookie_hook, user);
 		datarelay.session = session;
 		datarelay.username = session.getUser().getName();
-		datarelay.pagebuilder.setCookie(cookie_hook, session.getId());
+		datarelay.pagebuilder.setCookie(cookie_hook, session.getId(), path);
+
+		log.info("validate key:" + useKey(key));
 		return true;
 	}
 
 	public void doLogin() {
-		if(datarelay.post != null && datarelay.post.containsKey("name")){
+		if(datarelay.post != null && datarelay.post.containsKey("pass")){
 
-			datarelay.post.get("pass");
-			datarelay.post.get("pass2");
+			String pass = datarelay.post.get("pass");
+			String pass2 = datarelay.post.get("pass2");
 
+			//TODO:check for coherence;
+
+
+			datarelay.pagebuilder.setTitle("cms - reset password");
+			datarelay.pagebuilder.addHeadTag(
+					"<link type=\"text/css\" href=\""+
+					datarelay.res + "login.css\" rel=\"stylesheet\"/>"
+			);
+			
+
+			UserDb udb = UserDb.getDb();
+			log.info("evaluate password");
+			String message = udb.evaluatePassword(datarelay.username, pass, pass2);
+			if(message != null){
+				datarelay.pagebuilder.build(
+						"<div class=\"content\" style=\"text-align:center;\">"+
+						"<div class=\"boxi\">"+
+
+						"<h4 style=\"background-color:#D44232\">error</h4>"+
+						"<p>"+message+"</p>" +
+
+						"</div>"+
+						"</div>"
+				);
+				
+				datarelay.pagebuilder.bake();
+				return;
+			}
+			
+			
+			udb.loadDb();
+			log.info("change password for ["+datarelay.username+"] -> ["+pass+"]");
+			if(udb.changePass(datarelay.username, pass)){
+				if(udb.storeDb()==null){
+
+
+					datarelay.pagebuilder.build(
+							"<div class=\"content\" style=\"text-align:center;\">"+
+							"<div class=\"boxi\">"+
+
+							"<h4 style=\"background-color:#62d432\">Success!</h4>"+
+							"<p>salasana vaihdettu.</p>" +
+							"<a href=\""+datarelay.script+"\">&#187; kirjaudu</a>"+
+
+							"</div>"+
+							"</div>"
+					);
+
+					session.delete = true;
+					log.info(" session.delete -> true");
+					log.info(" "+session.delete);
+					
+				}else{
+					datarelay.pagebuilder.build(
+							"<div class=\"content\" style=\"text-align:center;\">"+
+							"<div class=\"boxi\">"+
+
+							"<h4 style=\"background-color:#D44232\">error</h4>"+
+							"<p>couldn't store new password</p>" +
+
+							"</div>"+
+							"</div>"
+					);
+				}
+
+			}else{
+				datarelay.pagebuilder.build(
+						"<div class=\"content\" style=\"text-align:center;\">"+
+						"<div class=\"boxi\">"+
+
+						"<h4 style=\"background-color:#D44232\">error</h4>"+
+						"<p>couldn't change password</p>" +
+
+						"</div>"+
+						"</div>"
+				);
+			}
+
+			datarelay.pagebuilder.bake();
 		}else{
 
 
@@ -215,124 +334,10 @@ public class KeyManager {
 				datarelay.pagebuilder.setRedirect(redir.toString());
 				datarelay.pagebuilder.bake();
 			}else{
-				datarelay.pagebuilder.setTitle("cms - login");
-				datarelay.pagebuilder.addStyle(
-						"body{"+
-						"font-family: verdana;"+
-						"font-size: small;"+
-						"min-height:300px;"+
-						"background-color:white;"+
-						"background-position:center top;"+
-						"color:black;"+
-						"margin:0px;"+
-						"}"+
-
-						"div.boxi a{"+
-						"border: 0px solid orange;"+
-						"color: black;"+
-						"background-color:#dddddd;"+
-						"font-size:x-small;"+
-						"text-transform:uppercase;"+
-						"text-decoration:none;"+
-						"}"+
-
-						"div.boxi a:visited{"+
-						"color:grey;"+
-						"}"+
-
-						"div.boxi a:hover{"+
-						"color:white;"+
-						"background-color:orange;"+
-						"}"+
-
-						"div.boxi {"+
-						"border-width: 1px;"+
-						"border-style: solid;"+
-						"}"+
-
-						"div.boxi {"+
-						"width:200px;"+
-						"margin: 8% auto;"+
-						"text-align:left;"+
-						"padding:2px;"+
-						"background-color:white;"+
-						"}"+
-
-						"div.boxi h4{"+
-						"background-color:orange;"+
-						"color:white;"+
-						"font-size: small;"+
-						"text-align:left;"+
-						"padding:4px 8px;"+
-						"margin:0px;"+
-						"}"+
-
-						"div.boxi p{"+
-						"font-size:x-small;"+
-						"margin: 6px 7px;"+
-						"}"+
-
-						"div.boxi a{"+
-						"padding:3px 10px;"+
-						"margin: 5px 7px;"+
-						"margin-top:0px;"+
-						"text-align:center;"+
-						"display:block;"+
-						"}"+
-
-						"div.boxi2 a {"+
-						"display:inline;"+
-						"margin: 2px;"+
-						"}"+
-
-						"h2{"+
-						"border-bottom-width:1px;"+
-						"border-bottom-style:solid;"+
-						"padding-top:20px;"+
-						"padding-left:10px;"+
-						"margin:05px;"+
-						"margin-bottom:0px;"+
-						"}"+
-
-						"div.boxi ul{"+
-						"	padding:0px;"+
-						"	margin:4px;"+
-						"	list-style:none;"+
-						"	line-height:25px;"+
-						"	text-align:right;"+
-						"}"+
-
-						"label {"+
-						"	font-size:x-small;"+
-						"	margin-right:6px;"+
-						"}"+
-
-						"input{"+
-						"	border: 1px solid black;"+
-						"	padding:1px 4px;"+
-						"	font-family:monospace;"+
-						"	font-size:12px;"+
-						"}"+
-
-						"input.button{"+
-						"padding:1px 6px;"+
-						"margin: 2px 4px;"+
-						"margin-right: 0px;"+
-
-						"text-align:center;"+
-
-						"background-color: #eee;"+
-						"font-family:verdana;"+
-						"font-size:10.5px;"+
-						"}"+
-
-						"input.button:hover{"+
-						"background-color: #fff8ee;"+
-						"}"+
-
-						"form {"+
-						"margin: 0px;"+
-						"}"
+				datarelay.pagebuilder.setTitle("cms - reset password");
+				datarelay.pagebuilder.addHeadTag(
+						"<link type=\"text/css\" href=\""+
+						datarelay.res + "login.css\" rel=\"stylesheet\"/>"
 				);
 
 				datarelay.pagebuilder.build(

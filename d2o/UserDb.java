@@ -24,7 +24,7 @@ public class UserDb {
 	private TriState state;
 	private static boolean created = false;
 	private static UserDb present;
-	
+
 	private static FlushingDb idb;
 	private static boolean info_loaded = false;
 
@@ -313,15 +313,15 @@ public class UserDb {
 		if(!info_loaded){
 			loadInfo();
 		}
-		
+
 		if(idb.pol(name))		
 			return new UserInfoRecord(idb.get(name));
 		return null;
 	}
-	
+
 	private void loadInfo() {
 		idb = new FlushingDb("userinfo");
-		
+
 		info_loaded = true;
 	}
 
@@ -330,9 +330,22 @@ public class UserDb {
 			loadInfo();
 		}
 		return idb.put(name,record.toArray());
-		
+
 	}
-	
+
+	public String evaluatePassword(String username, String pass1, String pass2){
+		if(username == null || pass1 == null || pass2 == null){
+			return "null reference";
+		}
+		if(pass1.trim().length() < 4)		
+			return "Salasanan tulee olla vähintään 4 merkkiä";
+		if(!pass1.equals(pass2))
+			return "uudet salasanat eivät täsmää";
+		if(username.equals(pass1))
+			return "Salasana ei voi olla sama kuin tunnus";
+		return null;
+	}
+
 }
 
 
