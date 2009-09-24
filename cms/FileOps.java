@@ -45,7 +45,7 @@ public class FileOps {
 	//	private static final byte[] linesep_bytes = linesep.getBytes();
 	private static final Logger log = new Logger("FileOps");
 
-	public String read(File file){
+	public static String read(File file){
 		StringBuilder lines = new StringBuilder();
 		try{
 			BufferedReader bin =
@@ -61,7 +61,7 @@ public class FileOps {
 				lines.append(line).append("\n");
 			}
 			bin.close();
-			//			log.info(" ->success");
+			//log.info(" ->success");
 			return lines.toString();
 		}catch(IOException ioe){
 			log.fail("read File failed:"+ioe);
@@ -85,7 +85,7 @@ public class FileOps {
 				lines.add(line);
 			}
 			bin.close();
-			//			log.info(" ->success");
+			//log.info(" ->success");
 			return lines.toArray(new String[0]);
 		}catch(IOException ioe){
 			log.fail("readToArray failed:"+ioe);
@@ -93,6 +93,11 @@ public class FileOps {
 		return null;
 	}
 
+	/**Warning this is unimplemented
+	 * 
+	 * @param file
+	 * @return
+	 */
 	public byte[] readBytes(File file){log.fail("unimplemented");return null;}
 
 	public static boolean write(File file, String line, boolean append){

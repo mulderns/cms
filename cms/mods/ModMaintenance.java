@@ -18,7 +18,6 @@ import util.Csv;
 import util.Utils;
 import cms.Cgicms;
 import cms.DataRelay;
-import cms.FileHive;
 import cms.FileOps;
 import d2o.FlushingFile;
 import d2o.UserDb;
@@ -588,9 +587,8 @@ public class ModMaintenance extends Module {
 //	}
 
 	private String getActionLog() {
-		FileHive filehive = FileHive.getFileHive(Cgicms.database_dir);
-		String actionlog = filehive.getActionLog();
-		return actionlog;		
+		log.info("getting actionlog");
+		return FileOps.read(ActionLog.getLogFile());
 	}
 
 	private String clearSessions(){

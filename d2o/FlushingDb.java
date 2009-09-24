@@ -99,6 +99,12 @@ public class FlushingDb {
 		return records.get(key).data;
 	}
 
+	/**
+	 * 
+	 * @param key	The key to be search for.
+	 * @return		True if records contain such key. False if loading is not successfull
+	 * 				or key is not found.
+	 */
 	public boolean pol(String key) {
 		if (!loaded)
 			if(!load()){

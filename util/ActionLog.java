@@ -58,6 +58,10 @@ public class ActionLog {
 		logfile = _logfile;
 	}
 
+	public static File getLogFile(){
+		return logfile;
+	}
+	
 	public static void write() {
 		if(buffer.size() > 0){
 			try {

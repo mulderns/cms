@@ -251,7 +251,7 @@ public class Cgicms {
 			datarelay = new DataRelay();
 			datarelay.env = new HashMap<String,String>(System.getenv());
 			request = new HttpRequest(datarelay);
-			filehive = FileHive.getFileHive(uploaded_dir);
+			filehive = FileHive.getFileHive();
 
 			//dumpEnv("env.file.dump");
 

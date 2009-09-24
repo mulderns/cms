@@ -1,13 +1,22 @@
 package cms.mods;
 
-import util.ActionLog;
-import util.Logger;
+
 import html.CmsElement;
 import html.FileField;
 import http.FormPart;
-import cms.Cgicms;
+
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.List;
+
+import util.ActionLog;
+import util.Logger;
 import cms.DataRelay;
 import cms.FileHive;
+import d2o.FileRecord;
 
 public class ModUpload extends Module {
 
@@ -22,7 +31,7 @@ public class ModUpload extends Module {
 
 		actions.add(new Action(null, ""){public void execute(){
 			CmsElement box = new CmsElement();
-			box.createBox("Tiedostot", "medium4");
+			box.createBox("Tiedostot");
 			box.addLayer("table", "table5");
 			box.addSingle("colgroup");
 			box.addSingle("colgroup width=\"70\"");
@@ -30,13 +39,34 @@ public class ModUpload extends Module {
 
 			log.info("hook["+hook+"]");
 
-			FileHive fh = FileHive.getFileHive(Cgicms.uploaded_dir);
+			FileHive fh = FileHive.getFileHive();
 
-			for(String file : fh.getFiles()){
+			DateFormat format = DateFormat.getDateInstance();
+			box.addLayer("tr");
+			box.addTag("th", "Tiedosto");
+			box.addTag("th", "Koko");
+			box.addTag("th", "Lis‰tty");
+			box.addTag("th", "Lis‰‰j‰");
+			box.addTag("th", "Poista");
+			box.up();
+			
+			List<FileRecord> records = fh.getFileRecords();
+			Collections.sort(records, new Comparator(){
+
+				public int compare(Object arg0, Object arg1) {
+					// TODO Auto-generated method stub
+					return 0;
+				}
+				
+			});
+			
+			for(FileRecord record : records){
 				box.addLayer("tr");
-				box.addTag("td", null, "<a title=\"lataa\" class=\"but\" href=\""+script+"/"+hook+"/download/"+file+"\">"+file+"</a>");
-				box.addTag("td", null, "&nbsp;");
-				box.addTag("td", null,"<a title=\"poista\" class=\"but\" href=\""+script+"/"+hook+"/delete/"+file+"\">X</a>");
+				box.addTag("td", "<a title=\"lataa\" class=\"but\" href=\""+script+"/"+hook+"/download/"+record.filename+"\">"+record.filename+"</a>");
+				box.addTag("td", record.size + " b");
+				box.addTag("td", format.format(new Date(record.upload_date)));
+				box.addTag("td", record.upload_user);
+				box.addTag("td", "<a title=\"poista\" class=\"but\" href=\""+script+"/"+hook+"/delete/"+record.filename+"\">X</a>");
 				box.up();
 			}
 			box.up();
@@ -57,7 +87,7 @@ public class ModUpload extends Module {
 
 				StringBuilder sb = new StringBuilder();
 
-				FileHive fh = FileHive.getFileHive(Cgicms.uploaded_dir);
+				FileHive fh = FileHive.getFileHive();
 
 				if(datarelay.files.length==0){
 					sb.append("Virhe: Tiedosto yli 10 megaa, tyhj‰, tai jotain muuta");
@@ -67,7 +97,7 @@ public class ModUpload extends Module {
 					if(fh.hasFile(p.getFilename())){
 						sb.append("store failed : file with same name exists in archive");
 					}else{
-						if(fh.storeFile(p)){
+						if(fh.addFile(username, false, "", p)){
 							sb.append("stored file["+p.getFilename()+"] type["+p.getContentType()+"] size["+p.bytes.length+"]bytes\n");
 						}else{
 							sb.append("storing failed, file["+p.getFilename()+"] type["+p.getContentType()+"] size["+p.bytes.length+"]bytes\n");
@@ -109,10 +139,10 @@ public class ModUpload extends Module {
 
 		actions.add(new Action(null, "download"){public void execute(){
 			if(!ext.equals("")){
-				FileHive fh = FileHive.getFileHive(Cgicms.uploaded_dir);
+				FileHive fh = FileHive.getFileHive();
 				log.fail("ext["+ ext+"]");
 				if(fh.hasFile(ext)){
-					String data = fh.getFileData(ext);
+					String data = fh.getFileResponse(ext);
 					if(data != null){
 						pagebuilder.rawSend(data);
 					}
@@ -123,9 +153,9 @@ public class ModUpload extends Module {
 		}});
 		actions.add(new Action(null, "delete"){public void execute(){
 			if(!ext.equals("")){
-				FileHive fh = FileHive.getFileHive(Cgicms.uploaded_dir);
+				FileHive fh = FileHive.getFileHive();
 				if(fh.hasFile(ext)){
-					fh.removeFile(ext);
+					fh.deleteFile(ext);
 					pagebuilder.setRedirect(script+"/"+hook);
 				}
 			}else{
