@@ -204,8 +204,8 @@ public class HttpRequest {
 		}
 	}
 
-	//the infamous multipart/form-data !not testet throughoutly
-	//causes some systematic error, but haven't pinpointed it yet 
+	//(old)the infamous multipart/form-data !not testet throughoutly
+	//(old)causes some systematic error, but haven't pinpointed it yet 
 	//-new implementation, no errors sofar
 	private void processMulti(final BufferedReader bis) throws IOException {
 		String line = env.get("CONTENT_TYPE");//getContentType();

@@ -68,8 +68,6 @@ public class FileHive {
 			String access_groups, FormPart part) {
 		FileRecord record = new FileRecord();
 
-		//TODO: fill in the details
-
 		record.filename = part.getFilename();
 
 		if (filedb.pol(record.filename)) {
@@ -137,16 +135,23 @@ public class FileHive {
 		return true;
 	}
 
-	public String getFileResponse(String filename) {
+	public String getFileResponse(String filename, boolean attach) {
 		if (!filedb.pol(filename))
 			return null;
 
 		FileRecord record = new FileRecord(filedb.get(filename));
 
 		String data = getFileContents(record.stored_name);
+		if(data == null){
+			log.fail("source file["+record.stored_name+
+					"] for ["+filename+"] not found");
+			return null;
+		}
+		
 		StringBuilder sb = new StringBuilder("Content-Type: "
 				+ record.content_type);
-		sb.append("\nContent-Disposition: attachment; filename=\""
+		if(attach)
+			sb.append("\nContent-Disposition: attachment; filename=\""
 				+ record.filename + "\"");
 		sb.append('\n');
 		sb.append('\n');
@@ -225,7 +230,7 @@ public class FileHive {
 		}
 		String file = pathi;
 
-		String data = getFileResponse(file);
+		String data = getFileResponse(file, true);
 
 		try {
 			BufferedWriter bout = new BufferedWriter(new OutputStreamWriter(
@@ -238,6 +243,15 @@ public class FileHive {
 			return false;
 		}
 		return true;
+	}
+
+	public void up(String filename) {
+		if (!filedb.pol(filename)) {
+			return;
+		}
+		FileRecord record = new FileRecord(filedb.get(filename));
+		record.download_count++;
+		filedb.mod(record.filename, record.toArray());
 	}
 
 }

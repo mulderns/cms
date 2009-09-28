@@ -13,7 +13,6 @@ public class User implements Serializable{
 	private String password;
 	private String salt;
 	private ArrayList<String> groups;
-	//private HashMap<String,String> info;
 
 	private User(){
 	}
@@ -29,8 +28,9 @@ public class User implements Serializable{
 
 		if(values.length > 3){
 			user.groups = new ArrayList<String>(values.length-3);
-			for(int i = 3; i < values.length; i++)
+			for(int i = 3; i < values.length; i++){
 				user.groups.add(values[i]);
+			}
 		}		
 		
 		return user;
@@ -47,10 +47,6 @@ public class User implements Serializable{
 	public ArrayList<String> getGroups() {
 		return groups;
 	}
-
-	/*public void setName(String name) {
-		this.name = name;		
-	}*/
 
 	public String getSalt() {
 		return salt;

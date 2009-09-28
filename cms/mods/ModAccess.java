@@ -669,7 +669,7 @@ public class ModAccess extends Module {
 						UserDb udb = UserDb.getDb();
 						udb.changePass(ext, Hasher.hashWithSalt(Long.toOctalString(System.nanoTime()), Hasher.getSalt()));
 						UserInfoRecord userinfo = udb.getUserInfo(ext);
-						//TODO:
+						//TODO: make message better
 						String message = 
 							"T‰ll‰ avaimella p‰‰set sis‰‰n muokkaamaan salasanaa : \n" +
 							"https://www.students.tut.fi/cgi-bin/cgiwrap/tkrt/reset.cgi?";

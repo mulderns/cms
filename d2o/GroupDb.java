@@ -99,6 +99,7 @@ public class GroupDb {
 			long stop = System.nanoTime();
 			log.info("gdb load ["+(stop - start)+"]ns");
 			buildFast();
+			
 			log.info("gdb index build ["+(System.nanoTime() - stop)+"]ns");
 			//Collections.sort(groups);
 			return true;
@@ -278,18 +279,18 @@ public class GroupDb {
 			//System.err.println((System.nanoTime()-start));
 			return false;
 		}
-		//System.err.print("\n ##########  1");
+		//System.err.print("\n ##########  module found");
 		HashSet<String> dead;
 		if((dead = slow.get(action)) == null){
 			//System.err.println((System.nanoTime()-start));
 			return false;
 		}
-		//System.err.print("\n ##########   group");
+		//System.err.print("\n ##########   action found");
 		if(dead.contains(group)){
 			//System.err.println((System.nanoTime()-start));
 			return true;
 		}
-		//System.err.print("\n ##########    fail");
+		//System.err.print("\n ##########    g not allowed to access m/a");
 		//System.err.println((System.nanoTime()-start));
 		return false;
 	}
@@ -422,12 +423,11 @@ public class GroupDb {
 	}
 
 	public static boolean checkAccess(User user, String mod, String act) {
-		//log.info("access check.. ug["+user.getGroups().get(0)+"] m["+mod+"] a["+act+"]");
+		//System.err.println("access check.. ug["+user.getGroups().get(0)+"] m["+mod+"] a["+act+"]");
 		ArrayList<String> groups = user.getGroups();
-		//System.err.println(Arrays.toString(groups.toArray(new String[0])));
+		//System.err.println("user["+user.getName()+"] in "+Arrays.toString(groups.toArray(new String[0])));
 		Collections.sort(groups);
 		if(Collections.binarySearch(groups, "root") >= 0){
-			//log.info("root");
 			return true;
 		}
 		GroupDb gdb = GroupDb.getDb();
@@ -436,16 +436,18 @@ public class GroupDb {
 			gdb.loadDb();
 		}
 		if(gdb.fastCanAccess("everyone", mod, act)){
-			//log.info("everyone");
+			//System.err.println("everyone");
 			return true;
 		}
 		for(String s : groups){
+			//System.err.println(" ?"+s);
+			
 			if( gdb.fastCanAccess(s, mod, act)){
-				//log.info("group["+s+"]");
+				//System.err.println("group["+s+"]");
 				return true;
 			}
 		}
-		//log.info("denied");
+		//System.err.println("denied");
 		return false;
 
 	}

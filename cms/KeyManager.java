@@ -168,15 +168,9 @@ public class KeyManager {
 			return false;
 		}
 
-		//TODO:
-
-		//?af0a580ce0d908835e6ea026c78a5f3c9cd0df2b
-		// 1234567891123456789212345678931234567894
-
 		String key = datarelay.query.keySet().iterator().next();
 
 		if(key.length() !=  40 || !keydb.pol(key)){
-			//TODO: fail
 			log.info("key length["+key.length()+"]!=40 || keydb.pol()"+keydb.pol(key));
 			return false;
 		}

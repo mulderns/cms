@@ -79,7 +79,6 @@ public class FlushingDb {
 			return false;
 		}
 
-		//TODO:
 		FlushingRecord record = new FlushingRecord(key, data);
 		records.put(key, record);
 		
@@ -124,8 +123,6 @@ public class FlushingDb {
 			return false;
 		}
 
-		
-		//TODO:
 		if(records.remove(key)==null){
 			log.fail("record not found");
 			return false;

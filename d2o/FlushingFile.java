@@ -115,7 +115,7 @@ public class FlushingFile {
 	}
 
 	public final String append(final String line, long last_modified) {
-		//TODO:
+		//TODO: last_modified check
 		return append(line);
 	}
 	
@@ -158,7 +158,7 @@ public class FlushingFile {
 	}
 
 	public String overwrite(String[] lines, long lmod) {
-		//TODO:
+		//TODO: last_modified check
 		return overwrite(lines);
 		
 	}
