@@ -2,272 +2,178 @@ package d2o.pages;
 
 import java.io.File;
 import java.io.FilenameFilter;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
-import java.util.Iterator;
+import java.util.List;
 
-/*
-import cms.Cgicms;
-import cms.FileHive;
- */
-import d2o.FlushingFile;
-
-import util.Csv;
-import util.TriState;
+import d2o.FlushingDb;
 
 public class IndexFile {
-	private FlushingFile ff;
-	private File file;
-	File dir;
-	private ArrayList<IndexRecord> records;
-	boolean changed;
+	private FlushingDb indexdb;
+	public File dir;
+	public File file;
 
-	private TriState state;
-
-	public IndexFile(File dir){
+	public IndexFile(File dir) {
 		this.dir = dir;
 		file = new File(dir, "index");
-		ff = new FlushingFile(file);
-		changed = false;
-		state = new TriState();
+		indexdb = new FlushingDb(file);
 	}
 
-	public ArrayList<IndexRecord> getRecords() {
-		return records;
+	public List<String[]> getRecords() {
+		return indexdb.all();
 	}
-	
-	public String loadRecords(){
-		if(state.open)
-			return "will not load, state open ["+state+"]";
 
-		records = new ArrayList<IndexRecord>();
-		if(!file.exists()){
-			try{
-				file.createNewFile();
-			}catch(IOException ioe){
-				return "failed to create file["+file+"]";
-			}
+	public boolean addRecord(CmsFile file) {
+		if (indexdb.pol(file.name)) {
+			return false;
 		}
 
-		String[] data = ff.loadAll();
-		if(data == null)
-			return "could not load database";
-		for(String s: data){
-			IndexRecord r;
-			if((r = parseRecord(s)) != null){
-				records.add(r);
-			}
+		IndexRecord record = new IndexRecord(file.name, "");
+
+		if (!indexdb.add(record.filename, record.toArray())) {
+			return false;
 		}
 
-		changed = false;
-		state.reset();
-		state.touch();
+		return true;
+	}
 
-		Collections.sort(
-				records,
+	public String removeRecord(String filename) {
+		if (!indexdb.pol(filename)) {
+			return "file not found";
+		}
 
-				new Comparator<IndexRecord>(){
-					public int compare(IndexRecord arg0, IndexRecord arg1) {
-
-						if(arg0.filename.equals(arg1.filename))
-							return arg0.filename.compareTo(arg1.filename);
-						return 0;
-					}
-				}
-		);
+		if (!indexdb.del(filename)) {
+			return "could not delete record";
+		}
 		return null;
-	}
 
-	//new which creates the entry and stores index.
-	public String addRecord(CmsFile file){
-		for(IndexRecord ir : records){
-			if(ir.filename.equals(file.name)){
-				return "filename in use";
-			}
-		}
-		IndexRecord ir = new IndexRecord(file.name);
-		ir.modified = true;
-		records.add(ir);
-		changed = true;
-		return null;
-	}
-
-
-	public String removeRecord(String filename){
-		if(!state.open){
-			loadRecords();
-		}
-		if(!state.open){
-			return "state not open["+state+"]";
-		}
-		for(IndexRecord ir : records){
-			if(ir.filename.equals(filename)){
-				records.remove(ir);
-				changed = true;
-				return null;
-			}
-		}
-		return "not found["+filename+"] in ["+file+"] size["+records.size()+"]";
-	}
-
-	public String storeRecords(){
-		if(state.open){
-			if(changed){
-				String[] temp = new String[records.size()];
-				Iterator<IndexRecord> iter = records.iterator();
-				for(int i = 0; i < temp.length; i++) {
-					temp[i] = iter.next().toString();
-				}
-
-				String result = ff.overwrite(temp);
-				if(result == null){
-					state.touch();
-					return null;
-				}
-				return result;
-			}
-			return "will not store: nothing changed";
-		}
-		return "will not store: state not open";
-	}
-
-	private IndexRecord parseRecord(String line){
-		final String[] stuff = Csv.decode(line);
-		if(stuff.length == 2){
-			IndexRecord ir = new IndexRecord(stuff[0]);
-			ir.dir = dir;
-			if(stuff[1].equals("+")){
-				ir.modified = true;
-			}
-			return ir;
-		}else{
-			System.err.println("oddity["+stuff.length+"]");
-			return null;
-		}
 	}
 
 	public boolean fileExists(String filename) {
-		for(IndexRecord ir:records){
-			if(ir.filename.equals(filename))
-				return true;
-		}
-		return false;
+		return indexdb.pol(filename);
 	}
 
-	public IndexRecord getRecord(String string) {
-		for(IndexRecord ir:records){
-			if(ir.filename.equals(string))
-				return ir;
+	public IndexRecord getRecord(String filename) {
+		if (!indexdb.pol(filename)) {
+			return null;
 		}
-		return null;
+		return new IndexRecord(indexdb.get(filename));
 	}
 
+	public boolean renameRecord(String name, String uusinimi) {
+		if (!indexdb.pol(name)) {
+			return false;
+		}
 
-	public void renameRecord(String name, String uusinimi) {
-		IndexRecord record = getRecord(name);
+		if (indexdb.pol(uusinimi)) {
+			return false;
+		}
+
+		IndexRecord record = new IndexRecord(indexdb.get(name));
+		indexdb.del(name);
 		record.filename = uusinimi;
-		changed = true;
-	}
-
-	public String toString(){
-		StringBuilder sb = new StringBuilder();
-		sb.append(dir.getPath());
-		sb.append("-");
-		for(IndexRecord ir:records){
-			sb.append(ir.filename);
-			sb.append(",");
-		}
-		return sb.toString();
+		return indexdb.add(uusinimi, record.toArray());
 	}
 
 	public void clean() {
-		if(!state.open)
-			loadRecords();
-		
+
 		//remove duplicates from records
 		HashSet<String> found_pool = new HashSet<String>();
 		ArrayList<IndexRecord> delete_these = new ArrayList<IndexRecord>();
-		for(IndexRecord record : records){
-			System.err.println("#### record - ["+record.filename+"]");
-			if(found_pool.contains(record.filename)){
+		for (String[] raw : indexdb.all()) {
+			IndexRecord record = new IndexRecord(raw);
+			if(record.status == 'e')
+				continue;
+			System.err.println("#### record - [" + record.filename + "]");
+			if (found_pool.contains(record.filename)) {
 				System.err.println(" -> delete_this");
 				delete_these.add(record);
-			}else{
+			} else {
 				System.err.println(" -> unique");
 				found_pool.add(record.filename);
 			}
 		}
-		records.removeAll(delete_these);
+		for (IndexRecord target : delete_these) {
+			indexdb.del(target.filename);
+		}
+
+		indexdb.del("e");
 		
-		HashSet<String> file_list = new HashSet<String>(Arrays.asList(dir.list(new FilenameFilter(){
-			public boolean accept(File dir, String name) {return (name.startsWith("page.")?true:false);}
-		})));
-		
+		HashSet<String> file_list = new HashSet<String>(Arrays.asList(dir
+				.list(new FilenameFilter() {
+					public boolean accept(File dir, String name) {
+						return (name.startsWith("page.") ? true : false);
+					}
+				})));
+
 		HashSet<IndexRecord> false_in_index = new HashSet<IndexRecord>();
 		HashSet<String> missing_data = new HashSet<String>();
 		HashSet<String> missing_meta = new HashSet<String>();
 		HashSet<String> complete_records = new HashSet<String>();
 
 		//collect complete records separate partial records		
-		for(IndexRecord record : records){
-			System.err.println("#### - record ["+record.filename+"]");
-			if(!file_list.contains("page.data."+record.filename)){
-				System.err.println("      not found in file list [page.data."+record.filename+"]");
+		for (String[] raw : indexdb.all()) {
+			IndexRecord record = new IndexRecord(raw);
+			if(record.status == 'e')
+				continue;
+			System.err.println("#### - record [" + record.filename + "]");
+			if (!file_list.contains("page.data." + record.filename)) {
+				System.err.println("      not found in file list [page.data."
+						+ record.filename + "]");
 				false_in_index.add(record);
-				if(file_list.contains("page.meta."+record.filename)){
-					System.err.println("       removing meta [page.meta."+record.filename+"]");
-					missing_data.add("page.meta."+record.filename);
+				if (file_list.contains("page.meta." + record.filename)) {
+					System.err.println("       removing meta [page.meta."
+							+ record.filename + "]");
+					missing_data.add("page.meta." + record.filename);
 				}
-			}else{
-				if(file_list.contains("page.meta."+record.filename)){
-					complete_records.add("page.meta."+record.filename);
-					complete_records.add("page.data."+record.filename);
-				}else{
-					System.err.println("       orphaned data [page.data."+record.filename+"]");
-					missing_meta.add("page.data."+record.filename);
+			} else {
+				if (file_list.contains("page.meta." + record.filename)) {
+					complete_records.add("page.meta." + record.filename);
+					complete_records.add("page.data." + record.filename);
+				} else {
+					System.err.println("       orphaned data [page.data."
+							+ record.filename + "]");
+					missing_meta.add("page.data." + record.filename);
 				}
 			}
 		}
 
 		System.err.println("#### - get missing full files");
-		records.removeAll(false_in_index);
+
+		for (IndexRecord target : false_in_index) {
+			indexdb.del(target.filename);
+		}
+
 		file_list.removeAll(missing_data);
 		file_list.removeAll(complete_records);
 
 		//import missing full files to index
 		HashSet<String> complete_nonindexed = new HashSet<String>();
-		for(String s : file_list){
-			System.err.println("#### - ["+s+"]");
-			if(s.startsWith("page.data.")){
-				if(file_list.contains("page.meta"+s.substring(9))){
+		for (String s : file_list) {
+			System.err.println("#### - [" + s + "]");
+			if (s.startsWith("page.data.")) {
+				if (file_list.contains("page.meta" + s.substring(9))) {
 					System.err.println("#### - complete");
 					complete_nonindexed.add(s);
-					complete_nonindexed.add("page.meta"+s.substring(9));
+					complete_nonindexed.add("page.meta" + s.substring(9));
 					continue;
 				}
 				System.err.println("#### - incomplete");
 			}
 		}
-		
+
 		file_list.removeAll(complete_nonindexed);
 		//add full (and partial) files to index
 		System.err.println("#### - add full files to index");
-		for(String s : complete_nonindexed){
-			if(s.startsWith("page.data.")){
-				System.err.println("#### - "+s);
-				try{
+		for (String s : complete_nonindexed) {
+			if (s.startsWith("page.data.")) {
+				System.err.println("#### - " + s);
+				try {
 					IndexRecord ir = new IndexRecord(s.substring(10));
-					//FlushingFile flush = new FlushingFile(new File(dir,"page.meta."+ir.filename));
-					//String[] meta = Csv.decode(flush.loadAll()[0]);
-					//ir.parent = meta[2];
-					ir.modified = true;
-					records.add(ir);
-					changed = true;
-				}catch(Exception e){
+					indexdb.add(ir.filename, ir.toArray());
+
+				} catch (Exception e) {
 					System.err.println(e);
 				}
 			}
@@ -275,27 +181,20 @@ public class IndexFile {
 
 		System.err.println("#### - removing rest");
 		//remove actual file that are in incomplete and in file_list(residue)
-		for(String s:missing_data){
-			System.err.println("#### - "+s);
-			File f = new File(dir,s);
-			if(!f.delete()){
-				System.err.println("    error could not delete "+s);
+		for (String s : missing_data) {
+			System.err.println("#### - " + s);
+			File f = new File(dir, s);
+			if (!f.delete()) {
+				System.err.println("    error could not delete " + s);
 			}
 		}
 
-		for(String s:file_list){
-			System.err.println("#### - "+s);
-			File f = new File(dir,s);
-			if(!f.delete()){
-				System.err.println("    error could not delete "+s);
+		for (String s : file_list) {
+			System.err.println("#### - " + s);
+			File f = new File(dir, s);
+			if (!f.delete()) {
+				System.err.println("    error could not delete " + s);
 			}
 		}
-		changed = true;
-		System.err.println("soring : "+storeRecords());
 	}
-
-
-
 }
-
-

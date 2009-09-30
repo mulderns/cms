@@ -114,7 +114,7 @@ public class Treedex {
 			}
 		}
 		
-		return null;
+		return new IndexFile(temp);
 	}
 	
 	

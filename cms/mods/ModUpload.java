@@ -16,7 +16,7 @@ import util.ActionLog;
 import util.Logger;
 import cms.DataRelay;
 import cms.FileHive;
-import d2o.FileRecord;
+import d2o.UploadFileRecord;
 
 public class ModUpload extends Module {
 
@@ -39,16 +39,16 @@ public class ModUpload extends Module {
 			FileHive fh = FileHive.getFileHive();
 
 			DateFormat format = DateFormat.getDateInstance();
-			Comparator<FileRecord> by_name = new Comparator<FileRecord>(){public int compare(FileRecord o1, FileRecord o2) {
+			Comparator<UploadFileRecord> by_name = new Comparator<UploadFileRecord>(){public int compare(UploadFileRecord o1, UploadFileRecord o2) {
 				return o1.filename.compareTo(o2.filename);
 			}};
-			Comparator<FileRecord> by_user = new Comparator<FileRecord>(){public int compare(FileRecord o1, FileRecord o2) {
+			Comparator<UploadFileRecord> by_user = new Comparator<UploadFileRecord>(){public int compare(UploadFileRecord o1, UploadFileRecord o2) {
 				return o1.upload_user.compareTo(o2.upload_user);
 			}};
-			Comparator<FileRecord> by_date = new Comparator<FileRecord>(){public int compare(FileRecord o1, FileRecord o2) {
+			Comparator<UploadFileRecord> by_date = new Comparator<UploadFileRecord>(){public int compare(UploadFileRecord o1, UploadFileRecord o2) {
 				return Long.valueOf(o1.upload_date).compareTo(Long.valueOf(o2.upload_date));
 			}};
-			Comparator<FileRecord> by_size = new Comparator<FileRecord>(){public int compare(FileRecord o1, FileRecord o2) {
+			Comparator<UploadFileRecord> by_size = new Comparator<UploadFileRecord>(){public int compare(UploadFileRecord o1, UploadFileRecord o2) {
 				return Long.valueOf(o1.size).compareTo(Long.valueOf(o2.size));
 			}};
 
@@ -73,7 +73,7 @@ public class ModUpload extends Module {
 			box.addTag("th", "Poista");
 			box.up();
 
-			List<FileRecord> records = fh.getFileRecords();
+			List<UploadFileRecord> records = fh.getFileRecords();
 
 			Collections.sort(records, by_name);
 
@@ -102,7 +102,7 @@ public class ModUpload extends Module {
 			};
 			boolean parillinen = true;
 			
-			for(FileRecord record : records){
+			for(UploadFileRecord record : records){
 				parillinen = !parillinen;
 				box.addLayer("tr"+(parillinen?" style=\"background-color:#f5f5f5\"":""));
 				box.addTag("td style=\"\"", "<a style=\"text-decoration:none;color:#125698\" title=\"avaa\" class=\"\" href=\""+script+"/"+hook+"/download/"+record.filename+"?direct\">"+record.filename+"</a>");
@@ -251,7 +251,7 @@ public class ModUpload extends Module {
 			if(!ext.equals("")){
 				FileHive fh = FileHive.getFileHive();
 				if(fh.hasFile(ext)){
-					FileRecord record = fh.getFileRecord(ext);
+					UploadFileRecord record = fh.getFileRecord(ext);
 					page.setTitle("Ominaisuudet - "+record.filename);
 					
 					CmsElement box = new CmsElement();

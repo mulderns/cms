@@ -1,7 +1,7 @@
 package d2o;
 
 
-public class FileRecord {
+public class UploadFileRecord {
 	public String filename;
 	public String stored_name;
 	public long size;
@@ -18,7 +18,7 @@ public class FileRecord {
 	public boolean public_access;
 	public String access_groups;
 
-	public FileRecord(){
+	public UploadFileRecord(){
 		filename = "untitled";
 		stored_name = "none";
 		size = 0;
@@ -36,7 +36,7 @@ public class FileRecord {
 		access_groups = null;
 	}
 	
-	public FileRecord(String[] parts) {
+	public UploadFileRecord(String[] parts) {
 		if(parts.length == 11){
 			filename = parts[0];
 			stored_name= parts[1];

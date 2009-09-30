@@ -16,7 +16,7 @@ import java.util.List;
 
 import util.Logger;
 import util.Utils;
-import d2o.FileRecord;
+import d2o.UploadFileRecord;
 import d2o.FlushingDb;
 
 public class FileHive {
@@ -52,7 +52,7 @@ public class FileHive {
 
 	public boolean addFile(String user, boolean public_access,
 			String access_groups, FormPart part) {
-		FileRecord record = new FileRecord();
+		UploadFileRecord record = new UploadFileRecord();
 
 		record.filename = part.getFilename();
 
@@ -132,7 +132,7 @@ public class FileHive {
 			return false;
 		}
 
-		FileRecord record = new FileRecord(filedb.get(filename));
+		UploadFileRecord record = new UploadFileRecord(filedb.get(filename));
 
 		File target = new File(hive_dir, record.stored_name);
 
@@ -176,7 +176,7 @@ public class FileHive {
 		if (!filedb.pol(filename))
 			return null;
 
-		FileRecord record = new FileRecord(filedb.get(filename));
+		UploadFileRecord record = new UploadFileRecord(filedb.get(filename));
 
 		String data = getFileContents(record.stored_name);
 		if(data == null){
@@ -196,17 +196,17 @@ public class FileHive {
 		return sb.toString();
 	}
 
-	public List<FileRecord> getFileRecords() {
-		ArrayList<FileRecord> records = new ArrayList<FileRecord>();
+	public List<UploadFileRecord> getFileRecords() {
+		ArrayList<UploadFileRecord> records = new ArrayList<UploadFileRecord>();
 		for(String[] raw : filedb.all()){
-			records.add(new FileRecord(raw));
+			records.add(new UploadFileRecord(raw));
 		}
 		return records;
 	}
 
-	public FileRecord getFileRecord(String filename) {
+	public UploadFileRecord getFileRecord(String filename) {
 		if(filedb.pol(filename))
-			return new FileRecord(filedb.get(filename));
+			return new UploadFileRecord(filedb.get(filename));
 		return null;
 	}
 	
@@ -217,7 +217,7 @@ public class FileHive {
 	private String genNewStoredName() {
 		HashSet<String> names = new HashSet<String>();
 		for (String[] raw : filedb.all()) {
-			FileRecord record = new FileRecord(raw);
+			UploadFileRecord record = new UploadFileRecord(raw);
 			names.add(record.stored_name);
 		}
 
@@ -292,7 +292,7 @@ public class FileHive {
 		if (!filedb.pol(filename)) {
 			return;
 		}
-		FileRecord record = new FileRecord(filedb.get(filename));
+		UploadFileRecord record = new UploadFileRecord(filedb.get(filename));
 		record.download_count++;
 		filedb.mod(record.filename, record.toArray());
 	}

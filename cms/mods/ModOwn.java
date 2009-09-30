@@ -15,6 +15,7 @@ import util.ActionLog;
 import util.Hasher;
 import cms.Cgicms;
 import cms.DataRelay;
+import cms.FileOps;
 import d2o.FlushingFile;
 import d2o.UserDb;
 import d2o.UserInfoRecord;
@@ -123,74 +124,30 @@ public class ModOwn extends Module{
 		}});
 
 		actions.add(new Action("Oman naamasivun muokkaus", "naama"){public void execute(){
-			//			FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));
-			//			String[] data = naamaprofiilit.loadAll();
-			//
-			//			if(ext == ""){
-			//				page.setTitle("Valitse naama");
-			//
-			//				CmsElement box = new CmsElement();
-			//				box.addLayer("div","boxi medium4");
-			//				box.addTag("h4", "Valitse naama");
-			//				box.addLayer("div","side5");
-			//
-			//				for(String s : data){
-			//					if(s.length()<2)
-			//						continue;
-			//					String[] palat = util.Csv.decode(s);
-			//					if(palat.length < 2){
-			//						box.addTag("pre", "error");
-			//						continue;
-			//					}
-			//					box.addTag("a href=\""+script+"/"+hook+"/"+action_hook+"/"+palat[1]+"\"", "menu", palat[0]);
-			//				}
-			//				page.addCenter(box);
-			//				page.addLeft(getActionLinks());
-			//
-			//			}else{
-
 			page.setTitle("Oma naama-sivun muokkaus");
 
 			UserDb udb = UserDb.getDb();
-
 			UserInfoRecord userinfo = udb.getUserInfo(username);
 
 			if(userinfo == null){
-
 				CmsElement box = new CmsElement();
 				box.createBox("virhe");
 				box.addTag("p","käyttäjätietoja ei saatu ladattua");
 				page.addCenter(box);
 				return;
 			}
+			
 			if(userinfo.file.length()==0 || userinfo.tittle.length()==0){
 				CmsElement box = new CmsElement();
 				box.createBox("virhe");
 				box.addTag("p","käyttäjätietoja ei ole määritetty");
 				page.addCenter(box);
 				return;
-
 			}
 
 			String titteli = userinfo.tittle;//"Puheenjohtaja";//datarelay.session.getUser().getInfo("titteli");
 			String clean = userinfo.file;//"naamat_"+titteli.toLowerCase()+".shtml";
 			String filename = "naamat_"+clean+".shtml";
-
-//			for(String s : data){
-//				if(s.length()<2)
-//					continue;
-//				String[] palat = util.Csv.decode(s);
-//				if(palat.length < 2){
-//					pagebuilder.addHidden("error["+s+"]");
-//					continue;
-//				}
-//				if(palat[1].equals(ext)){
-//					titteli = palat[0];
-//					filename = "naamat_"+palat[1]+".shtml";
-//					clean = palat[1];
-//					break;
-//				}
-//			}
 
 			if(titteli == null){
 				page.addCenter("<pre>error: no profile["+ext+"] found</pre>");
@@ -257,6 +214,13 @@ public class ModOwn extends Module{
 					if(checkField("_preview")){
 						pagebuilder.setRedirect(script+"/"+hook+"/esikatsele/"+ext);
 					}else{
+						Renderer renderer = Renderer.getRenderer();
+
+						String data = renderer.generateHtml((TextFile)file);
+						String[] ds = new String[1];
+						ds[0] = data;
+						File target_path = new File(datarelay.target);
+						FileOps.write(new File(target_path,file.name), ds , false);
 						pagebuilder.setRedirect(script+"/"+hook+"/"+action_hook);
 					}
 

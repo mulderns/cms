@@ -16,9 +16,6 @@ public class FlushingDb {
 	private FlushingFile dbfile;
 	private long lmod;
 
-	//private ArrayList<FlushingRecord> records;
-	//private HashSet<String> quick_list;
-
 	private HashMap<String, FlushingRecord> records;
 
 	private boolean loaded;
@@ -186,11 +183,7 @@ public class FlushingDb {
 
 		lmod = dbfile.getLastModified();
 		loaded = true;
-		
-		//log.info("loaded userinfo:");
-		//for(FlushingRecord r : records.values()){
-		//	log.info(Arrays.toString(r.data));
-		//}
+
 		return true;
 	}
 

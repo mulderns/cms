@@ -12,6 +12,7 @@ import http.FormPart;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map.Entry;
 
@@ -21,6 +22,7 @@ import cms.DataRelay;
 import cms.FileOps;
 import d2o.pages.BinaryFile;
 import d2o.pages.CmsFile;
+import d2o.pages.IndexRecord;
 import d2o.pages.PageDb;
 import d2o.pages.TemplateFile;
 import d2o.pages.TextFile;
@@ -89,12 +91,12 @@ public class ModPages extends Module {
 				folderview.addTag("th","Status");
 				folderview.up();
 
-				for(String name: pdb.getFileNameList(path.getPath())){
+				for(IndexRecord record: pdb.getFileRecords(path.getPath())){
 					folderview.addLayer("tr");
-					folderview.addTag("td","<a href=\""+link+"/file"+url_path+name+"\">"+
-							name+
+					folderview.addTag("td","<a href=\""+link+"/file"+url_path+record.filename+"\">"+
+							record.filename+
 					"</a>");
-					folderview.addTag("td","");
+					folderview.addTag("td",Character.toString(record.status));
 					folderview.up();
 				}
 
@@ -1023,23 +1025,17 @@ public class ModPages extends Module {
 
 			// according to type,
 			if(file.type.equals(CmsFile.Type.BINARY)){
-				//TODO:render non page file
-
 				//copy file content to target
-
 				try{
 					File target_path = new File(datarelay.target,path.getPath());
 
-					if(!target_path.exists()){
+					if(!target_path.exists())
 						target_path.mkdirs();
-					}
 
 					File target = new File(target_path,file.name);
-					//					FileHive fh = FileHive.getFileHive(target_path);
-
 					BinaryFile rfile = (BinaryFile)file;
+
 					if(!FileOps.write(target, rfile.getData(),false)){
-						//if(!fh.storeFile(target, rfile.getData())){
 						page.addCenter("could not write the file");
 					}else{
 						page.addCenter("ok");
@@ -1057,10 +1053,7 @@ public class ModPages extends Module {
 				String[] ds = new String[1];
 				ds[0] = data;
 				File target_path = new File(datarelay.target);
-				//				FileHive fh = FileHive.getFileHive(target_path);
-
 				FileOps.write(new File(target_path,file.name), ds , false);
-				//				fh.writeFileIso(new File(target_path,file.name), ds , true);
 				page.addCenter("ok");
 			}
 		}});
@@ -1073,6 +1066,47 @@ public class ModPages extends Module {
 			pdb.store();
 			pagebuilder.setRedirect(script+"/"+hook);
 		}});
+		
+		actions.add(new Action("Rebuild", "rebuild"){public void execute(){
+			PageDb pdb = PageDb.getDb();
+			pdb.deleteIndexes();
+			pagebuilder.setRedirect(script+"/"+hook+"/cleandirs/");
+		}});
+		
+		actions.add(new Action("Scan target", "scan"){public void execute(){
+			
+			CmsElement box = new CmsElement();
+			box.createBox("target looks like this");
+			
+			File target_dir = new File(datarelay.target);
+			
+			ArrayList<File> root_list = new ArrayList<File>(Arrays.asList(target_dir.listFiles()));
+			Collections.sort(root_list);
+			
+			
+			PageDb pdb = PageDb.getDb();
+			
+			box.addLayer("pre style=\"font-size:12.5px\"");
+			
+			for(File f : root_list){
+				if(f.isFile()){
+					box.addContent(
+							(pdb.fileExists(
+									VirtualPath.create("/"+f.getName())
+									)?"+ ":"- ")+f.getName()+"\n");
+				}else {
+					
+					box.addContent("d"+
+							(pdb.dirExists(
+									"/"+f.getName()
+									)?"+ ":"- ")+f.getName()+"\n");
+		
+				}
+			}
+			page.addCenter(box);
+			page.addLeft(getActionLinks());
+		}});
+		
 
 		actions.add(new Action(null, "upload"){public void execute(){
 			VirtualPath path = VirtualPath.create(ext);

@@ -4,6 +4,7 @@ package d2o.pages;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 
 import util.ActionLog;
 import util.Logger;
@@ -174,15 +175,12 @@ public class PageDb {
 		}
 
 		IndexFile index = getIndex(path);
-		String result;
-		if( (result = index.addRecord(file)) != null)
+		if( !index.addRecord(file))
 			return false;
 
 		if(!CmsFile.storeMeta(file, index.dir))
 			return false;
 		if(!CmsFile.storeData(file, index.dir))
-			return false;
-		if((result = index.storeRecords())!=null)
 			return false;
 
 		actions.append("+f,"+path+"/"+file.name+","+Cgicms.datarelay.username);
@@ -202,11 +200,6 @@ public class PageDb {
 
 	private IndexFile getIndex(String path) {
 		IndexFile index = new IndexFile(new File(sdir, path));
-		String result;
-		if((result = index.loadRecords())!= null){
-			log.fail("could not load index file: "+ result);
-			return null;
-		}
 		return index;
 	}
 
@@ -219,20 +212,42 @@ public class PageDb {
 
 		File dir = new File(sdir,path);
 		IndexFile index = new IndexFile(dir);
-		if(index.loadRecords()!=null)
-			log.fail("index not loaded because idont know");
-		log.info("loaded records");
 
 		ArrayList<String> temp = new ArrayList<String>();
 
-		for(IndexRecord ir: index.getRecords()){
-			temp.add(ir.filename);
-			log.info("record >> "+ir);
+		for(String[] raw : index.getRecords()){
+			IndexRecord record = new IndexRecord(raw);
+			temp.add(record.filename);
+			log.info("record >> "+record);
 		}
 		Collections.sort(temp);
 		return temp.toArray(new String[0]);
 	}
 
+	public IndexRecord[] getFileRecords(String path) {
+		log.info("getting filename list for ["+path+"]");
+		if(!checkDirSyntax(path, "")){
+			log.info("invalid dir syntax");
+			return null;
+		}
+
+		File dir = new File(sdir,path);
+		IndexFile index = new IndexFile(dir);
+
+		ArrayList<IndexRecord> temp = new ArrayList<IndexRecord>();
+
+		for(String[] raw : index.getRecords()){
+			IndexRecord record = new IndexRecord(raw);
+			temp.add(record);
+		}
+		Collections.sort(temp,new Comparator<IndexRecord>(){
+			public int compare(IndexRecord o1, IndexRecord o2) {
+				return o1.filename.compareTo(o2.filename);
+			}
+		});
+		return temp.toArray(new IndexRecord[0]);
+	}
+	
 	public String rename(VirtualPath path, String uusinimi) {
 		IndexFile index = getIndex(path.getPath());
 		if(index == null){
@@ -246,7 +261,6 @@ public class PageDb {
 		index.renameRecord(path.getFilename(),uusinimi);
 
 		if(CmsFile.loadFile(path, sdir).rename(uusinimi,sdir)){
-			index.storeRecords();
 			return null;
 		}
 		return "error while renaming the file";
@@ -432,7 +446,7 @@ public class PageDb {
 			if(index.exists()){
 				log.info(" 3");
 				IndexFile dex = new IndexFile(dir);
-				if(dex.loadRecords()==null){
+
 					log.info(" 4");
 					if(dex.fileExists(parts[parts.length-1])){
 						log.info(" 5");
@@ -445,7 +459,7 @@ public class PageDb {
 							return true;
 						}						
 					}
-				}
+				
 			}
 			//			}
 		}
@@ -474,8 +488,6 @@ public class PageDb {
 		IndexFile index = new IndexFile(new File(sdir,path));
 		String result;
 
-		if( (result = index.loadRecords()) != null)
-			return result;
 		if( (result = index.removeRecord(name)) != null)
 			return result;
 
@@ -488,9 +500,7 @@ public class PageDb {
 		if(!FileOps.archive(data)){
 			errors.append("could not remove data["+data.getAbsolutePath()+"]\n");
 		}
-		if( (result = index.storeRecords()) != null){
-			errors.append(result+"\n");
-		}
+
 		if(!FileOps.archive(meta)){
 			errors.append("could not remove meta["+meta.getAbsolutePath()+"]");
 		}
@@ -626,6 +636,14 @@ public class PageDb {
 
 	public File getDir(VirtualPath path) {
 		return new File(sdir,path.getPath());
+	}
+
+	public void deleteIndexes() {
+		getIndex("/").file.delete();
+		for(String dir : getDirList("/")){
+			getIndex(dir).file.delete();
+		}
+		
 	}
 
 }

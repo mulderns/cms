@@ -1,27 +1,40 @@
 package d2o.pages;
 
-import java.io.File;
-
-public class IndexRecord{
+public class IndexRecord {
 	public String filename;
-	//public String parent;
-	//public CmsFile.Type type;
-	public boolean modified;
-	public File dir;
+	public char	status;
+	public String path;
 
-	public IndexRecord(String filename) {
+	public IndexRecord(String filename, String path){
 		this.filename = filename;
-		modified = false;
-		//type = CmsFile.Type.TEXT;
+		this.path = path;
+		status = 'n';
 	}
 
-	public String toString(){
+	public IndexRecord(String filename){
+		this.filename = filename;
+		path = "";
+		status = 'n';
+	}
+
+	public IndexRecord(String[] parts){
+		if(parts.length != 3){
+			filename = "error";
+			status = 'e';
+			path = "";
+		}else{
+			filename = parts[0];
+			status = parts[1].charAt(0);
+			path = parts[2];
+		}
+	}
+
+	public String[] toArray(){
 		String[] fields = {
 				filename,
-				//type.toString(),
-				//(parent==null?"none":parent),
-				(modified?"+":"-")
+				Character.toString(status),
+				path
 		};
-		return util.Csv.encode(fields);		
+		return fields;
 	}
 }
