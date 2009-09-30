@@ -46,28 +46,30 @@ public class ModUpload extends Module {
 				return o1.upload_user.compareTo(o2.upload_user);
 			}};
 			Comparator<FileRecord> by_date = new Comparator<FileRecord>(){public int compare(FileRecord o1, FileRecord o2) {
-				return new Long(o1.upload_date).compareTo(new Long(o2.upload_date));
+				return Long.valueOf(o1.upload_date).compareTo(Long.valueOf(o2.upload_date));
 			}};
 			Comparator<FileRecord> by_size = new Comparator<FileRecord>(){public int compare(FileRecord o1, FileRecord o2) {
-				return new Long(o1.size).compareTo(new Long(o2.size));
+				return Long.valueOf(o1.size).compareTo(Long.valueOf(o2.size));
 			}};
 
 
 			//box.addLayer("tr");
 			box.addSingle("colgroup ");
+			box.addSingle("colgroup width=\"55\"");
+			box.addSingle("colgroup width=\"55\"");
 			box.addSingle("colgroup width=\"65\"");
-			box.addSingle("colgroup width=\"65\"");
-			box.addSingle("colgroup width=\"75\"");
+			box.addSingle("colgroup ");
 			box.addSingle("colgroup width=\"85\"");
 			box.addSingle("colgroup width=\"65\"");
 			//box.up();
 			
 			box.addLayer("tr");
-			box.addTag("th", "<a href=\""+script+"/"+hook+"/"+action_hook+"?sort=name\">Tiedosto</a>");
+			box.addTag("th", "<a class=\"but\" href=\""+script+"/"+hook+"/"+action_hook+"?sort=name\">Nimi</a>");
 			box.addTag("th", "Lataa");
-			box.addTag("th", "<a href=\""+script+"/"+hook+"/"+action_hook+"?sort=size\">Koko</a>");
-			box.addTag("th", "<a href=\""+script+"/"+hook+"/"+action_hook+"?sort=date\">Lis‰tty</a>");
-			box.addTag("th", "<a href=\""+script+"/"+hook+"/"+action_hook+"?sort=user\">Lis‰‰j‰</a>");
+			box.addTag("th", "Tiedot");
+			box.addTag("th", "<a class=\"but\" href=\""+script+"/"+hook+"/"+action_hook+"?sort=size\">Koko</a>");
+			box.addTag("th", "<a class=\"but\" href=\""+script+"/"+hook+"/"+action_hook+"?sort=date\">Lis‰tty</a>");
+			box.addTag("th", "<a class=\"but\" href=\""+script+"/"+hook+"/"+action_hook+"?sort=user\">Lis‰‰j‰</a>");
 			box.addTag("th", "Poista");
 			box.up();
 
@@ -98,11 +100,14 @@ public class ModUpload extends Module {
 					"Gb",
 					"Tb"
 			};
+			boolean parillinen = true;
 			
 			for(FileRecord record : records){
-				box.addLayer("tr");
-				box.addTag("td", "<a title=\"lataa\" class=\"\" href=\""+script+"/"+hook+"/download/"+record.filename+"?direct\">"+record.filename+"</a>");
-				box.addTag("td", "<a title=\"lataa\" class=\"but\" href=\""+script+"/"+hook+"/download/"+record.filename+"\">lataa</a>");
+				parillinen = !parillinen;
+				box.addLayer("tr"+(parillinen?" style=\"background-color:#f5f5f5\"":""));
+				box.addTag("td style=\"\"", "<a style=\"text-decoration:none;color:#125698\" title=\"avaa\" class=\"\" href=\""+script+"/"+hook+"/download/"+record.filename+"?direct\">"+record.filename+"</a>");
+				box.addTag("td", "<a title=\"lataa\" style=\"text-decoration:none;color:#125698\" href=\""+script+"/"+hook+"/download/"+record.filename+"\">&#187;lataa</a>");
+				box.addTag("td", "<a title=\"tiedot\" style=\"text-decoration:none;color:#125698\" href=\""+script+"/"+hook+"/prefs/"+record.filename+"\">&#187;tiedot</a>");
 				
 				int order = 0;
 				double size = record.size;
@@ -116,7 +121,7 @@ public class ModUpload extends Module {
 				box.addTag("td style=\"text-align:right\"", processed_size);
 				box.addTag("td style=\"padding-left:6px\"", format.format(new Date(record.upload_date)));
 				box.addTag("td", record.upload_user);
-				box.addTag("td", "<a title=\"poista\" class=\"but\" href=\""+script+"/"+hook+"/delete/"+record.filename+"\">X</a>");
+				box.addTag("td", "<a title=\"poista\" class=\"but\" style=\"margin:0px;padding:0px;\" href=\""+script+"/"+hook+"/delete/"+record.filename+"\">X</a>");
 				box.up();
 			}
 			box.up();
@@ -144,15 +149,15 @@ public class ModUpload extends Module {
 				}
 
 				for(FormPart p: datarelay.files){
-					if(fh.hasFile(p.getFilename())){
-						sb.append("store failed : file with same name exists in archive");
-					}else{
+//					if(fh.hasFile(p.getFilename())){
+//						sb.append("store failed : file with same name exists in archive");
+//					}else{
 						if(fh.addFile(username, false, "", p)){
 							sb.append("stored file["+p.getFilename()+"] type["+p.getContentType()+"] size["+p.bytes.length+"]bytes\n");
 						}else{
 							sb.append("storing failed, file["+p.getFilename()+"] type["+p.getContentType()+"] size["+p.bytes.length+"]bytes\n");
 						}
-					}
+					//}
 				}
 
 				box.addTag("p", sb.toString());
@@ -166,6 +171,10 @@ public class ModUpload extends Module {
 				box.addLayer("form method=\"post\" action=\"" +
 						script + "/" + hook +"/"+action_hook+
 				"\" enctype=\"multipart/form-data\"");
+				box.createBox(null,"medium3");
+				box.addTag("p", "tiedosto(je)n (yhteis)koko ei saa ylitt‰‰ 10mb");
+				box.up(2);
+				
 				box.addLayer("div", "boxi2 medium3");
 				box.addTag("h4", "Tiedoston l‰hetys");
 				box.addLayer("div", "ingroup filled");
@@ -231,6 +240,35 @@ public class ModUpload extends Module {
 				if(fh.hasFile(ext)){
 					fh.deleteFile(ext);
 					pagebuilder.setRedirect(script+"/"+hook);
+				}
+			}else{
+				pagebuilder.setRedirect(script+"/"+hook);
+			}
+		}});
+		
+		actions.add(new Action(null, "prefs"){public void execute(){
+			
+			if(!ext.equals("")){
+				FileHive fh = FileHive.getFileHive();
+				if(fh.hasFile(ext)){
+					FileRecord record = fh.getFileRecord(ext);
+					page.setTitle("Ominaisuudet - "+record.filename);
+					
+					CmsElement box = new CmsElement();
+					box.createBox("Ominaisuudet");
+					
+					CmsElement prebox = new CmsElement();
+										
+					prebox.createBox(record.filename);
+					prebox.addLayer("pre style=\"font-size:12.5px\"");
+					prebox.addContent("filename : " + record.filename + "\n");
+					prebox.addContent("size : " + record.size + "\n");
+					prebox.addContent("content_type : " + record.content_type + "\n");
+					prebox.addContent("download count : " + record.download_count + "\n");
+					prebox.addContent("public access : " + record.public_access + "\n");
+					prebox.addContent("access groups : " + record.access_groups + "\n");
+					
+					page.addCenter(prebox);
 				}
 			}else{
 				pagebuilder.setRedirect(script+"/"+hook);

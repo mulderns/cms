@@ -55,7 +55,8 @@ public class Deploy {
 					new InputStreamReader(System.in));
 			System.out.println("\ngenerate lauchscripts? [yes/no]");
 			apu = in.readLine();
-
+			if(apu == null)
+				return;
 			if(apu.equalsIgnoreCase("yes") || apu.equalsIgnoreCase("y")) {
 				System.out.println("\nrunning on linux? [yes/no/maybe]");
 				apu = in.readLine();
@@ -100,6 +101,8 @@ public class Deploy {
 
 			System.out.println("would you like to bootstap an user account? [yes/no]");
 			apu = in.readLine();
+			if(apu == null)
+				return;
 			if(apu.equalsIgnoreCase("yes") || apu.equalsIgnoreCase("y")) {
 				System.out.print("Username:");
 				String name = in.readLine();
@@ -222,6 +225,8 @@ public class Deploy {
 				System.out.println("DEFAULT: "+Cgicms.property_keys[i].default_value+linesep);
 				System.out.print(">");
 				apu = in.readLine();
+				if(apu == null)
+					return;
 				if(apu.length() < 1){
 					System.out.println(linesep+"no input -> using default");
 					host.main_props.put(Cgicms.property_keys[i].identifier, Cgicms.property_keys[i].default_value);

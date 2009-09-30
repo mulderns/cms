@@ -107,7 +107,6 @@ public class ModViikko extends Module {
 
 		forma.addLayer("div","boxi2 medium3");
 		forma.addTag("h4","nohi","Lisäasetukset");
-		//forma.addLayer("div", "ingroup filled");
 		forma.addLayer("table", "table5");
 		forma.addSingle("colgroup width=\"33\"");
 		forma.addSingle("colgroup width=\"49\"");
@@ -358,134 +357,6 @@ public class ModViikko extends Module {
 
 		actions.add(null);
 
-		/*
-		actions.add(
-				new Action(null, "poistapohja"){
-					public void execute(){
-						if(ext != ""){
-							ViikkoDb db = new ViikkoDb();
-
-							CmsBoxi box = new CmsBoxi("Pohjan poisto");
-							String res;
-							if((res = db.removeTemlate(ext)) == null){
-								box.addParagraph("pohja tuhottu");
-								ActionLog.action(username+" - deleted template ["+ext+"]");
-							}else{
-								box.addParagraph("poisto epäonnistui id["+ext+"]:"+res);
-								ActionLog.action(username+" - user deletion failed ["+ext+"]");
-							}				
-
-							box.addLink("Ohjelma", script +"/"+ hook );
-
-							CmsPage results_page = new CmsPage("Viikkoohjelma");
-							results_page.addTop(getMenu());
-							results_page.addCenter(box.toString());
-							//results_page.addCenter(getActionLinks().toString());
-							pagebuilder.buildPage(results_page);
-						}else{
-							CmsBoxi box = new CmsBoxi("Muokkaus sivu");
-							//box.addParagraph("lista kaikista muokattavista tai ei");
-							CmsPage results_page = new CmsPage("Viikkoohjelma");
-							results_page.addTop(getMenu());
-							results_page.addCenter(box.toString());
-							//results_page.addCenter(getActionLinks().toString());
-							results_page.addCenter(genBugreport().toString());
-							pagebuilder.buildPage(results_page);
-
-						}
-					}
-				}
-		);*/
-
-		/*
-		actions.add(new Action(null, "pohjat"){public void execute(){
-			if(!ext.trim().equals("")){
-
-				pagebuilder.addHidden("ext["+ext+"]");
-				ViikkoDb db = new ViikkoDb();
-				ViikkoEntry ve = db.loadEntry(ext);	
-
-				CmsBoxi box = new CmsBoxi("Lisää tapahtuma");
-				if(ve != null){
-					{
-						HashMap<String, String> temp = new HashMap<String, String>(11);
-						temp.put("otsikko", ve.otsikko);
-						//temp.put("paiva", ve.day+"."+ve.month);
-						temp.put("vuosi", Integer.toString(Calendar.getInstance().get(Calendar.YEAR)));
-						temp.put("aika", ve.hour+":"+Utils.addLeading(ve.minute,2));
-						temp.put("paikka", ve.paikka);
-
-						{
-							StringBuilder sb = new StringBuilder();
-							for(String s:ve.yhteenveto){
-								sb.append(s+"\n");
-							}
-							sb.append("\n");
-							for(String s:ve.teksti){
-								sb.append(s+"\n");
-							}
-							temp.put("teksti", sb.toString());
-						}
-
-
-						temp.put("mailiin", (ve.mailiin? "on":"off"));
-						temp.put("etukateen", (ve.etukateen? "on":"off"));
-
-
-						forma.setFields(temp);
-						forma.addFormTop(script + "/" + hook + "/lisaa");
-
-					}
-					ActionLog.action("Loaded pohja["+ext+"]");
-				}else{
-					box.addP("pohjaa ei löytynyt id["+ext+"]");
-					ActionLog.error("Loafing pohja["+ext+"] failed");
-				}				
-
-
-				page.setTitle("Viikkoohjelma");
-				page.addTop(getMenu());
-				page.addCenter(box.toString());
-				page.addCenter(forma.toString());
-
-				//page.addRight(genTalkback().toString());
-				//page.addRight(genBugreport().toString());
-				//page.addRight(genMonth(0));
-				//page.addRight(genMonth(1));
-				//page.addRight(genTemplates().toString());
-				//results_page.addCenter(getActionLinks());
-			}else{
-
-				CmsBoxi naytaTapahtumatBox = new CmsBoxi("Pohjat");
-
-				naytaTapahtumatBox.addTag("<table class=\"def\">");
-
-				ViikkoDb db = new ViikkoDb();
-				for(ViikkoEntry ve : db.loadTemplates()){
-					naytaTapahtumatBox.addTag(
-							"<tr><td>"+ve.otsikko+"</td>" +
-							"<td>"+ve.user+"</td><td>"+
-							"<a class=\"line\" href=\""+
-							script+"/"+hook+"/poista/"+ve.id +
-							"\">poista</a></td></tr>"
-					);
-				}
-
-				naytaTapahtumatBox.addTag("</table>");
-
-				CmsBoxi boxi = new CmsBoxi(null);
-				boxi.addLink("Ohjelma", script +"/"+ hook );
-
-				page.setTitle("Viikkoohjelma");
-				page.addTop(getMenu());
-				page.addCenter(naytaTapahtumatBox.toString());
-				page.addCenter(boxi.toString());
-				//page.addRight(genTalkback().toString());
-				//page.addRight(genBugreport().toString());
-			}
-
-		}});*/
-
 		actions.add(new Action(null, "muokkaa"){public void execute(){
 			log.info("/muokkaa ["+ext+"]");
 			if(ext != ""){
@@ -723,8 +594,7 @@ public class ModViikko extends Module {
 						poista.addLayer("td");
 						poista.addTag("p","Tuhotaanko ["+ve.otsikko+"]");
 						poista.up();
-						//poista.up();
-						//poista.addLayer("tr");
+
 						poista.addLayer("td");
 						poista.addTag("label", "Kyllä ");
 						poista.up();
@@ -753,15 +623,12 @@ public class ModViikko extends Module {
 				if(ext.length() > 0 && ext.length() < 3){
 					try{
 						int offset = Integer.parseInt(ext);
-
-						//CmsBoxi box = new CmsBoxi("Esikatselu");
 						page.addTop(getMenu());
 						page.addLeft(getActionLinks().toString());
 						page.addCenter("<div class=\"right\">");
 						page.addCenter(getViikkoHtml(offset,true));
 						page.addCenter("</div>");
 
-						//CmsBoxi boxb = new CmsBoxi(null);
 						CmsElement boxb = new CmsElement();
 						boxb.createBox(null, "medium3");
 						
@@ -788,8 +655,6 @@ public class ModViikko extends Module {
 						page.setTitle("esikatselu");
 						page.addCenter(p.toString());
 					}else{
-						//CmsBoxi esikatselu = new CmsBoxi("error");
-						
 						CmsElement esikatselu = new CmsElement();
 						esikatselu.createBox("error", "medium3");
 						
@@ -905,8 +770,6 @@ public class ModViikko extends Module {
 					boxi.addLayer("div", "ingroup filled");
 					boxi.addLayer("pre style=\"font-size:12.5px\"");
 					boxi.addContent(getViikkoMail(week, false));
-
-
 					page.setTitle("Viikko-ohjelma");
 
 					page.addCenter(boxi);
@@ -916,11 +779,7 @@ public class ModViikko extends Module {
 
 		actions.add(new Action("Päivitä sivut", "julkaise"){public void execute(){
 			if(checkField("flag")){
-
-				//FileHive fh = FileHive.getFileHive();
 				FileOps.write(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false), false);
-				//				fh.storeFile(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false));
-				//CmsBoxi box = new CmsBoxi("Sivujen päivitys");
 				CmsElement box = new CmsElement();
 				box.createBox("Sivujen päivitys", "medium3");
 				box.addTag("p","sivut päivitetty");
@@ -952,7 +811,6 @@ public class ModViikko extends Module {
 				box.up();
 				box.addLayer("tr");
 				box.addTag("td colspan=\"3\"","<input value=\"do it\" type=\"submit\" class=\"list\" style=\"width:100%\"");
-				//box.addInput(null, "do it", "submit", null);
 
 				page.setTitle("Viikkoohjelma");
 				page.addCenter(box);
@@ -1015,7 +873,6 @@ public class ModViikko extends Module {
 		return strings.toString();
 	}
 	private String genWeekHtmlString(ViikkoEntry ve, boolean preview){
-		//ArrayList<String> strings = new ArrayList<String>();
 		StringBuilder sb = new StringBuilder();
 		sb.append("<ul>\n");
 		sb.append("<li>\n");
@@ -1108,23 +965,6 @@ public class ModViikko extends Module {
 		sb.append("</tr></table></div>\n");
 		return sb.toString();
 	}
-
-	/*
-	private CmsToolBoxi genTemplates() {
-		ViikkoDb db = new ViikkoDb();
-
-		CmsToolBoxi tools = new CmsToolBoxi("&#187;Pohjat");
-		//tools.addTag("<div class=\"toolbar-item\">\n");
-		//tools.addTag("<p>");
-		for(ViikkoEntry ve : db.loadTemplates()){
-			tools.addTag("<a href=\""+script+"/"+hook+"/pohjat/"+ve.id+"\">"+ve.otsikko+"</a>");
-		}
-		tools.addTag("<a href=\""+script+"/"+hook+"/pohjat\">&#187;poista pohjia</a>");
-		//tools.addTag("</p>\n");
-		//tools.addTag("</div>\n");
-
-		return tools;
-	}*/
 
 	private String getViikkoMail(int offset, boolean preview){
 		ViikkoDb db = new ViikkoDb();
@@ -1244,15 +1084,9 @@ public class ModViikko extends Module {
 				last_space = i;
 
 			if(current_line_size == line_size){
-				//if(i-last_space <= current_line_size){
-				//	sb.insert(i, '\n');
-				//	i++;
-				//	current_line_size = 0;
-				//}else{
 				sb.insert(last_space, '\n');
 				sb.deleteCharAt(last_space+1);
 				current_line_size = i - last_space;				
-				//}
 
 			}else{
 				current_line_size++;

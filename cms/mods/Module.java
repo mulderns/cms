@@ -55,16 +55,12 @@ public class Module {
 
 		void execute(){
 			CmsElement noImplementionBox = new CmsElement();
-			noImplementionBox.addLayer("div","boxi2 medium3");
-			noImplementionBox.addTag("h4", mod + "/" + act);
-			noImplementionBox.addLayer("div","ingroup filled");
+			noImplementionBox.createBox(mod + "/" + act, "medium3");
 			noImplementionBox.addTag("p", "Virheellinen toiminto ["+act+"]");
 
-			page.setTitle("blank");
-
-			page.addTop(getMenu());
+			page.setTitle("error");
 			page.addCenter(noImplementionBox);
-			page.addCenter(getActionLinks());
+			page.addLeft(getActionLinks());
 
 		}
 	}

@@ -206,7 +206,9 @@ public class FlushingFile {
 			if (!flush_file.exists()) {
 				log.fail("l_entries: file does not exist ["
 						+ flush_file.getName() + "]");
-				flush_file.createNewFile();
+				if(!flush_file.createNewFile()){
+					log.fail("could not create new source for flushing file");
+				}
 				return new String[0];
 			}
 

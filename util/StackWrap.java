@@ -5,7 +5,7 @@ import java.util.ArrayList;
 public class StackWrap<E>{
 
 	ArrayList<E> stack;
-	int capacity;
+	//int capacity;
 	int top;
 
 

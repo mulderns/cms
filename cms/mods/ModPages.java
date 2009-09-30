@@ -47,7 +47,6 @@ public class ModPages extends Module {
 
 		actions.add(new Action("Hallitse", "hallitse"){	public void execute(){
 			page.setTitle("Sivuston hallinta");
-			//page.addTop(getMenu());
 
 			CmsElement side = new CmsElement();
 			side.addLayer("div", "boxi inv col");
@@ -242,7 +241,6 @@ public class ModPages extends Module {
 			//page.addTop(getMenu());
 
 			if(ext.equals("")){
-				//CmsBoxi box = new CmsBoxi("Hmm", "medium");
 				CmsElement box = new CmsElement();
 				box.addLayer("div", "boxi medium");
 				box.addTag("h4","Hmm");
@@ -406,7 +404,6 @@ public class ModPages extends Module {
 				String type = datarelay.query.get("type");
 				if(type.equals("directory")){
 
-					//CmsBoxi box = new CmsBoxi("Poistetaan kansio [/"+path.getPath()+"]", "medium");
 					CmsElement box = new CmsElement();
 					box.addLayer("div","boxi medium");
 					box.addTag("h4","Poistetaan kansio [/"+path.getPath()+"]");
@@ -420,19 +417,21 @@ public class ModPages extends Module {
 						box.addLayer("div","boxi medium3");
 						box.addTag("h4","Poistetaan kansio [/"+path.getPath()+"]");
 
-						String result = pdb.removeDir(path.getPath()); 
-						if(result == null){
-							result = (pdb.store() ? null : "store of db failed");
-						}
-						if( result == null){
-							box.addTag("p","Success!");
-							box.addLink("Ok", script +"/"+ hook + "/hallitse/"+path.down().getPath());
-							pagebuilder.setRedirect(script +"/"+ hook + "/hallitse/"+path.down().getPath());
-						}else{
-							box.addTag("p","failed");
-							box.addTag("pre",result);
+						if(!pdb.removeDir(path.getPath())){
+							box.addTag("p","could not remove dir");
 							box.addLink("Ok", script +"/"+ hook + "/hallitse");
+							page.addCenter(box);
+							return;
 						}
+						if(!pdb.store()){
+							box.addTag("p","could not store db");
+							box.addLink("Ok", script +"/"+ hook + "/hallitse");
+							page.addCenter(box);
+							return;
+						}
+						box.addTag("p","Success!");
+						box.addLink("Ok", script +"/"+ hook + "/hallitse/"+path.down().getPath());
+						pagebuilder.setRedirect(script +"/"+ hook + "/hallitse/"+path.down().getPath());
 					}
 					page.addCenter(box);
 
@@ -442,7 +441,7 @@ public class ModPages extends Module {
 
 		}});
 
-		
+
 		actions.add(new Action(null, "rename"){public void execute(){
 			page.setTitle("rename file - "+ext);
 			VirtualPath path = VirtualPath.create(ext);
@@ -742,7 +741,7 @@ public class ModPages extends Module {
 			side.addLayer("div","ingroup filled");
 			side.addLink("preview", script + "/" + hook + "/preview" +  path.getUrl(true) );
 			side.addLink("render", script + "/" + hook + "/render"  +   path.getUrl(true) );
-		
+
 			side.up();
 			side.addLayer("div","ingroup filled");
 			side.addLink("hallintaan", script + "/" + hook + "/hallitse/"+ path.getPath());
@@ -771,7 +770,7 @@ public class ModPages extends Module {
 				edit.addLayer("table");
 				edit.addLayer("tr");
 				edit.addTag("td","<input name=\"_save\" value=\"tallenna\" type=\"submit\" class=\"list\"/>");
-//				edit.addTag("td","<input name=\"_preview\" value=\"esikatsele\" type=\"submit\" class=\"list\"/>");
+				//				edit.addTag("td","<input name=\"_preview\" value=\"esikatsele\" type=\"submit\" class=\"list\"/>");
 				edit.up(2);
 				edit.addField("_lastmodified", Long.toString(file.lastModified), true, new HiddenField());
 			}
@@ -829,11 +828,16 @@ public class ModPages extends Module {
 				String folder = datarelay.post.get("folder_name");
 				if(checkFolder(folder)){
 					if(pdb.dirExists(path.getPath())){
-						String result;
-						if((result = pdb.createDir(path.getPath(), folder)) != null){
-							results.add(result);
-						}else if(!pdb.store()){
-							results.add("could not store database");
+//						String result;
+						if(!pdb.createDir(path.getPath(), folder)){
+							box.addTag("p", "could not create directory");
+							page.addCenter(box);
+							return;
+						}
+						if(!pdb.store()){
+							box.addTag("p", "could not store db");
+							page.addCenter(box);
+							return;
 						}
 					}else{
 						results.add("invalid parent directory");
@@ -907,7 +911,7 @@ public class ModPages extends Module {
 					file.setData("");
 
 					String result = "";
-					if((result = pdb.addFile(ext, file)) == null){
+					if(pdb.addFile(ext, file)){
 						pagebuilder.setRedirect(script +"/"+ hook + "/file/"+path.getPath()+file.name);
 
 					}else{
@@ -987,8 +991,8 @@ public class ModPages extends Module {
 						"position:fixed;" +
 						"top:20px;" +
 						"left:20px;" +
-//						"width:50px;" +
-//						"height:30px;" +
+						//						"width:50px;" +
+						//						"height:30px;" +
 						"padding:4px;" +
 						"\">" +
 						"" +
@@ -998,7 +1002,7 @@ public class ModPages extends Module {
 						"href=\""+script+"/"+hook+"/file/"+ext+"\">&#187;back</a>" +
 						"" +
 						"" +
-						"</html>");
+				"</html>");
 				pagebuilder.rawSend(data);
 			}
 
@@ -1029,13 +1033,13 @@ public class ModPages extends Module {
 					if(!target_path.exists()){
 						target_path.mkdirs();
 					}
-					
+
 					File target = new File(target_path,file.name);
-//					FileHive fh = FileHive.getFileHive(target_path);
+					//					FileHive fh = FileHive.getFileHive(target_path);
 
 					BinaryFile rfile = (BinaryFile)file;
 					if(!FileOps.write(target, rfile.getData(),false)){
-					//if(!fh.storeFile(target, rfile.getData())){
+						//if(!fh.storeFile(target, rfile.getData())){
 						page.addCenter("could not write the file");
 					}else{
 						page.addCenter("ok");
@@ -1043,7 +1047,7 @@ public class ModPages extends Module {
 				}catch (Exception e){
 					page.addCenter("exception:"+e);
 				}
-				
+
 
 			}else if(file.type.equals(CmsFile.Type.TEXT)){
 				log.info("pagefile");
@@ -1053,10 +1057,10 @@ public class ModPages extends Module {
 				String[] ds = new String[1];
 				ds[0] = data;
 				File target_path = new File(datarelay.target);
-//				FileHive fh = FileHive.getFileHive(target_path);
+				//				FileHive fh = FileHive.getFileHive(target_path);
 
 				FileOps.write(new File(target_path,file.name), ds , false);
-//				fh.writeFileIso(new File(target_path,file.name), ds , true);
+				//				fh.writeFileIso(new File(target_path,file.name), ds , true);
 				page.addCenter("ok");
 			}
 		}});

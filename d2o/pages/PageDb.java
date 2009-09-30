@@ -40,19 +40,23 @@ public class PageDb {
 		actions = new FlushingFile(new File(sdir, "actions"));
 	}
 
-	public String createDir(String path, String name){
+	
+	public boolean createDir(String path, String name){
 		if(!treedex.state.open){
 			if(treedex.load() != null){
 				log.fail("could not load treedex");
-				return "could not load treedex";
+				return false;
 			}
 		}
 
-		if(!checkDirSyntax(path, name))
-			return "dirsyntaxerror";
+		if(!checkDirSyntax(path, name)){
+			log.fail("dir syntax fail");
+			return false;
+		}
 
 		if(!treedex.pingDir(path)){
-			return "parent dir doesn't exist";
+			log.fail("parent dir doesn't exist");
+			return false;
 		}
 
 		if(treedex.addDir(path,name)){
@@ -60,98 +64,59 @@ public class PageDb {
 			temp = new File(temp,name);
 			if(temp.mkdir()){
 				actions.append("+d,"+path+"/"+name+","+Cgicms.datarelay.username);
-				return null;
+				return true;
 			}
-			return "could not create directory["+temp.getAbsolutePath()+"]";
+			log.fail( "could not create directory["+temp.getAbsolutePath()+"]");
+			return false;
 		}else{
-			return "could not add directory to db";
+			log.fail( "could not add directory to db");
+			return false;
 		}
 	}
 
-	public String removeDir(String path) {
+	public boolean removeDir(String path) {
 		if(!treedex.state.open){
 			if(treedex.load() != null){
 				log.fail("could not load treedex");
-				return "could not load treedex";
+				return false;
 			}
 		}
 
-		if(!checkDirSyntax(path, ""))
-			return "dirsyntaxerror";
+		if(!checkDirSyntax(path, "")){
+			log.fail("dir syntax fail");
+			return false;
+		}
 
-		if(path.length() == 0)
-			return "can't delete root folder";
+		if(path.length() == 0){
+			log.info("can't delete root folder");
+			return false;
+		}
 
 		File temp = new File(sdir,path);
 
 		if(temp.exists() && temp.isDirectory()){
 			for(File file : temp.listFiles()){
 				if(!file.delete()){
-					return "could not remove ["+file.getAbsolutePath()+"]";
+					log.fail("could not remove ["+file.getAbsolutePath()+"]");
+					return false;
 				}
 			}
 			if(temp.delete()){
 				if(treedex.deleteDir(path)){
 					actions.append("-d,"+path+","+Cgicms.datarelay.username);
-					return null;
+					return true;
 				}
-				return "could not remove directory from db";
+				log.fail("could not remove directory from db");
+				
 			}else{
-				return "could not remove directory["+temp.getAbsolutePath()+"]";
+				log.fail("could not remove directory["+temp.getAbsolutePath()+"]");
 			}
 		}else{
-			return "directory ["+temp+"] doesn't exist or is not a directory";
+			log.fail("directory ["+temp+"] doesn't exist or is not a directory");
 		}
+		
+		return false;
 	}
-
-
-	/*
-	private String getFolderHtml(String path) {
-		if(!treedex.state.open){
-			treedex.load();
-		}
-		return treedex.dir_tree.rootToHtml(path);
-	}*/
-
-	/*
-	private boolean pathCheck(String path) {
-		char c;
-		boolean dot = false;
-		boolean slash = false;
-
-		for(int i = 0; i < path.length(); i++){
-			c = path.charAt(i);
-			if(Character.isLetter(c))
-				continue;
-			if(Character.isDigit(c))
-				continue;
-			if(c == '-')
-				continue;
-			if(c == '_')
-				continue;
-			if(c == '.'){
-				dot = true;
-				continue;
-			}
-			if(c == '/'){
-				slash = true;
-				continue;
-			}
-			return false;
-		}
-
-		if(dot){
-			if(path.contains(".."))
-				return false;
-		}
-		if(slash){
-			if(path.contains("//"))
-				return false;
-		}
-		return true;
-	}*/
-
-
 
 	public boolean dirExists(String path) {
 		if(!treedex.state.open){
@@ -198,94 +163,42 @@ public class PageDb {
 		return treedex.dir_tree;
 	}
 
-	public String addFile(String path, CmsFile file){
-		if(!checkDirSyntax(path, ""))
-			return "dir syntaxerror";
-		if(!checkFileSyntax(file.name))
-			return "name syntax error";
+	public boolean addFile(String path, CmsFile file){
+		if(!checkDirSyntax(path, "")){
+			log.fail("dir syntaxerror");
+			return false;
+		}
+		if(!checkFileSyntax(file.name)){
+			log.fail("name syntax error");
+			return false;
+		}
 
 		IndexFile index = getIndex(path);
 		String result;
 		if( (result = index.addRecord(file)) != null)
-			return result;
+			return false;
 
 		if(!CmsFile.storeMeta(file, index.dir))
-			return "failed to store meta";
+			return false;
 		if(!CmsFile.storeData(file, index.dir))
-			return "failed to store data";
+			return false;
 		if((result = index.storeRecords())!=null)
-			return result;
+			return false;
 
 		actions.append("+f,"+path+"/"+file.name+","+Cgicms.datarelay.username);
-		return null;
+		return true;
 	}
 
 	public CmsFile getFileMeta(VirtualPath path){
 		log.info("getFileMeta...");
 
-		//chech request
 		if(path.getFilename().equals("")){
 			log.fail("no file specified");
 			return null;
 		}
-
-		//load file meta
-
-		//load metafile
 		log.info("load File ["+path.getUrl()+"]");
 		return CmsFile.loadFile(path,sdir);
-
-		//determine file type
-		//create appropriate file (txt,bin,etc..)
-		//make sure meta is filled in
-
-
-		//if file doesn't exist
-		// return null
-
-		/**
-		log.info("loading index ["+path.getPath()+"]");
-		IndexFile indexfile = treedex.getIndexFile(path.getPath());
-		if(indexfile == null){
-			log.fail("index file could not be retrieved ["+path.getPath()+"]");
-			return null;
-		}
-
-		if(indexfile.load() == null){
-			if(indexfile.fileExists(path.getFilename())){
-				log.info("file exists");
-				CmsFile temp = indexfile.getFile(path.getFilename());
-				temp.relativePath = path;
-				if(temp.loadMeta2(indexfile.dir)){
-					log.info("meta load success");
-					log.info(" content_type : "+temp.content_type);
-					return temp;					
-				}
-				log.fail("meta load failed");
-				return null;
-			}else{
-				log.info("file doesn't exist? ["+path.getFilename()+"]");
-				log.info(" in: "+ indexfile.toString());
-			}
-		}else{
-			log.fail("could not load index ["+indexfile.file+"]");
-		}
-
-		return null;*/
 	}
-
-	/*
-	public CmsFile[] getFileList(String path) {
-		File dir = new File(sdir,path);
-		IndexFile index = new IndexFile(dir);
-		String result = index.load();
-		if(result != null){
-			log.fail("index did not load["+result+"]");
-		}else{
-			log.info("index loaded well or something");
-		}
-		return index.getFileList();
-	}*/
 
 	private IndexFile getIndex(String path) {
 		IndexFile index = new IndexFile(new File(sdir, path));
@@ -339,23 +252,6 @@ public class PageDb {
 		return "error while renaming the file";
 	}
 
-	/**
-	public String rename(CmsFile file, String uusinimi) {
-		IndexFile index = getIndex(file.relativePath.getPath());
-		if(index == null){
-			return "could not load index";
-		}
-
-		if(index.getRecord(uusinimi)!=null){
-			return "name already in use";
-		}
-
-		index.rename(file.name,uusinimi);
-		CmsFile.loadFile(path, sdir).rename();
-		index.store();
-		return null;
-	}*/
-
 	public String createTemplate(String filename){
 		String result;
 		if(!tempdex.state.open){
@@ -376,33 +272,6 @@ public class PageDb {
 			return "failed to store meta";
 
 		if(!CmsFile.storeData(temp, tempdex.getDir()))
-			return "failed to store data";
-
-		if(!tempdex.store())
-			return "db store failed";
-
-		return null;
-	}
-
-
-	public String createTemplate(TemplateFile file){
-		String result;
-		if(!tempdex.state.open){
-			if((result = tempdex.load()) != null){
-				log.fail("could not load tempdex");
-				return "could not load tempdex: "+result;
-			}
-		}
-
-		if(!checkFileSyntax(file.name))
-			return "name syntax error";
-
-		if( (result = tempdex.createTempEntry(file)) != null)
-			return result;
-
-		if(!CmsFile.storeMeta(file, tempdex.getDir()))
-			return "failed to store meta";
-		if(!CmsFile.storeData(file, tempdex.getDir()))
 			return "failed to store data";
 
 		if(!tempdex.store())
@@ -498,14 +367,6 @@ public class PageDb {
 
 	}
 
-	/*
-	public String getTempHtml(String path) {
-		if(!tempdex.state.open){
-			tempdex.load();
-		}
-		return tempdex.temp_tree.toTempHtml2(path);
-	}*/
-
 	public boolean updateTemplate(TemplateFile tfile) {
 		if(!tempdex.state.open){
 			if(tempdex.load() != null){
@@ -543,46 +404,7 @@ public class PageDb {
 		return true;
 	}
 
-
-	/*
-	public TemplateFile getTemplate(String name) {
-		if(tempdex.state.pure){
-			if(tempdex.load() != null){
-				log.fail("could not load treedex");
-				return null;
-			}
-		}
-		log.info("getting template ["+tempdex.temp_tree.toString()+"]");
-		return tempdex.getTemplate(name);
-	 */
-
-	/*
-		boolean found = false;
-		for(String s: tempdex.getTemplateNames()){
-			if(s.equals(name)){
-				found = true;
-				break;
-			}
-		}
-
-		if(!found)
-			return null;
-
-		FileHive fh = FileHive.getFileHive();
-		File meta = new File(sdir,"temp.meta."+name);
-		File data = new File(sdir,"temp.data."+name);
-
-		TemplateFile file = new TemplateFile();
-		file.parseMeta(fh.readFileToArrayIso(meta));
-		file.parseData(fh.readFileToArrayIso(data));
-		return file;
-	 */
-	//}
-
-
 	public boolean fileExists(VirtualPath vpath) {
-		//public boolean fileExists(String path) {
-
 		String path = vpath.getUrl();
 
 		log.info("checking if file exists["+path+"]");
@@ -605,7 +427,6 @@ public class PageDb {
 				sb.append(parts[i]+"/");
 			}
 			log.info(" 2");
-			//			if(dirExists(sb.toString())){
 			File dir = new File(sdir,sb.toString());
 			File index = new File(dir,"index");
 			if(index.exists()){
@@ -647,54 +468,7 @@ public class PageDb {
 		return temp;
 	}
 
-	/*
-	private String getFolderHtml(String path) {
-		if(!treedex.state.open){
-			treedex.load();
-		}
-		return treedex.dir_tree.rootToHtml(path);
-	}*/
-
-	/*
-	private boolean pathCheck(String path) {
-		char c;
-		boolean dot = false;
-		boolean slash = false;
-
-		for(int i = 0; i < path.length(); i++){
-			c = path.charAt(i);
-			if(Character.isLetter(c))
-				continue;
-			if(Character.isDigit(c))
-				continue;
-			if(c == '-')
-				continue;
-			if(c == '_')
-				continue;
-			if(c == '.'){
-				dot = true;
-				continue;
-			}
-			if(c == '/'){
-				slash = true;
-				continue;
-			}
-			return false;
-		}
-
-		if(dot){
-			if(path.contains(".."))
-				return false;
-		}
-		if(slash){
-			if(path.contains("//"))
-				return false;
-		}
-		return true;
-	}*/
-
 	public String removeFile(String path, String name){
-		//path = cleanDir(path);
 		checkDirSyntax(path, name);
 
 		IndexFile index = new IndexFile(new File(sdir,path));
@@ -705,7 +479,6 @@ public class PageDb {
 		if( (result = index.removeRecord(name)) != null)
 			return result;
 
-		//FileHive fh = FileHive.getFileHive();
 		File dir = new File(sdir,path);
 		File meta = new File(dir,"page.meta."+name);
 		File data = new File(dir,"page.data."+name);
@@ -726,263 +499,8 @@ public class PageDb {
 		}
 		return null;
 	}
-
-	public String addGroup(String path, String name){
-		if(!checkDirSyntax(path, name))
-			return "syntaxerror";
-
-		File temp = new File(sdir,path);
-		temp = new File(temp, "index.groups");
-
-		FlushingFile groups = new FlushingFile(temp);
-		boolean found = false;
-		for(String s : groups.loadAll())
-			if(s.equals(name))
-				found = true;
-
-		if(found)
-			return "group exists allready";
-
-		return groups.append(name);
-	}
-
-	/*
-	private String getFolderView(String ext, String link) {
-		log.info("getFolderView["+ext+"]");
-		ext = cleanDir(ext);
-		File dir = new File(sdir,ext);
-		if(!dir.exists()){
-			log.severe("directory doesn't exist:"+dir.getAbsolutePath());
-			return null;
-		}
-
-		StringBuilder sb = new StringBuilder();
-		//boolean first = true;
-
-		log.info("dirs from treedex:");
-		String[] folders = treedex.getFolders(ext);
-		log.info(Arrays.toString(folders));
-
-		sb.append("<dl class=\"folder\">");
-		if(folders.length > 0){
-			sb.append("<dt><a href=\""+link+"/addfold/"+ext+"\" class=\"add\">[+]</a></dt>");
-			for(String s : folders){
-				//if(first){first = false;}
-				sb.append("<dt><a href=\""+link+"/hallitse/"+ext+(ext==""?"":"/")+s+"\">"+s+"</a></dt>");
-			}
-		}else{
-			sb.append("<dt><a href=\""+link+"/addfold/"+ext+"\">[+] lis‰‰ kansio</a></dt>");
-		}
-		sb.append("</dl>");
-
-
-		IndexFile index = new IndexFile(dir);
-		String result = index.load();
-		log.info("index.load:"+result);
-		log.info("index.size:"+(index.records==null?"null":index.records.size()));
-
-		log.info("groups from index:");
-		FileGroup[] groups = index.getGroups();
-		log.info(Arrays.toString(groups));
-		boolean root = false;
-		if(groups.length > 0){
-			for(FileGroup fg : groups){
-				if(fg.groupname.equals("-")){
-					root = true;
-					sb.append("<dl class=\"filegroup root\">");
-					sb.append("<dt><a href=\""+link+"/addfile/"+ext+"?group="+fg.groupname+"\" class=\"add\">[+]</dt>");
-				}else{
-					sb.append("<dl class=\"filegroup\">");
-					sb.append("<dt><a href=\""+link+"/addfile/"+ext+"?group="+fg.groupname+"\" class=\"add\">[+]</dt>");
-				}
-				for(CmsFile ir : fg.files){
-					sb.append("<dd><a href=\""+link+"/file/"+ext+(ext==""?"":"/")+ir.name+"\">"+ir.name+"</dd>");
-				}
-				sb.append("</dl>");
-			}
-
-		}
-		if(!root){
-			sb.append("<dl class=\"filegroup root\">");
-			sb.append("<dt><a href=\""+link+"/addfile/"+ext+"\">[+] lis‰‰ tiedosto</dt>");
-			sb.append("</dl>");
-		}
-		sb.append("<dl class=\"filegroup\">");
-		sb.append("<dt><a href=\""+link+"/addgroup/"+ext+"\">[+] lis‰‰ ryhm‰</dt>");
-		sb.append("</dl>");
-
-
-		return sb.toString();
-	}*/
-
-	/*
-	private String[] getGroups(String path) {
-		if(treedex.state.pure){
-			if(treedex.load() != null){
-				log.severe("could not load treedex");
-				return null;
-			}
-		}
-		if(!pathCheck(path)){
-			log.severe("malicious path detected");
-			return null;
-		}
-		File source_dir;
-		if(path.length()== 0){
-			source_dir = sdir;
-		}else{
-			source_dir = new File(sdir,path);
-			if(!source_dir.isDirectory()){
-				log.severe("error in paht["+source_dir.getAbsolutePath()+"]");
-				return null;
-			}
-		}
-		ArrayList<String> groups = new ArrayList<String>(10);
-		groups.add("-");
-		//see as to what groups can be found in said location;
-		//read groupsfile(s)		
-
-		return groups.toArray(new String[groups.size()]);
-
-	}*/
-
-	public String removeGroup(String path, String name){
-		if(!checkDirSyntax(path, name)){
-			return "syntaxerror";
-		}
-
-		File temp = new File(sdir,path);
-		temp = new File(temp, "groups");
-
-		FlushingFile groups = new FlushingFile(temp);
-		boolean found = false;
-		String[] lines = groups.loadAll();
-		ArrayList<String> newLines = new ArrayList<String>(lines.length);
-		for(String s : lines)
-			if(s.equals(name)){
-				found = true;
-			}else{
-				newLines.add(s);
-			}
-
-		if(found){
-			return groups.overwrite(newLines.toArray(new String[newLines.size()]));
-		}
-		return "no such group found";
-	}
-
-	/*
-	private String getFolderView(String ext, String link) {
-		log.info("getFolderView["+ext+"]");
-		ext = cleanDir(ext);
-		File dir = new File(sdir,ext);
-		if(!dir.exists()){
-			log.severe("directory doesn't exist:"+dir.getAbsolutePath());
-			return null;
-		}
-
-		StringBuilder sb = new StringBuilder();
-		//boolean first = true;
-
-		log.info("dirs from treedex:");
-		String[] folders = treedex.getFolders(ext);
-		log.info(Arrays.toString(folders));
-
-		sb.append("<dl class=\"folder\">");
-		if(folders.length > 0){
-			sb.append("<dt><a href=\""+link+"/addfold/"+ext+"\" class=\"add\">[+]</a></dt>");
-			for(String s : folders){
-				//if(first){first = false;}
-				sb.append("<dt><a href=\""+link+"/hallitse/"+ext+(ext==""?"":"/")+s+"\">"+s+"</a></dt>");
-			}
-		}else{
-			sb.append("<dt><a href=\""+link+"/addfold/"+ext+"\">[+] lis‰‰ kansio</a></dt>");
-		}
-		sb.append("</dl>");
-
-
-		IndexFile index = new IndexFile(dir);
-		String result = index.load();
-		log.info("index.load:"+result);
-		log.info("index.size:"+(index.records==null?"null":index.records.size()));
-
-		log.info("groups from index:");
-		FileGroup[] groups = index.getGroups();
-		log.info(Arrays.toString(groups));
-		boolean root = false;
-		if(groups.length > 0){
-			for(FileGroup fg : groups){
-				if(fg.groupname.equals("-")){
-					root = true;
-					sb.append("<dl class=\"filegroup root\">");
-					sb.append("<dt><a href=\""+link+"/addfile/"+ext+"?group="+fg.groupname+"\" class=\"add\">[+]</dt>");
-				}else{
-					sb.append("<dl class=\"filegroup\">");
-					sb.append("<dt><a href=\""+link+"/addfile/"+ext+"?group="+fg.groupname+"\" class=\"add\">[+]</dt>");
-				}
-				for(CmsFile ir : fg.files){
-					sb.append("<dd><a href=\""+link+"/file/"+ext+(ext==""?"":"/")+ir.name+"\">"+ir.name+"</dd>");
-				}
-				sb.append("</dl>");
-			}
-
-		}
-		if(!root){
-			sb.append("<dl class=\"filegroup root\">");
-			sb.append("<dt><a href=\""+link+"/addfile/"+ext+"\">[+] lis‰‰ tiedosto</dt>");
-			sb.append("</dl>");
-		}
-		sb.append("<dl class=\"filegroup\">");
-		sb.append("<dt><a href=\""+link+"/addgroup/"+ext+"\">[+] lis‰‰ ryhm‰</dt>");
-		sb.append("</dl>");
-
-
-		return sb.toString();
-	}*/
-
-	/*
-	private String[] getGroups(String path) {
-		if(treedex.state.pure){
-			if(treedex.load() != null){
-				log.severe("could not load treedex");
-				return null;
-			}
-		}
-		if(!pathCheck(path)){
-			log.severe("malicious path detected");
-			return null;
-		}
-		File source_dir;
-		if(path.length()== 0){
-			source_dir = sdir;
-		}else{
-			source_dir = new File(sdir,path);
-			if(!source_dir.isDirectory()){
-				log.severe("error in paht["+source_dir.getAbsolutePath()+"]");
-				return null;
-			}
-		}
-		ArrayList<String> groups = new ArrayList<String>(10);
-		groups.add("-");
-		//see as to what groups can be found in said location;
-		//read groupsfile(s)		
-
-		return groups.toArray(new String[groups.size()]);
-
-	}*/
-
-	/*
-	public String[] getGroups2(String path){
-		if(!checkDirSyntax(path, "")){
-			return null;
-		}
-		File temp = new File(sdir,path);
-		temp = new File(temp, "index.groups");
-		FlushingFile groups = new FlushingFile(temp);
-		return groups.loadAll();
-	}
-	 */
-	private boolean checkDirSyntax(String path, String name) {
+	
+	public boolean checkDirSyntax(String path, String name) {
 		if(
 				path.contains("..") ||
 				path.contains("//") ||
@@ -993,11 +511,10 @@ public class PageDb {
 				name.contains("\\") 
 		) 
 			return false;
-
 		return true;
 	}
 
-	private boolean checkFileSyntax(String name) {
+	public boolean checkFileSyntax(String name) {
 		char c;
 		boolean dot = false;
 		for(int i = 0; i < name.length(); i++){
@@ -1081,49 +598,10 @@ public class PageDb {
 	public boolean updateData(CmsFile file) {
 		log.info("pagedb updating data");
 		return CmsFile.storeData(file, sdir);
-		/*IndexFile index = getIndex(file.relativePath.getPath());
-		if(index==null)
-			return false;
-
-		if(index.fileExists(file.name)){
-			log.info(" file exits");
-			String result;
-			if((result = index.updateFile(file))!=null){
-				log.fail("could not update data: "+ result);
-				return false;
-			}
-
-			if((result = index.storeRecords())== null)
-				return true;
-			log.fail("could not store index: "+result);
-			return false;
-		}
-		log.fail("file doesn't exist in index");
-		return false;*/
 	}
 
-	public boolean updateMeta(CmsFile file) { //TODO: no need for index in updating meta unless renaming..
+	public boolean updateMeta(CmsFile file) {
 		return CmsFile.storeMeta(file, sdir);	
-
-		/*IndexFile index = getIndex(file.relativePath.getPath());
-		if(index==null)
-			return false;
-		if(index.fileExists(file.name)){
-			String result;
-			if((result = index.updateFile(file))!=null){
-				log.fail("could not update meta: "+ result);
-				return false;
-			}
-			//index.getRecord(file.name).type = file.type;
-			index.changed = true;
-			if((result = index.storeRecords())== null)
-				return true;
-			log.fail("could not store index: "+result);
-			return false;
-		}
-		log.fail("file doesn't exist in index");
-		return false;*/
-
 	}
 
 	public boolean store(){

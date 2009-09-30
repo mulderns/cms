@@ -55,8 +55,6 @@ public class ModOwn extends Module{
 
 		actions.add(new Action("Muokkaa yhteystietoja", "tiedot"){public void execute(){
 
-
-
 			CmsElement box = new CmsElement();
 			box.addFormTop(script+"/"+hook+"/"+action_hook);
 			box.addLayer("div","boxi2 medium4");
@@ -213,7 +211,7 @@ public class ModOwn extends Module{
 				naamasivu.parent = "oma_naama";
 				naamasivu.setData("");
 
-				if(pdb.addFile("/", naamasivu)!=null){
+				if(!pdb.addFile("/", naamasivu)){
 					page.addCenter("<pre>error: could not add file["+filename+"] to db</pre>");
 					return;
 				}

@@ -114,6 +114,26 @@ public class FlushingDb {
 		return records.containsKey(key);
 	}
 
+	public boolean ren(String key, String target){
+		if (key == null)
+			throw new NullPointerException("key is null");
+		if (target == null)
+			throw new NullPointerException("target is null");
+		if (!pol(key)) {
+			log.info("key not found [" + key + "]");
+			return false;
+		}
+		if (pol(key)) {
+			log.info("key in use [" + key + "]");
+			return false;
+		}
+		
+		FlushingRecord record = records.remove(key);
+		record.id = target;
+		records.put(target, record);
+		return store();
+	}
+	
 	public boolean del(String key) {
 		if (key == null)
 			throw new NullPointerException("key is null");

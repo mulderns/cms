@@ -262,7 +262,7 @@ public class ModAccess extends Module {
 							boolean hallitus = false;
 							boolean toimar = false;
 
-							if(toimari != null && hallituksessa.equalsIgnoreCase("true"));{
+							if(toimari != null && hallituksessa.equalsIgnoreCase("true")){
 								hallitus = true;
 							}
 							if(toimari != null && toimari.equalsIgnoreCase("true")){

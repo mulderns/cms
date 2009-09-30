@@ -21,7 +21,7 @@ public class KeyManager {
 	Logger log;
 
 	FlushingDb keydb;
-	private final String source = "keydb"; 
+	private static final String source = "keydb"; 
 
 	public KeyManager(){
 		log = new Logger("KeyManager");

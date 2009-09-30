@@ -19,20 +19,6 @@ import util.Utils;
 import d2o.FileRecord;
 import d2o.FlushingDb;
 
-/**
- * index
- add file
- rename file
- remove file
-
-store from part
-
-send file
-
-genfilename
-
- */
-
 public class FileHive {
 	private static boolean initiated = false;
 	private static FileHive current;
@@ -71,10 +57,42 @@ public class FileHive {
 		record.filename = part.getFilename();
 
 		if (filedb.pol(record.filename)) {
-			log.fail("file [" + record.filename + "] allready in db");
-			//TODO: autorename;
+			log.info("file [" + record.filename + "] allready in db");
 
-			return false;
+			String oldname = record.filename;
+			String newname = null;
+
+			String prefix;
+			String postfix;
+
+			int t = oldname.lastIndexOf('.');
+			if(t == -1){
+				prefix = oldname;
+				postfix= "";
+			}else{
+				prefix = oldname.substring(0, t);
+				if(oldname.length() == t-1){
+					postfix = "";
+				}else{
+					postfix = oldname.substring(t);
+				}
+			}
+
+			for(int i = 1; i < 1000; i++){
+				String temp = prefix+"("+Utils.addLeading(i, 1)+")"+postfix;
+				log.info("pol name ["+temp+"]");
+				if(!filedb.pol(temp)){
+					newname = temp;
+					break;
+				}
+			}
+
+			if(newname == null){
+				log.fail("could not generate new name ["+prefix+"]#["+postfix+"]");
+				return false;
+			}
+			log.info("new name for ["+oldname+"] -> ["+newname+"]");
+			record.filename = newname;
 		}
 
 		record.stored_name = genNewStoredName();
@@ -135,6 +153,25 @@ public class FileHive {
 		return true;
 	}
 
+	public boolean renameFile(String filename, String newname){
+		log.info("renaming file");
+
+		if(!filedb.pol(filename)) {
+			log.fail("file not found in index");
+			return false;
+		}
+
+		if(filedb.pol(newname)){
+			log.fail("cannot rename, new name in use");
+			return false;
+		}
+
+		//TODO:check newname;
+
+		return filedb.ren(filename, newname);
+
+	}
+
 	public String getFileResponse(String filename, boolean attach) {
 		if (!filedb.pol(filename))
 			return null;
@@ -147,12 +184,12 @@ public class FileHive {
 					"] for ["+filename+"] not found");
 			return null;
 		}
-		
+
 		StringBuilder sb = new StringBuilder("Content-Type: "
 				+ record.content_type);
 		if(attach)
 			sb.append("\nContent-Disposition: attachment; filename=\""
-				+ record.filename + "\"");
+					+ record.filename + "\"");
 		sb.append('\n');
 		sb.append('\n');
 		sb.append(data);
@@ -167,6 +204,12 @@ public class FileHive {
 		return records;
 	}
 
+	public FileRecord getFileRecord(String filename) {
+		if(filedb.pol(filename))
+			return new FileRecord(filedb.get(filename));
+		return null;
+	}
+	
 	public boolean hasFile(String filename) {
 		return filedb.pol(filename);
 	}
@@ -253,5 +296,6 @@ public class FileHive {
 		record.download_count++;
 		filedb.mod(record.filename, record.toArray());
 	}
+
 
 }

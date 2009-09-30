@@ -246,10 +246,10 @@ public final class Utils {
 	public static final long calculateLongTime(int d, int h, int min, int sec){
 		long result = 0;
 		
-		result  = sec *    1000;
-		result += min *   60000;
-		result += h   * 3600000;
-		result += d   *86400000;
+		result  = sec *    1000L;
+		result += min *   60000L;
+		result += h   * 3600000L;
+		result += d   *86400000L;
 		
 		return result;
 	}
