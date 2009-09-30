@@ -32,6 +32,15 @@ public class FlushingDb {
 		loaded = false;
 	}
 
+	public FlushingDb(final File file) {
+		log = new Logger("FlushingDb[" + file.getName() + "]");
+
+		source = file;
+		dbfile = new FlushingFile(source);
+
+		loaded = false;
+	}
+	
 	public boolean add(String key, String[] data) {
 		if (key == null)
 			throw new NullPointerException("key is null");

@@ -25,14 +25,15 @@ public class Session {
 
 	public boolean delete = false;
 	public boolean temporary = false;
-
-	private static String sId;
-	private static String ip;
-	private static long lastAccess;
-	private static String cookie_hook;
+	private boolean changed = false;
+	
+	private String sId;
+	private String ip;
+	private long lastAccess;
+	private String cookie_hook;
 	private User user;
 	private HashMap<String, String> attributes;
-	private static ObjectInputStream oin;
+	private ObjectInputStream oin;
 
 	public Session(){
 		log = new Logger("session");
@@ -42,11 +43,14 @@ public class Session {
 		log = new Logger("session");
 
 		sId = generateID();
-		Session.ip = (datarelay.env.containsKey("REMOTE_ADDR") ? datarelay.env.get("REMOTE_ADDR") : "NULL");
+		ip = (datarelay.env.containsKey("REMOTE_ADDR") ? 
+				datarelay.env.get("REMOTE_ADDR") : "NULL");
 		lastAccess = System.currentTimeMillis();
-		Session.cookie_hook = cookie_hook;
+		this.cookie_hook = cookie_hook;
 		this.user = user;
 		attributes = new HashMap<String, String>();
+		
+		changed = true;
 	}
 
 	public String getAttribute(String key) {
@@ -80,6 +84,8 @@ public class Session {
 	@SuppressWarnings("unchecked")
 	public void readStuff() {
 		try {
+			if(oin == null)
+				log.info("oin == @null");
 			cookie_hook = (String)oin.readObject();
 			user = (User)oin.readObject();
 			attributes = (HashMap<String, String>)oin.readObject();
@@ -105,28 +111,34 @@ public class Session {
 
 	public void setAttribute(String key, String value) {
 		attributes.put(key, value);
+		changed = true;
 	}
 
 	public void setID(String id) {
 		sId = id;
+		changed = true;
 	}
 
 	public void setIp(String newip){
 		if(newip != null){
 			ip = newip;
+			changed = true;
 		}
 	}
 
 	public void setLastAccess(long newTime) {
-		lastAccess = newTime;
+		File source = new File(Cgicms.sessions_dir, sId);
+		source.setLastModified(newTime);
+		//lastAccess = newTime;
 	}
 
 	public void setTemp(boolean b) {
-		temporary = b;		
+		temporary = b;	
+		changed = true;
 	}
 
 	public void store() {
-		if(temporary)
+		if(temporary || !changed)
 			return;
 
 		log.info("storing session: "+ sId);
@@ -140,7 +152,7 @@ public class Session {
 //			log.info("writing ip");
 			oout.writeObject(ip);
 //			log.info("writing last access");
-			oout.writeLong(lastAccess);
+			//oout.writeLong(lastAccess);
 //			log.info("writing all the rest");
 			oout.writeObject(cookie_hook);
 			oout.writeObject(user);
@@ -176,7 +188,7 @@ public class Session {
 	}
 
 
-	public static boolean close() {
+	public boolean close() {
 		try {
 			oin.close();
 			return true;
@@ -187,10 +199,10 @@ public class Session {
 		}
 	}
 
-	public static String generateID(){
+	public String generateID(){
 		return Integer.valueOf(new Random(System.nanoTime()).nextInt(1000)).toString() + Long.valueOf(System.currentTimeMillis()).toString().substring(5);
 	}
-	public static boolean open(String sid) {
+	public boolean open(String sid) {
 		File source = new File(Cgicms.sessions_dir, sid);
 		if(source.canRead()){
 			Cgicms.log.info("session exists");
@@ -199,6 +211,7 @@ public class Session {
 						new BufferedInputStream(
 								new FileInputStream(source)));
 				sId = sid;
+				lastAccess = source.lastModified();
 				return true;
 			} catch (IOException ioe) {
 				Cgicms.log.fail(""+ioe);
@@ -208,7 +221,7 @@ public class Session {
 		return false;
 	}
 
-	public static String readIp() {
+	public String readIp() {
 		try {
 			String temp = (String)oin.readObject();
 			Cgicms.log.info("read ip: "+temp);
@@ -222,7 +235,7 @@ public class Session {
 		Cgicms.log.info("could not read ip");
 		return null;
 	}
-	public static long readLastAccess() {
+	/*public long readLastAccess() {
 		try {
 			long temp = (long)oin.readLong();
 			Cgicms.log.info("read last access: " + temp);
@@ -234,7 +247,7 @@ public class Session {
 
 		Cgicms.log.info("could not read last access");
 		return System.currentTimeMillis()+5000000;
-	}
+	}*/
 	public static void remove(String sid) {
 		Cgicms.log.info("removing session: " + sid);
 		File file = new File(Cgicms.sessions_dir , sid); 

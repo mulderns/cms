@@ -85,12 +85,14 @@ public class Cgicms {
 
 	public static String group_hook;
 	private long t_begin, t_init, t_request, t_restore, t_execute;
+	private long t_begin_nano, t_init_nano, t_request_nano, t_restore_nano, t_execute_nano;
 
 	HashMap<String,String> main_props;
 
 	Cgicms(){
 		log.meta("CGICMS");
 		t_begin = System.currentTimeMillis();
+		t_begin_nano = System.nanoTime();
 		ActionLog.setLogFile(new File(logbooks_dir, "actionlog"));
 	}
 
@@ -153,6 +155,7 @@ public class Cgicms {
 			}
 
 			t_init = System.currentTimeMillis();
+			t_init_nano = System.nanoTime();
 			log.info("not-properties load+check took: "+(t_init - t_temp)+" ms");
 
 			datarelay = new DataRelay();
@@ -165,6 +168,7 @@ public class Cgicms {
 			// read input from cgi-environment
 			request = new HttpRequest(datarelay);//initHttpRequest();
 			t_request = System.currentTimeMillis();
+			t_request_nano = System.nanoTime();
 
 			//Deploy deploy = new Deploy(this);
 			//deploy.dumpEnv("cms.env.dump");
@@ -191,10 +195,12 @@ public class Cgicms {
 			){
 				sessioner.doLogin(); // send login page
 				t_restore = System.currentTimeMillis();
+				t_restore_nano = System.nanoTime();
 
 			}else{
 				log.info("has session");
 				t_restore = System.currentTimeMillis();
+				t_restore_nano = System.nanoTime();
 				session = datarelay.session;
 
 				if(datarelay.multipart)
@@ -228,6 +234,7 @@ public class Cgicms {
 			}
 
 			t_execute = System.currentTimeMillis();
+			t_execute_nano = System.nanoTime();
 			log.info("run took: "+(System.currentTimeMillis()-t_begin)+" ms");
 			ActionLog.time(
 					"i "+Utils.addLeading((int)(t_init - t_begin), 4) +" "+
@@ -235,6 +242,13 @@ public class Cgicms {
 					"l "+Utils.addLeading((int)(t_restore - t_request), 4) +" "+
 					"e "+Utils.addLeading((int)(t_execute - t_restore), 4) +" "+
 					"t "+Utils.addLeading((int)(System.currentTimeMillis() - t_begin), 4));
+		
+			ActionLog.time(
+					"i "+Utils.addLeading((int)(t_init_nano - t_begin_nano), 10).substring(0, 4) +" "+
+					"r "+Utils.addLeading((int)(t_request_nano - t_init_nano), 10).substring(0, 4) +" "+
+					"l "+Utils.addLeading((int)(t_restore_nano - t_request_nano), 10).substring(0, 4) +" "+
+					"e "+Utils.addLeading((int)(t_execute_nano - t_restore_nano), 10).substring(0, 4) +" "+
+					"t "+Utils.addLeading((int)(System.nanoTime() - t_begin_nano), 10).substring(0, 4));
 			ActionLog.write();
 			log.info("____________________________________________");
 

@@ -36,16 +36,6 @@ public class IndexFile {
 		state = new TriState();
 	}
 
-	/*
-	public IndexFile(Path path){
-		file = path.getFile();
-		ff = new FlushingFile(file);
-		changed = false;
-		state = new TriState();
-	}*/
-
-	//filename,modified
-
 	public ArrayList<IndexRecord> getRecords() {
 		return records;
 	}
@@ -106,33 +96,7 @@ public class IndexFile {
 		return null;
 	}
 
-/*
-	public String updateFile(CmsFile file) {
-		System.err.println("#### - indexfile updating file");
-		for(IndexRecord ir : records){
-			if(ir.filename.equals(file.name)){
-				System.err.println("#### - found record");
-				//ir.group = file.group;
-				ir.modified = true;
-				//records.add(ir);
-				changed = true;
-				
-				if(CmsFile.storeMeta(file, dir)){
-					if(CmsFile.storeData(file, dir)){
-						return null;
-					}else{
-						file.delete(dir);
-						return "could not write data ["+file.name+"]";
-					}
-				}else{
-					return "could not write meta ["+file.name+"]";
-				}
 
-			}
-		}	
-		return "file not found";
-	}
-*/
 	public String removeRecord(String filename){
 		if(!state.open){
 			loadRecords();

@@ -133,28 +133,29 @@ public class KeyManager {
 
 		log.info("got sesid");
 		String sID = datarelay.cookie.get(cookie_hook);
-		if(!Session.open(sID))
+		Session session = new Session();
+		if(!session.open(sID))
 			return false;
 
 		String ip;
-		if((ip = Session.readIp()) == null )
+		if((ip = session.readIp()) == null )
 			return false;
 
 		if(!ip.equals(datarelay.env.get("REMOTE_ADDR")))
 			return false;
 
 		log.info("ip ok");
-		if(System.currentTimeMillis() - Session.readLastAccess() > (4000000) ){
+		if(System.currentTimeMillis() - session.getLastAccess() > (4000000) ){
 			log.info("expired");
-			Session.close();
+			session.close();
 			Session.remove(sID);
 			return false;
 		}
 
 		log.info("la ok");
-		session = new Session();
+		//session = new Session();
 		session.readStuff();
-		Session.close();
+		session.close();
 		session.setLastAccess(System.currentTimeMillis());
 		datarelay.session = session;
 		datarelay.username = session.getUser().getName();
