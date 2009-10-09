@@ -317,6 +317,8 @@ public class Cgicms {
 			
 			if(!new ModViikko(datarelay).blind_update()){
 				ActionLog.error("update failed");
+			}else{
+				ActionLog.log("kicker updated week successfully");
 			}
 			
 			ActionLog.write();

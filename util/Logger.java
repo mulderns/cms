@@ -43,7 +43,7 @@ public class Logger implements Serializable{
 		parent = new String(clone.parent);
 	}
 
-	private final void log(LogEvent.eventType type, String message){
+	private final void log(final LogEvent.eventType type, final String message){
 		final LogEvent spur = new LogEvent(parent, type, message);
 		events.add(spur);
 		if(enableSystemOut){

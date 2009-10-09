@@ -47,7 +47,7 @@ public class CmsElement {
 	public CmsElement(){
 		this(Type.normal);
 		current = this;
-		fields = new ArrayList<Field>();
+		fields = new ArrayList<Field>(0);
 	}
 
 	CmsElement(Type type){

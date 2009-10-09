@@ -98,8 +98,6 @@ public class IndexFile {
 			indexdb.del(target.filename);
 		}
 
-		indexdb.del("e");
-		
 		HashSet<String> file_list = new HashSet<String>(Arrays.asList(dir
 				.list(new FilenameFilter() {
 					public boolean accept(File dir, String name) {

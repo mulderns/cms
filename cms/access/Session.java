@@ -21,18 +21,32 @@ import cms.Cgicms;
 import cms.DataRelay;
 
 public class Session {
-	private Logger log;
 
+	/*public static void remove(String sid) {
+		Cgicms.log.info("removing session: " + sid);
+		File file = new File(Cgicms.sessions_dir , sid); 
+		if(file.delete()){
+			ActionLog.system("deleted "+sid);
+			Cgicms.log.info(" -> successfully removed: "+file);
+		}else{
+			ActionLog.error("failed to delete "+sid);
+			Cgicms.log.info(" -> failed to remove: "+file);
+		}
+
+	}*/
+
+	private Logger log;
 	public boolean delete = false;
 	public boolean temporary = false;
-	private boolean changed = false;
 	
-	private String sId;
+	private boolean changed = false;
+	private String session_id;
 	private String ip;
 	private long lastAccess;
 	private String cookie_hook;
 	private User user;
 	private HashMap<String, String> attributes;
+
 	private ObjectInputStream oin;
 
 	public Session(){
@@ -42,31 +56,35 @@ public class Session {
 	public Session(DataRelay datarelay, String cookie_hook, User user){
 		log = new Logger("session");
 
-		sId = generateID();
+		session_id = generateID();
 		ip = (datarelay.env.containsKey("REMOTE_ADDR") ? 
 				datarelay.env.get("REMOTE_ADDR") : "NULL");
 		lastAccess = System.currentTimeMillis();
 		this.cookie_hook = cookie_hook;
 		this.user = user;
-		attributes = new HashMap<String, String>();
+		attributes = new HashMap<String, String>(1);
 		
 		changed = true;
+	}
+
+	public String generateID(){
+		return Integer.valueOf(new Random(System.nanoTime()).nextInt(1000)).toString() + Long.valueOf(System.currentTimeMillis()).toString().substring(5);
 	}
 
 	public String getAttribute(String key) {
 		return attributes.get(key);
 	}
-	
+
 	public HashMap<String,String> getAttributes(){
 		return attributes;
 	}
-	
+
 	public String getCookie_hook() {
 		return cookie_hook;
 	}
 
 	public String getId() {
-		return sId;
+		return session_id;
 	}
 
 	public String getIp() {
@@ -81,136 +99,21 @@ public class Session {
 		return user;
 	}
 
-	@SuppressWarnings("unchecked")
-	public void readStuff() {
-		try {
-			if(oin == null)
-				log.info("oin == @null");
-			cookie_hook = (String)oin.readObject();
-			user = (User)oin.readObject();
-			attributes = (HashMap<String, String>)oin.readObject();
-
-		} catch (ClassNotFoundException cnfe){
-			Cgicms.log.fail(""+cnfe);
-		} catch (IOException ioe) {
-			Cgicms.log.fail(""+ioe);
-		}
-	}
-
-	public void remove() {
-		log.info("removing session: " + sId);
-		File file = new File(Cgicms.sessions_dir , sId); 
-		if(file.delete()){
-			//ActionLog.system("deleted "+sId);
-			log.info(" -> successfully removed: "+file);
-		}else{
-			ActionLog.error("failed to delete "+sId);
-			log.info(" -> failed to remove: "+file);
-		}
-	}
-
-	public void setAttribute(String key, String value) {
-		attributes.put(key, value);
-		changed = true;
-	}
-
-	public void setID(String id) {
-		sId = id;
-		changed = true;
-	}
-
-	public void setIp(String newip){
-		if(newip != null){
-			ip = newip;
-			changed = true;
-		}
-	}
-
-	public void setLastAccess(long newTime) {
-		File source = new File(Cgicms.sessions_dir, sId);
-		source.setLastModified(newTime);
-		//lastAccess = newTime;
-	}
-
-	public void setTemp(boolean b) {
-		temporary = b;	
-		changed = true;
-	}
-
-	public void store() {
-		if(temporary || !changed)
-			return;
-
-		log.info("storing session: "+ sId);
-		long start = System.currentTimeMillis();
-		File session_file = new File(Cgicms.sessions_dir, sId);
-		try {
-//			log.info("opening object stream");
-			ObjectOutputStream oout = new ObjectOutputStream(new
-					BufferedOutputStream(new FileOutputStream(session_file)));
-
-//			log.info("writing ip");
-			oout.writeObject(ip);
-//			log.info("writing last access");
-			//oout.writeLong(lastAccess);
-//			log.info("writing all the rest");
-			oout.writeObject(cookie_hook);
-			oout.writeObject(user);
-			oout.writeObject(attributes);
-			//oout.writeObject(history);
-			oout.close();
-			//ActionLog.system("stored session "+sId);
-//			log.info("successful write");
-			log.info("store took: "+(System.currentTimeMillis()-start)+" ms");
-			return;
-		}catch (NotSerializableException nse){
-			log.fail("could not serialize object:"+nse);
-		} catch (IOException ioe) {
-			log.fail("error writing session:"+ioe);
-		}
-		ActionLog.error("store failed "+sId);
-		log.info("store failed");
-	}
-
-	public String toString(){
-		StringBuilder buff = new StringBuilder();
-		buff.append("sessionID: " + sId + "\n");
-		buff.append("lastAccess: " + lastAccess + "\n");
-		buff.append("IPAdress: " + ip + "\n");
-		buff.append("user: " + user + "\n");
-		buff.append("Attributes:\n");
-		for(Map.Entry<String, String> entry : attributes.entrySet()){
-			buff.append(entry.getKey()+": " + entry.getValue() + "\n");
-		}
-		buff.append("delete: " + delete + "\n");
-
-		return buff.toString();
-	}
-
-
-	public boolean close() {
-		try {
-			oin.close();
-			return true;
-		} catch (IOException ioe) {
-			Cgicms.log.fail(""+ioe);
-			Cgicms.log.info("could not close session");
-			return false;
-		}
-	}
-
-	public String generateID(){
-		return Integer.valueOf(new Random(System.nanoTime()).nextInt(1000)).toString() + Long.valueOf(System.currentTimeMillis()).toString().substring(5);
-	}
-	public boolean open(String sid) {
-		File source = new File(Cgicms.sessions_dir, sid);
+	/** opens the session file to be read by readIp() and readStuff().
+	 *  remember to close with close().
+	 * 
+	 * @param session_id	The session id used to identify the session and as filename
+	 * @return				True if opening streams succeeded. False if there was an ioexception.
+	 */
+	public boolean open(String session_id) {
+		File source = new File(Cgicms.sessions_dir, session_id);
 		if(source.canRead()){
 			Cgicms.log.info("session exists");
 			try {
 				oin = new ObjectInputStream(
 						new BufferedInputStream(
 								new FileInputStream(source)));
-				sId = sid;
+				this.session_id = session_id;
 				lastAccess = source.lastModified();
 				return true;
 			} catch (IOException ioe) {
@@ -235,30 +138,121 @@ public class Session {
 		Cgicms.log.info("could not read ip");
 		return null;
 	}
-	/*public long readLastAccess() {
+
+	//@SuppressWarnings("unchecked")
+	public void readStuff() {
 		try {
-			long temp = (long)oin.readLong();
-			Cgicms.log.info("read last access: " + temp);
-			lastAccess = temp;
-			return temp;
+			if(oin == null)
+				log.info("oin == @null");
+			cookie_hook = (String)oin.readObject();
+			user = (User)oin.readObject();
+			//attributes = (HashMap<String, String>)oin.readObject();
+
+		} catch (ClassNotFoundException cnfe){
+			Cgicms.log.fail(""+cnfe);
 		} catch (IOException ioe) {
 			Cgicms.log.fail(""+ioe);
 		}
-
-		Cgicms.log.info("could not read last access");
-		return System.currentTimeMillis()+5000000;
-	}*/
-	public static void remove(String sid) {
-		Cgicms.log.info("removing session: " + sid);
-		File file = new File(Cgicms.sessions_dir , sid); 
-		if(file.delete()){
-			ActionLog.system("deleted "+sid);
-			Cgicms.log.info(" -> successfully removed: "+file);
-		}else{
-			ActionLog.error("failed to delete "+sid);
-			Cgicms.log.info(" -> failed to remove: "+file);
+	}
+	
+	public boolean close() {
+		try {
+			oin.close();
+			return true;
+		} catch (IOException ioe) {
+			Cgicms.log.fail(""+ioe);
+			Cgicms.log.info("could not close session");
+			return false;
 		}
+	}
+	
+	public void remove() {
+		log.info("removing session: " + session_id);
+		File file = new File(Cgicms.sessions_dir , session_id); 
+		if(file.delete()){
+			//ActionLog.system("deleted "+sId);
+			log.info(" -> successfully removed: "+file);
+		}else{
+			ActionLog.error("failed to delete "+session_id);
+			log.info(" -> failed to remove: "+file);
+		}
+	}
 
+	public void setAttribute(String key, String value) {
+		attributes.put(key, value);
+		changed = true;
+	}
+
+	public void setID(String id) {
+		session_id = id;
+		changed = true;
+	}
+
+
+	public void setIp(String newip){
+		if(newip != null){
+			ip = newip;
+			changed = true;
+		}
+	}
+
+	public void setLastAccess(long newTime) {
+		File source = new File(Cgicms.sessions_dir, session_id);
+		source.setLastModified(newTime);
+	}
+	
+	public void setTemp(boolean temporary) {
+		this.temporary = temporary;	
+		changed = true;
+	}
+
+	public void store() {
+		if(temporary || !changed)
+			return;
+
+		log.info("storing session: "+ session_id);
+		long start = System.currentTimeMillis();
+		File session_file = new File(Cgicms.sessions_dir, session_id);
+		try {
+//			log.info("opening object stream");
+			ObjectOutputStream oout = new ObjectOutputStream(new
+					BufferedOutputStream(new FileOutputStream(session_file)));
+
+//			log.info("writing ip");
+			oout.writeObject(ip);
+//			log.info("writing last access");
+			//oout.writeLong(lastAccess);
+//			log.info("writing all the rest");
+			oout.writeObject(cookie_hook);
+			oout.writeObject(user);
+			oout.writeObject(attributes);
+			//oout.writeObject(history);
+			oout.close();
+			//ActionLog.system("stored session "+sId);
+//			log.info("successful write");
+			log.info("store took: "+(System.currentTimeMillis()-start)+" ms");
+			return;
+		}catch (NotSerializableException nse){
+			log.fail("could not serialize object:"+nse);
+		} catch (IOException ioe) {
+			log.fail("error writing session:"+ioe);
+		}
+		ActionLog.error("store failed "+session_id);
+		log.info("store failed");
+	}
+	public String toString(){
+		StringBuilder buff = new StringBuilder();
+		buff.append("sessionID: " + session_id + "\n");
+		buff.append("lastAccess: " + lastAccess + "\n");
+		buff.append("IPAdress: " + ip + "\n");
+		buff.append("user: " + user + "\n");
+		buff.append("Attributes:\n");
+		for(Map.Entry<String, String> entry : attributes.entrySet()){
+			buff.append(entry.getKey()+": " + entry.getValue() + "\n");
+		}
+		buff.append("delete: " + delete + "\n");
+
+		return buff.toString();
 	}
 }
 

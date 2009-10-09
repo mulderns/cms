@@ -102,6 +102,8 @@ public class ModUpload extends Module {
 			};
 			boolean parillinen = true;
 			
+			long total_size = 0;
+			
 			for(UploadFileRecord record : records){
 				parillinen = !parillinen;
 				box.addLayer("tr"+(parillinen?" style=\"background-color:#f5f5f5\"":""));
@@ -110,6 +112,7 @@ public class ModUpload extends Module {
 				box.addTag("td", "<a title=\"tiedot\" style=\"text-decoration:none;color:#125698\" href=\""+script+"/"+hook+"/prefs/"+record.filename+"\">&#187;tiedot</a>");
 				
 				int order = 0;
+				total_size += record.size;
 				double size = record.size;
 				while(size >= 100){
 					size/=1024;
@@ -126,6 +129,30 @@ public class ModUpload extends Module {
 			}
 			box.up();
 
+			
+			int order = 0;
+			double size = total_size;
+			while(size >= 1000){
+				size/=1024;
+				order++;
+			}
+						
+			String processed_size = decimal_format.format(size) + " " + suffixes[order];
+			
+
+			box.addTag("p", "total size: "+processed_size);
+			
+			order = 0;
+			size = 167772160 - total_size;
+			while(size >= 1000){
+				size/=1024;
+				order++;
+			}
+			processed_size = decimal_format.format(size) + " " + suffixes[order];
+			
+			
+			box.addTag("p", "estimated free space: "+ processed_size);
+			
 			page.setTitle("Tiedostojen huploadaus");
 			page.addCenter(box);
 			page.addLeft(getActionLinks());

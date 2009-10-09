@@ -79,7 +79,7 @@ public class FeedBacker {
 			);
 
 			pagebuilder.build(
-					"<form method=\"post\" action=\"http://www.students.tut.fi/cgi-bin/cgiwrap/kortesmv/palaute.cgi\" name=\"palaute\">"
+					"<form method=\"post\" action=\"http://www.students.tut.fi/cgi-bin/cgiwrap/tkrt/palaute.cgi\" name=\"palaute\">"
 			);
 
 			String referer;

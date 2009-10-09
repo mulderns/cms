@@ -46,7 +46,7 @@ public class SessionerCms {
 		if(System.currentTimeMillis() - session.getLastAccess() > (4000000) ){
 			log.info("expired");
 			session.close();
-			Session.remove(sID);
+			session.remove();
 			return false;
 		}
 
