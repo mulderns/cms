@@ -276,16 +276,16 @@ public class ModPages extends Module {
 					box.addLayer("div","boxi");
 					box.addTag("h4","dynamic operation");
 
-					Renderer r = Renderer.getRenderer();
-					TemplateFile oldfile = pdb.getTemplate(path.getFilename());
+					Renderer renderer = Renderer.getRenderer();
+					TemplateFile template = pdb.getTemplate(path.getFilename());
 
 
-					if(oldfile != null){
+					if(template != null){
 						log.info("got oldfile");
-						oldfile.setData(r.dynData(command.getKey(), command.getValue(), oldfile));
-						log.info("oldfile.data " +(oldfile.data != null));
+						template.setData(renderer.dynData(command.getKey(), command.getValue(), template));
+						log.info("oldfile.data " +(template.data != null));
 
-						if(pdb.updateTemplate(oldfile)){
+						if(pdb.updateTemplate(template)){
 							ActionLog.action("Updated t["+path.getUrl()+"]" );
 							pagebuilder.setRedirect(script+"/"+hook+"/"+action_hook+path.getUrl(true));
 						}else{
@@ -310,7 +310,7 @@ public class ModPages extends Module {
 						if(checkFields(r.getFields(oldfile)))
 							log.info("saving template");
 
-						oldfile.setData(r.genData(datarelay.post, oldfile));
+						oldfile.setData(r.postToCmsData(datarelay.post, oldfile));
 						log.info("oldfile.data" +(oldfile.data != null));
 
 						if(pdb.updateTemplate(oldfile)){
@@ -570,7 +570,7 @@ public class ModPages extends Module {
 					log.info("got oldfile");
 					TextFile file = (TextFile)oldfile;
 					log.info("setting data");
-					file.setData(r.genData(datarelay.post, file));
+					file.setData(r.postToCmsData(datarelay.post, file));
 
 					file.relativePath = path;
 					if(pdb.updateData(file)){

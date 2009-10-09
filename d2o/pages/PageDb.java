@@ -13,15 +13,14 @@ import cms.FileOps;
 import d2o.FlushingFile;
 
 public class PageDb {
-	private Logger log;
-
 	private static boolean created = false;
 	private static PageDb present;
 
-	private FlushingFile actions;
-
 	private static final File sdir = new File(Cgicms.products_dir,"pagedb");
 
+	private Logger log;
+
+	private FlushingFile actions;
 	private Treedex treedex;
 	private Tempdex tempdex;
 
@@ -261,6 +260,7 @@ public class PageDb {
 		index.renameRecord(path.getFilename(),uusinimi);
 
 		if(CmsFile.loadFile(path, sdir).rename(uusinimi,sdir)){
+			actions.append("r,"+path+","+uusinimi+","+Cgicms.datarelay.username);
 			return null;
 		}
 		return "error while renaming the file";
@@ -507,6 +507,7 @@ public class PageDb {
 		if(errors.length() > 0){
 			return errors.toString();
 		}
+		actions.append("-f,"+path+"/"+name+","+Cgicms.datarelay.username);
 		return null;
 	}
 	
@@ -607,11 +608,14 @@ public class PageDb {
 
 	public boolean updateData(CmsFile file) {
 		log.info("pagedb updating data");
-		return CmsFile.storeData(file, sdir);
+		actions.append("f,"+file.relativePath.getPath()+file.name+","+Cgicms.datarelay.username);
+		return CmsFile.storeData(file, new File(sdir,file.relativePath.getPath()));
 	}
 
 	public boolean updateMeta(CmsFile file) {
-		return CmsFile.storeMeta(file, sdir);	
+		log.info("pagedb updating meta");
+		actions.append("f,"+file.relativePath.getPath()+file.name+","+Cgicms.datarelay.username);
+		return CmsFile.storeMeta(file, new File(sdir,file.relativePath.getPath()));
 	}
 
 	public boolean store(){

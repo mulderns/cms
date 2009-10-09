@@ -32,6 +32,7 @@ import util.Logger;
  */
 
 public class HttpRequest {
+	private static final boolean dump_raw_post = false;
 	private Logger log;
 
 	public enum req_type {
@@ -143,7 +144,6 @@ public class HttpRequest {
 
 	private boolean processPost(){
 		try{
-
 			if(env.containsKey("CONTENT_TYPE") &&
 					env.get("CONTENT_TYPE").toLowerCase().startsWith("multipart/form-data")){
 				multipart = true;
@@ -181,6 +181,7 @@ public class HttpRequest {
 
 	private void processNormal(BufferedReader bin) throws IOException{
 		for(String apu; (apu = bin.readLine()) != null;	){
+			if(dump_raw_post)log.info("post["+apu+"]");
 			String[] pairs = apu.split("\\&");
 			for(String pair : pairs) {
 

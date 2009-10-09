@@ -201,7 +201,7 @@ public class ModOwn extends Module{
 
 					log.info("got oldfile");
 					TextFile file = (TextFile)oldfile;
-					file.setData(r.genData(datarelay.post, file));
+					file.setData(r.postToCmsData(datarelay.post, file));
 					file.relativePath = naamapath;
 
 					if(!pdb.updateData(file)){

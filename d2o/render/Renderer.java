@@ -11,11 +11,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import util.StackWrap;
 import java.util.TreeSet;
 import java.util.Map.Entry;
 
 import util.Logger;
+import util.StackWrap;
 import util.Utils;
 import d2o.pages.CmsFile;
 import d2o.pages.PageDb;
@@ -27,15 +27,6 @@ public class Renderer {
 	private static boolean created = false;
 	private static Renderer present;
 
-	PageDb pdb;
-	private static Logger log;
-
-	HashMap<String, RenderModule> modules;
-	HashMap<String, RenderModule> locals;
-
-	//private boolean preview;
-	String url;
-
 	public static Renderer getRenderer() {
 		if(!created){
 			created = true;
@@ -43,1461 +34,60 @@ public class Renderer {
 		}
 		return present;
 	}
+	
+	private static Logger log;
 
+	private HashMap<String, RenderModule> modules;
+	private HashMap<String, RenderModule> locals;
+
+	private HashMap<String, Kernel> templateCache;
+
+	private String url;
+	private PageDb pdb;
+
+	
 	private Renderer(){
 		pdb = PageDb.getDb();
 		log = new Logger("Renderer");
 		initModules();
 	}
 
-	private void initModules(){
-		locals = new HashMap<String, RenderModule>();
 
-		RenderModule module;
+	private ArrayList<DataKernel> checkData(String[] path, ArrayList<DataKernel> datas, CmsFile file) {
+		//log.info("check for corresponding data...");
 
-		module = new RenderModule("a"){
-			void init(){type = Type.local;}
-			public void substitute(Kernel metakernel, VirtualPath from) {
-				metakernel.type = Kernel.Type.code;
+		ArrayList<DataKernel> siblings = new ArrayList<DataKernel>(datas);
 
-				//String original = metakernel.id;
-				//VirtualPath to = VirtualPath.create(original);
-				//metakernel.id = "<!-- anchor "+metakernel.id+"-->";// from.getPathTo(to);
-				//String local_url = null;
-				String[] parts = metakernel.id.split(":");
-				if(url != null){
-					if (parts[1].startsWith("./")){
-						parts[1] = parts[1].substring(2);
+		int i = 0;
+		boolean found = false;
+		while(path.length > i+1){
+			found = false;
+			//log.info("looking for ["+path[i]+"]");
+			for(DataKernel dk: siblings){
+				//log.info(" ?"+dk.id);
+				if(dk.id.equals(path[i])){
+					//log.info("  +");
+
+					if(dk.subs == null){
+						dk.subs = new ArrayList<DataKernel>();
 					}
-				}
-
-				log.info("a - > "+(url==null?"@":url));
-				log.info("m - > "+parts[1]);
-				metakernel.id = (url==null?"":url)+parts[1];
-
-				//metakernel.id = "http://localhost:8080/cgi-bin/cms-2/Cgicms.exe/sivut/preview"+metakernel.id.split(":")[1];
-			}
-		};
-		locals.put(module.hook, module);
-
-		module = new RenderModule("ssi"){ //TODO: convert to using generateHtml(PageFile file)
-			void init(){type = Type.local;}
-
-			public void substitute(Kernel metakernel, VirtualPath from) {
-				metakernel.type = Kernel.Type.code;
-				PageDb pdb = PageDb.getDb();
-
-				String[] parts = metakernel.id.split(":");
-				String target = parts[1];
-
-				if(url!=null){
-					TextFile file = (TextFile)pdb.getFileMeta(VirtualPath.create(target));
-					if(file != null){
-						Kernel structure = getFile(file);
-						//log.info("apuva : "+structure.toString());
-						structure = infuse(structure, new Kernel(), from);
-						metakernel.id = "";
-						metakernel.add(new Kernel(structure.toHtml(),Kernel.Type.code));
-						//log.info("apuva : "+structure.toHtml());
-					}else{
-						metakernel.id = "";
-						metakernel.add(new Kernel("<!-- file not found: "+target+" -->",Kernel.Type.code));
-					}
-
-					/*
-				if(file == null){
-					log.fail("ssi fetch file null");
-					metakernel.id = "<!-- ssi error ["+VirtualPath.create(target).getUrl()+"] -->";
-				}else{
-					metakernel.id = "";
-					for(String s: file.getData()){
-						metakernel.add(new Kernel(s,Kernel.Type.code));
-					}
-				}*/
-				}else{
-					metakernel.id = "";
-					metakernel.add(new Kernel("<!--#include virtual=\""+target+"\" -->",Kernel.Type.code));
-
-				}
-				metakernel.type = Kernel.Type.code;
-			}
-		};
-		locals.put(module.hook, module);
-
-
-		modules = new HashMap<String, RenderModule>();
-
-		module = new RenderModule("line"){
-			void init(){type = Type.external;}
-
-			@Override
-			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
-				log.info("synthesizing ["+hook+"] id["+m.id+"]");
-
-				brew.addContent(m.getLabel()+":");
-				brew.addField(parentid+m.id, Utils.deNormalize(extractData(cloud, m.id, parentid).data), true, new TextField());
-			}
-
-			@Override
-			public void render(Kernel metakernel, Kernel cloud){
-				String[] parts = metakernel.id.split(":");
-				String id = parts[1];
-				Kernel data = cloud.getData(id);
-				if(data != null){
-					log.info("data found");
-					metakernel.id = "";
-					metakernel.add(data.getSubs());
-					//metakernel.id = data.getFirst().id; //"";// data.id;
-					//log.info(">"+metakernel.id+"<");
-
-					//metakernel.addAll(data);
-				}else{
-					log.info("could not get data from cloud");
-					metakernel.id = "<!-- null line -->";
-				}
-				metakernel.type = Kernel.Type.code;
-			}
-		};
-		modules.put(module.hook, module);
-
-		module = new RenderModule("area"){
-			void init(){type = Type.external;}
-			@Override
-			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
-				log.info("synthesizing ["+hook+"] id["+m.id+"]");
-
-				int height = 200;
-
-				//				String[] elements = new String[0];
-				if(m.parts != null && m.parts.length > 2){
-					height = Integer.parseInt(m.parts[2]);
-				}
-
-				brew.addContent(m.getLabel()+":");
-				brew.addField(parentid+m.id, kastrate(extractData(cloud, m.id, parentid).data), true, new TextAreaField(height));
-			}
-
-			@Override
-			public void render(Kernel metakernel, Kernel cloud){
-				String[] parts = metakernel.id.split(":");
-				String id = parts[1];
-				Kernel data = cloud.getData(id);
-				if(data != null){
-					//log.info("data found");
-					metakernel.id = "";// data.id;
-					metakernel.addAll(data);
-				}else{
-					log.info("could not get data from cloud");
-					id = "<!-- null area -->";
-				}
-				metakernel.type = Kernel.Type.code;
-			}
-		};
-		modules.put(module.hook, module);
-
-		module = new RenderModule("parsing_area"){
-			void init(){type = Type.external;}
-			@Override
-			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
-				log.info("synthesizing ["+hook+"] id["+m.id+"]");
-				int height = 200;
-
-				if(m.parts != null && m.parts.length > 2){
-					height = Integer.parseInt(m.parts[2]);
-				}
-
-				brew.addContent(m.getLabel()+":");
-				brew.addField(parentid+m.id, extractData(cloud, m.id, parentid).data, true, new TextAreaField(height));
-			}
-
-			@Override
-			public void render(Kernel metakernel, Kernel cloud){
-				String[] parts = metakernel.id.split(":");
-				String id = parts[1];
-				Kernel data = cloud.getData(id);
-
-
-				if(data != null){
-					//log.info("data found");
-					metakernel.id = "";// data.id;
-					data.id = data.id.replace("\n", "<br/>");
-					for(Kernel k: data.asList()){
-
-						k.id = k.id.replace("\n", "<br/>");
-
-					}
-
-					metakernel.addAll(data);
-				}else{
-					log.info("could not get data from cloud");
-					id = "<!-- null area -->";
-				}
-				metakernel.type = Kernel.Type.code;
-			}
-		};
-		modules.put(module.hook, module);
-
-		module = new RenderModule("dynamic"){
-			void init(){type = Type.external;}
-
-			private TreeSet<DataKernel> extractDynData(TreeSet<DataKernel> cloud, String id, String parentid){
-				log.info("extracting dyndata... id["+id+"] pid["+parentid+"]");
-
-				//first get to the right stage
-				ArrayList<DataKernel> buffer = new ArrayList<DataKernel>(cloud);
-
-				int i = 0;
-				int j = 0;
-				i = parentid.indexOf('.');
-				String curid;
-				while(i != -1){
-					curid = parentid.substring(j,i);
-					for(DataKernel dk : buffer){
-						if(dk.id.startsWith((curid))){
-							if(dk.subs == null)
-								dk.subs = new ArrayList<DataKernel>();
-							buffer = dk.subs;
-							continue;
-						}
-					}
-					j = i+1;
-					i = parentid.indexOf('.',j);
-				}
-				TreeSet<DataKernel> kernels = new TreeSet<DataKernel>();
-				for(DataKernel dk : buffer){
-					if(dk.id.startsWith((id+"-"))){
-						kernels.add(dk);
-						continue;
-					}
-				}
-				buffer.removeAll(kernels);
-				return kernels;
-			}
-
-			@Override
-			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
-				log.info("synthesizing ["+hook+"] id["+m.id+"]");
-
-				TreeSet<DataKernel> datas = extractDynData(cloud, m.id, parentid);
-
-				if(datas != null){
-					for(DataKernel data : datas){
-						brew.addLayer("div","ingroup");
-						brew.addSingle("input type=\"hidden\" name=\""+parentid+data.id+"\" value=\"\" style=\"display:none\"");
-						brew.addTag("h3","<a class=\"add\" title=\"poista\" href=\"?del="+parentid+data.id+"\">X</a><a class=\"add\" title=\"shift up\" href=\"?up="+parentid+data.id+"\">&#94;</a>"+data.id);
-
-						for(MetaKernel subm: m.subs){
-							if(modules.containsKey(subm.getType())){
-								modules.get(subm.getType()).synthesize(subm, datas, brew, parentid+data.id+".");
-							}else{
-								log.fail(" invalid key/type/module ["+subm.getType()+"]");
-							}
-						}
-						brew.up();
-					}
-				}
-				brew.addLink(null, "ingroup", "?add="+parentid+m.getLabel(), "[+] "+m.id);
-			}
-
-			@Override
-			public void render(Kernel metakernel, Kernel cloud){
-				log.info("rendering dynamic ["+metakernel.id+"]");
-				Kernel proto = new Kernel(metakernel);
-
-				ArrayList<Kernel> datas = new ArrayList<Kernel>();
-
-				for(Kernel k : cloud.getSubs()){
-					if(k.id.startsWith(metakernel.id)){
-						//log.info(" data["+k.id+"]");
-						datas.add(k);
-					}
-				}
-				metakernel.getSubs().clear();
-				metakernel.id = "";
-
-				//log.info("proto : " +proto.debug(0));				
-
-				log.info("processing");
-				for(Kernel k : datas){
-					//log.info("["+k.id+"]");
-					for(Kernel protosub:proto.getSubs()){
-						if(protosub.type.equals(Kernel.Type.code)){
-							//log.info(" [code] "+ protosub.id);
-
-							metakernel.add(new Kernel(protosub.id,Kernel.Type.code));
-
-						}else if(protosub.type.equals(Kernel.Type.meta)){
-							//log.info(" [meta] ["+protosub.id+"]");
-							RenderModule m;
-							if(protosub.id.indexOf(':') == -1){
-								m = modules.get("dynamic");
-							}else{
-								m = modules.get(protosub.id.split(":")[0]);
-							}
-							if(m!= null){
-								Kernel temp = new Kernel(protosub);
-								m.render(temp, k);
-								metakernel.add(temp);
-							}
-						}
-					}
-
-				}
-				metakernel.type = Kernel.Type.code;
-			}
-		};
-		modules.put(module.hook, module);
-
-		module = new RenderModule("drop"){
-			void init(){type = Type.external;}
-
-			@Override
-			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
-				log.info("synthesizing ["+hook+"] id["+m.id+"]");
-
-				String[] elements = new String[0];
-				if(m.parts != null && m.parts.length > 2){
-					elements = m.parts[2].split(",");
-				}
-				brew.addContent(m.getLabel()+":");
-				String value = extractData(cloud, m.id, parentid).data;
-				brew.addField(parentid+m.id, value, true, new ComboBoxField(elements, value));
-			}
-
-			@Override
-			public void render(Kernel metakernel, Kernel cloud){
-				String[] parts = metakernel.id.split(":");
-				String id = parts[1];
-				Kernel data = cloud.getData(id);
-				if(data != null){
-					//log.info("data found");
-					metakernel.id = "";// data.id;
-					metakernel.addAll(data);
-				}else{
-					log.info("could not get data from cloud");
-					id = "<!-- null drop -->";
-				}
-				metakernel.type = Kernel.Type.code;
-			}
-		};
-		modules.put(module.hook, module);
-
-		module = new RenderModule("hidden"){
-			void init(){type = Type.external;}
-
-			@Override
-			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
-				log.info("synthesizing ["+hook+"] id["+m.id+"]");
-
-				brew.addContent("<!-- " +m.getLabel()+ "-->");
-				//brew.addField(parentid+m.id, extractData(cloud, m.id, parentid).data, true, new TextField());
-			}
-
-			@Override
-			public void render(Kernel metakernel, Kernel cloud){
-				log.info("render hidden");
-				String[] parts = metakernel.id.split(":");
-				String id = parts[1];
-				Kernel data = cloud.getData(id);
-				if(data != null){
-					log.info("data found");
-					metakernel.id = data.getFirst().id; //"";// data.id;
-					//log.info(">"+metakernel.id+"<");
-					//metakernel.addAll(data);
-				}else{
-					log.info("could not get data from cloud");
-					metakernel.id = "<!-- hidden null line -->";
-				}
-				metakernel.type = Kernel.Type.code;
-			}
-		};
-		modules.put(module.hook, module);
-	}
-
-
-	public String[] getFields(CmsFile file){
-		if(file.parent == null){
-			String[] fields = new String[1];
-			fields[0] = "data";
-			return fields;
-		}else{
-			return pdb.getTemplate(file.parent).getFields();
-		}
-	}
-
-	public CmsElement generateEditPage(CmsFile file){
-		log.info("gen edit");
-
-		/** needs 
-		 * - the file to be edited
-		 * - maybe html elements
-		 * - access to parent templates
-		 */
-
-
-		CmsElement edit = new CmsElement();
-		edit.addLayer("div","ingroup filled");
-
-		if(file.parent == null){ 	//source edit
-			log.info("source edit");
-
-			log.info("reading data [");
-			StringBuilder data = new StringBuilder();
-			data.append(kastrate(file.getData()));
-
-			log.info("            ]");
-
-			edit.addField("data", data.toString(), true, new TextAreaField(500));
-
-		}else{
-			ArrayList<DataKernel> cloud = mineData(file.getData());
-			if(cloud != null){
-				log.info("mined data");
-				int i = 0;
-				for(DataKernel data: cloud){
-					log.info((i++)+": " + data.toString());
-				}
-			}
-			log.info("getting parent["+file.name+"] -> ["+file.parent+"]");
-			TemplateFile parent = pdb.getTemplate(file.parent);
-			if(parent == null){
-				log.fail("parent template could not be found ["+file.parent+"]");
-				edit.addTag("pre","parent template could not be found ["+file.parent+"]");
-				edit.addLayer("pre");
-
-				edit.addContent(file.getData());
-				edit.up();
-
-				return edit;
-			}
-			ArrayList<MetaKernel> storm = mineMeta(parent.getData());
-			//fill parent with data and produce elements
-			edit = brew(storm, cloud);
-		}
-
-		return edit;
-	}
-
-
-	private String kastrate(String data) {
-		if(data == null)
-			return null;
-
-		StringBuilder sb = new StringBuilder();
-		
-		int last = 0;
-		for(int i = 0 ; i < data.length(); i++){
-			if(data.charAt(i) == '<'){
-				sb.append(data.substring(last, i)).append("&lt;");
-				last = i+1;
-			}else if(data.charAt(i) == '>'){
-				sb.append(data.substring(last, i)).append("&gt;");
-				last = i+1;
-			}
-		}
-
-		if(last < data.length())
-			sb.append(data.substring(last));
-
-		return sb.toString();
-	}
-
-	private String kastrate2(String data) {
-		if(data == null)
-			return null;
-
-		StringBuilder sb = new StringBuilder();
-		
-		int last = 0;
-		for(int i = 0 ; i < data.length(); i++){
-			if(data.charAt(i) == '«'){
-				sb.append(data.substring(last, i)).append("&#171");
-				last = i+1;
-			}else if(data.charAt(i) == '»'){
-				sb.append(data.substring(last, i)).append("&#187;");
-				last = i+1;
-			}
-		}
-
-		if(last < data.length())
-			sb.append(data.substring(last));
-
-		return sb.toString();
-	}
-
-	public String generateHtml(TextFile file) {
-		log.info("Generating html...");
-
-		if(file == null){
-			log.fail("file is null");
-			return null;
-		}
-
-		VirtualPath path = (file.relativePath==null?VirtualPath.create(""):file.relativePath);
-		String parent;
-
-		// gut == abstract sectionize
-		// infuse == synthetize meta tags to code using cloud data;
-
-		// gut the file
-		log.info("1st get gutted file");
-		Kernel structure = getFile(file);
-		// infuse the file -> cloud
-		//log.info("gutts: "+structure.toString());
-
-		log.info("1st infuse");
-		Kernel cloud = infuse(structure, new Kernel(), path);
-		//log.info("fusion: "+cloud.toString());
-		// if file has parent
-		parent = structure.getParentName();
-
-		while(parent != null && !parent.equals("null")){
-			log.info("gut lap");
-			// gut the parent
-			structure = getCachedTemplate(parent);
-			//log.info("gutts: "+structure.toString());
-			// infuse cloud and parent -> new cloud
-			cloud = infuse(structure, cloud, path);
-			//log.info("fusion: "+cloud.toString());
-			// if parent has parent
-			parent = structure.getParentName();
-		}
-
-		StringBuilder sb = new StringBuilder();
-
-		if(url!=null){
-			if(parent!=null){
-				sb.append("Content-Type: text/html; charset=iso-8859-1;\n\n");
-			}else{
-				sb.append("Content-Type: "+file.content_type+"; charset=iso-8859-1;\n\n");
-			}
-			log.info("content type: ["+file.content_type+"] ->"+sb.toString());
-		}
-
-		//final String linesep = System.getProperty("line.separator");
-		/*for(Kernel kernel : cloud.subs){
-			sb.append(kernel.toString());
-			sb.append(linesep);
-		}*/
-
-		if(cloud != null){
-			sb.append(cloud.toHtml());
-		}else{
-			sb.append("<html><body><pre>null</pre></body></html>");
-			log.fail("cloud == @null");
-		}
-		return sb.toString();
-
-	}
-
-
-	private Kernel infuse(Kernel structure, Kernel cloud, VirtualPath path) {
-		log.info("Infusing...");
-		long start = System.nanoTime();
-
-		if(structure == null){
-			log.info("no structure");
-			return new Kernel();
-		}
-		if(cloud == null){
-			log.info("cloud == @");
-			cloud = new Kernel();
-		}
-
-		Kernel mesosphere = new Kernel();
-
-		//ArrayList<Kernel> hello = structure.asList();
-		//log.info("as list:"+hello.size()+"");
-
-		for(Kernel k : structure.getSubs()){
-			if(k.type.equals(Kernel.Type.code)){
-				log.info("add [code]");
-				mesosphere.add(k);
-			}else if(k.type.equals(Kernel.Type.data)){
-				log.info("add [data] "+k.id);
-				mesosphere.add(k);
-				for(Kernel l : k.getSubs()){
-
-					if(l.type.equals(Kernel.Type.meta)){
-						log.info("  [fuse] "+k.id);
-						metaFuse(l,cloud,path);
-					}
-				}
-			}else if(k.type.equals(Kernel.Type.meta)){
-				log.info("add [meta] "+k.id);
-				mesosphere.add(metaFuse(k,cloud,path));
-			} 
-		}
-
-		//log.info("path:"+path.getUrl());
-		//log.info("cloud:"+cloud.toString());
-		//log.info("structure:"+structure.toString());
-		//log.info("mesosphere:"+mesosphere.toString());
-
-		log.info("infuse took: " + Utils.nanoTimeToString((System.nanoTime() - start)));
-		return mesosphere;
-	}
-
-
-	private Kernel metaFuse(Kernel metakernel, Kernel cloud, VirtualPath path) {
-		log.info("Metafuse...");
-
-		String[] parts = metakernel.id.split(":");
-		String type = "";
-		if(parts.length == 1){
-			type = "dynamic";
-		}else if (parts.length > 1){
-			type = parts[0];
-		}
-
-		log.info("type ["+type+"]");
-		log.info(metakernel.id);
-		if(modules.containsKey(type)){
-			//log.info(" module found");
-			modules.get(type).render(metakernel, cloud);
-		}else{
-			if(locals.containsKey(type)){
-				locals.get(type).substitute(metakernel, path);
-				//log.info(" module found in locals");
-			}else{
-				log.fail(" invalid key/type/module ["+type+"]");
-			}
-		}
-		return metakernel;
-	}
-
-
-	private CmsElement brew(ArrayList<MetaKernel> storm, ArrayList<DataKernel> _cloud) {
-		log.info("storm is brewing... s["+(storm==null?"null":storm.size())+"] c["+(_cloud==null?"null":_cloud.size())+"]");
-		TreeSet<DataKernel> cloud;
-		if(_cloud != null){
-			cloud = new TreeSet<DataKernel>(_cloud);
-		}else{
-			cloud = new TreeSet<DataKernel>();
-		}
-
-		CmsElement brew = new CmsElement();
-		brew.addLayer("div","ingroup filled");
-
-		if(storm != null){
-			for(MetaKernel m: storm){
-				log.info("["+m.getType()+"]");
-				if(modules.containsKey(m.getType())){
-					log.info(" module found");
-					modules.get(m.getType()).synthesize(m, cloud, brew, "");
-				}else{
-					log.fail(" invalid key/type/module ["+m.getType()+"]");
-				}
-			}
-		}else{
-			log.info("storm == null");
-		}
-		return brew;
-	}
-
-
-	private Kernel getFile(TextFile file) {
-		//Kernel data = gut(file.bin);
-		if(file != null){
-			BufferedReader bin = file.datasource.initRead();
-			if(file.parent!=null){
-				if(!file.parent.equals("null")){
-					Kernel data = dataGut2(bin);
-					file.datasource.endRead(bin);
-					while(data.parent != null)
-						data = data.parent;
-					//data.addFile(new Kernel((file.parent==null?"null":file.parent),Kernel.Type.file)); //redundant null check
-					data.addFile(new Kernel(file.parent,Kernel.Type.file));
-					return data;
-				}
-			}
-			//Kernel data = straight(file.bin);
-			Kernel data = dataGut2(bin);
-			file.datasource.endRead(bin);
-			return data;
-		}
-		return null;
-	}
-
-	private HashMap<String, Kernel> templateCache; 
-	private Kernel getCachedTemplate(String filename){
-		if(templateCache == null){
-			templateCache = new HashMap<String, Kernel>();
-		}
-
-		Kernel cached = templateCache.get(filename);
-		if(cached == null){
-
-			TemplateFile temp = pdb.getTemplateMeta(filename);
-			if(temp == null){
-				return null;
-			}
-
-
-			//cached = gut(temp.bin);
-			BufferedReader bin = temp.datasource.initRead();
-			cached = dataGut2(bin);
-			temp.datasource.endRead(bin);
-
-			while(cached.parent != null)
-				cached = cached.parent;
-
-			cached.addFile(new Kernel((temp.parent==null?"null":temp.parent),Kernel.Type.file));
-			templateCache.put(temp.name, cached);
-		}
-
-		return cached;
-
-	}
-
-	/*
-	private Kernel gut(BufferedReader reader) {
-		long start = System.nanoTime();
-
-		char c;
-		int i;
-		Kernel open = new Kernel();
-
-		StringBuilder buffer = new StringBuilder();
-
-		try{
-			while((i = reader.read()) != -1){
-				//log.info("[gt]               ["+c+"]");
-				c = (char)i;
-				switch (c) {
-
-				case '{':
-					log.info("[gt] {");
-					if(buffer.length()>0){
-						log.info("[gt] +code -> [dg]");
-						open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
-						buffer.setLength(0);
-					}
-					open = dataGut(open, reader);
-					log.info("^");
-					break;
-
-				case '}':
-					log.info("[gt] malform - } ");
-					buffer.setLength(0);
-					break;
-
-				case '[':
-					log.info("[gt] [");
-					if(buffer.length() > 0){
-						log.info("[gt] +code -> [mg]");
-						open.subs.add(new Kernel(buffer.toString(),open, Kernel.Type.code));
-						buffer.setLength(0);
-					}
-					open = metaGut(open, reader);
-					log.info("^");
-					break;
-
-				case ']':
-					log.info("[gt] malform - ] ");
-					buffer.setLength(0);
-					break;
-				default:
-					buffer.append(c);
-				}
-			}
-
-			log.info("[gt] end of stream");
-			if(buffer.length() > 0){
-				log.info("[gt] +code");
-				open.subs.add(new Kernel(buffer.toString(),open, Kernel.Type.code));
-				buffer.setLength(0);
-			}
-		}catch (IOException ioe) {
-			log.fail("IOException occured while gutting: "+ioe);
-		}
-
-		log.info("gut took " + Utils.nanoTimeToString((System.nanoTime() - start)));
-		return open;
-	}*/
-
-
-	/*HashMap<String, TemplateFile> templateCache;
-	private CmsFile getCachedTemplate(String filename) {
-		if(templateCache == null){
-			templateCache = new HashMap<String, TemplateFile>();
-		}
-
-		TemplateFile cached = templateCache.get(filename);
-		if(cached == null){
-			cached = pdb.getTemplate(filename);
-			templateCache.put(cached.name, cached);
-		}
-
-		return cached;
-	}*/
-
-	/*
-	private Kernel dataGut(Kernel _open, BufferedReader reader) throws IOException{
-		char c;
-		int i;
-		StringBuilder buffer = new StringBuilder();
-
-		boolean openbrace = true;
-		boolean doublepoint = false;
-
-		Kernel open = new Kernel();
-
-		while((i = reader.read()) != -1){
-			c = (char)i;
-			switch (c) {
-
-			case '{':
-				log.info("[dg] {");
-				if(!openbrace){
-					openbrace = true;
-					if(buffer.length()>0){
-						log.info("[dg] +code");
-						//log.info("["+buffer.toString()+"]");
-
-						open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
-
-						//open.data = buffer.toString();
-						buffer.setLength(0);
-					}
-					//dataGut(open, reader);
-				}else{
-					log.fail("[dg] malform x!p");
-					buffer.setLength(0);
-
-				}
-				break;
-
-			case '}':
-				log.info("[dg] }");
-				if(openbrace){
-					openbrace = false;
-					if(doublepoint){
-						doublepoint = false;
-						final String id = buffer.toString();
-						buffer.setLength(0);
-						if(open.id.equals(id)){
-							log.info("[dg] $["+id+"]");
-							open = open.parent;
-							if(open.parent == null){
-								log.info("[dg] <");
-								_open.subs.add(open.subs.get(0));
-								return _open;
-							}
-						}else{
-							log.fail("[dg] malform o!l - o["+open.id+"] l["+id+"]");
-							buffer.setLength(0);
-						}
-					}else{
-						log.info("[dg] +dkernel ["+buffer.toString()+"]");
-						Kernel temp = new Kernel(buffer.toString(), open, Kernel.Type.data);
-						open.subs.add(temp);
-						open = temp;
-						buffer.setLength(0);
-					}
-					//open.subs.add(new Kernel(buffer.toString(), open, Kernel.Type.data));
-					//buffer.setLength(0);
-				}else{
-					log.fail("[dg] malform }!o");
-					buffer.setLength(0);
-				}
-				break;
-
-			case ':':
-				if(openbrace){
-					log.info("[dg] :");
-					doublepoint = true;
-					if(buffer.length() == 0){
-
-					}else{
-						buffer.append(c);
-					}
-				}
-				break;
-
-			case '[':
-				log.info("[dg] [");
-				if(buffer.length() > 0){
-					log.info("[dg] +code");
-					open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
-					buffer.setLength(0);
-				}
-				log.info("[dg] > [mg]");
-				open = metaGut(open, reader);
-				break;
-
-			case ']':
-				log.info("[dg] malform - ] ");
-				buffer.setLength(0);
-				break;
-			default:
-				buffer.append(c);
-			}
-
-		}
-		log.info("end of stream");
-		return open;
-	}*/
-
-
-	private Kernel metaGut(Kernel open, BufferedReader reader) throws IOException{
-		char c;
-		int i;
-		StringBuilder buffer = new StringBuilder();
-
-		boolean openbrace = true;
-		boolean doublepoint = false;
-		boolean end = false;
-
-		while((i = reader.read()) != -1){
-			c = (char)i;
-			switch (c) {
-
-			case '[':
-				log.info("[mg] [");
-				if(!openbrace){
-					openbrace = true;
-					if(buffer.length()>0){
-						log.info("[mg] >data");
-						//open.data = buffer.toString();
-						open.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
-						buffer.setLength(0);
-					}
-				}else{
-					log.fail("[mg] malform x!p");
-				}
-				break;
-
-			case ']':
-				log.info("[mg] ]");
-				if(openbrace){
-					openbrace = false;
-					if(doublepoint){
-						doublepoint = false;
-						if(end){ // end to dynamic
-							end = false;
-							final String id = buffer.toString();
-							buffer.setLength(0);
-							if(open.id.equals(id)){
-								log.info("[mg] $");
-								open = open.parent;
-								if(!open.type.equals(Kernel.Type.meta)){
-									log.info("[mg] <");
-									return open;
-								}
-							}else{
-								log.fail("[mg] malform o!l - o["+open.id+"] l["+id+"]");
-							}
-						}else{ // normal tag
-							log.info("[mg] +normal ");
-							//open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.meta));
-							open.add(new Kernel(buffer.toString(),open,Kernel.Type.meta));
-							if(!open.type.equals(Kernel.Type.meta))
-								return open;
-							buffer.setLength(0);
-						}
-					}else{ // dynamic
-						log.info("[mg] +dynamic");
-						Kernel temp = new Kernel(buffer.toString(), open, Kernel.Type.meta);
-						//open.subs.add(temp);
-						open.add(temp);
-						open = temp;
-						buffer.setLength(0);
-					}
-				}else{
-					log.fail("[mg] malform }!o");
-				}
-				break;
-
-			case ':':
-				log.info("[mg] :");
-				if(openbrace){
-					doublepoint = true;
-					if(buffer.length() == 0){
-						log.info("[mg] =$");
-						end = true;
-					}else{
-						buffer.append(c);
-					}
-				}
-				break;
-
-			default:
-				buffer.append(c);
-			}
-
-		}
-		log.info("end of stream");
-		return open;
-	}
-
-
-	public static ArrayList<MetaKernel> mineMeta(String data) {
-		long start = System.nanoTime();
-		if(log == null){
-			log = new Logger("Renderer");
-		}
-		log.info("Mining meta...");
-		if(data == null)
-			return new ArrayList<MetaKernel>();
-
-		ArrayList<MetaKernel> storm = new ArrayList<MetaKernel>();
-
-		StackWrap<MetaKernel> parents = new StackWrap<MetaKernel>();
-		//Stack<MetaKernel> parents = new Stack<MetaKernel>();
-
-		MetaKernel kernel = new MetaKernel("~");
-
-		int prev = 0;
-		int alku = 0;
-		String intag = "";
-		for(String line : data.split("\n")){
-			//log.info(line);
-			prev = 0;
-			while((alku = line.indexOf('[', prev)) != -1){
-				//log.info("  [");
-				//log.info(Utils.genSpace(alku)+"^");
-				if((prev = line.indexOf(']', alku)) != -1){
-					//log.info("  ]");
-					//log.info(Utils.genSpace(prev)+"^");
-
-					intag = line.substring(alku+1, prev);
-					//log.info("  >"+intag+"<");
-
-					switch (intag.indexOf(':')) {
-
-					case -1: //dynaaminen
-						//log.info("  d");
-						kernel = new MetaKernel();
-						kernel.id = intag;
-						parents.push(kernel);
-						break;
-
-					case 0:	//lopputagi (dynaamiselle)
-						//log.info("  /d");
-						if(!parents.isEmpty()){
-							kernel = parents.pop();
-							if(parents.isEmpty()){
-								storm.add(kernel);
-							}else{
-								parents.peek().add(kernel);
-							}
-						}else{
-							log.fail("malform - empty parent");
-							log.fail(line);
-							log.fail(Utils.genSpace(prev)+"^");
-							return null;
-						}
-						break;
-
-					default : //normi tagit
-						//log.info("  n");
-						kernel = new MetaKernel(intag);
-					if(!parents.isEmpty()){
-						//log.info("  -> ["+parents.peek().id+"]");
-						parents.peek().add(kernel);
-					}else{
-						//log.info("  -> root");
-						storm.add(kernel);
-					}
-					}
-				}else{
-					log.fail("malform");
-					log.fail(line);
-					log.fail(Utils.genSpace(prev)+"^");
-					return null;
-				}
-			}
-		}
-		HashSet<String> done = new HashSet<String>(storm.size());
-		ArrayList<MetaKernel> clean = new ArrayList<MetaKernel>(storm.size());
-		for(MetaKernel k : storm ){
-			if(!done.contains(k.id)){
-				clean.add(k);
-				done.add(k.id);
-			}
-		}
-
-		log.info("mineMeta took " + Utils.nanoTimeToString((System.nanoTime() - start)));
-		return clean;//storm;
-	}
-
-	/*
-	static ArrayList<MetaKernel> mineMeta2(String[] data) {
-		long start = System.nanoTime();
-		if(log == null){
-			log = new Logger("Renderer");
-		}
-		log.info("Mining meta2...");
-		if(data == null)
-			return new ArrayList<MetaKernel>();
-
-		ArrayList<MetaKernel> storm = new ArrayList<MetaKernel>();
-
-		boolean openbrace = false;
-		//boolean opencontent = false;
-		boolean doublepoint = false;
-		boolean end = false;
-
-		//Stack<MetaKernel> open = new Stack<MetaKernel>();
-
-		int alku = 0;
-
-		MetaKernel kernel = new MetaKernel("~"); 
-
-		StringBuilder buffer = new StringBuilder();
-		for(int l = 0; l < data.length; l++){
-
-			log.info(data[l]);
-
-			for(int i = 0; i < data[l].length(); i++){
-				switch (data[l].charAt(i)) {
-				case '[':
-					if(!openbrace){
-						openbrace = true;
-						//if(opencontent){
-						//	opencontent = false;
-						if(buffer.length()>0){ // contents (non meta)
-							MetaKernel mk = new MetaKernel();
-							mk.id = null;
-							mk.header = buffer.toString() + data[l].substring(alku, i);
-							log.info("~");
-							if(open.empty()){
-								storm.add(mk);
-								log.info("+|");
-							}else{
-								open.peek().add(mk);
-								log.info("+<");
-							}
-							buffer = new StringBuilder();
-						}else{ // contents (non meta)
-							MetaKernel mk = new MetaKernel();
-							mk.id = null;
-							mk.header = data[l].substring(alku, i);
-							log.info("~");
-							if(open.empty()){
-								storm.add(mk);
-								log.info("+|");
-							}else{
-								open.peek().add(mk);
-								log.info("+<");
-							}
-						}
-						//cloud.add(kernel);
-						alku = i+1;
-						log.info(Utils.genSpace(i)+">");
-						//}else{
-						//	alku = i+1;
-						//	log.info(Utils.genSpace(i)+"/");
-						//}
-					}else{
-						log.fail("malform x!p");
-						log.fail(data[l]);
-						log.fail(Utils.genSpace(i)+"^");
-						return null;
-					}
-					break;
-
-				case ']':
-					if(openbrace){
-						openbrace = false;
-
-						if(doublepoint){ // non dynamic or end to dynamic
-							doublepoint = false;
-							log.info(Utils.genSpace(i)+"\\");
-							if(end){  // end to dynamic
-								end = false;
-								log.info("$");
-
-								if(!open.empty() && open.peek().id.equals(data[l].substring(alku, i))){
-									MetaKernel temp = open.pop();
-									if(open.empty()){
-										storm.add(temp);
-										log.info("+|");
-									}else{
-										open.peek().add(temp);
-										log.info("+<");
-									}
-									alku = i+1;
-								}else{
-									log.fail("malform o!l - o["+open.peek()+"] l["+data[l].substring(alku, i)+"]");
-									log.fail(data[l]);
-									log.fail(Utils.genSpace(i)+"^");
-									return null;
-								}
-
-							}else{ // non dynamic
-								log.info("¤ "+data[l].substring(alku, i));
-								MetaKernel temp = new MetaKernel(data[l].substring(alku, i));
-								if(open.empty()){
-									storm.add(temp);
-									log.info("+|");
-								}else{
-									open.peek().add(temp);
-									log.info("+<");
-								}
-								alku = i+1;									
-
-							}
-
-						}else{ //dynamic
-
-							//if(!opencontent){
-							//	opencontent = true;
-							log.info(Utils.genSpace(i)+"(");
-							kernel = new MetaKernel(data[l].substring(alku, i));
-							open.push(kernel);
-							alku = i+1;
-							//}else{
-							//	log.fail("malform c!o - o["+open.peek()+"] l["+data[l].substring(alku, i)+"]");
-							//	log.fail(data[l]);
-							//	log.fail(Utils.genSpace(i)+"^");
-							//	return null;
-							//}
-						}
-
-					}else{
-						log.fail("malform e!o");
-						log.fail(data[l]);
-						log.fail(Utils.genSpace(i)+"^");
-						return null;
-					}
-					break;
-				case ':':
-					if(openbrace){
-						doublepoint = true;
-						if(alku == i){
-							alku++;
-							end = true;
-						}
-					}
-					break;
-
-				default:
+					siblings = dk.subs;
+					found = true;
 					break;
 				}
-
-
 			}
-
-			if(data[l].length()-1 > alku){
-				log.info("\\");
-				buffer.append(data[l].substring(alku));
-				buffer.append("\n");
+			if(!found){
+				log.fail("not found ["+path[i]+"]");
+				break;
 			}
-			alku = 0;
-
+			i++;
 		}
-
-		log.info("mineMeta2 took " + Utils.nanoTimeToString((System.nanoTime() - start)));
-		return storm;
-	}*/
-
-
-	public static ArrayList<DataKernel> mineData(String data){
-		long start = System.nanoTime();
-		log.info("Mining data...");
-		ArrayList<DataKernel> cloud = new ArrayList<DataKernel>();
-
-		boolean openbrace = false;
-		boolean opencontent = false;
-		boolean doublepoint = false;
-
-		StackWrap<DataKernel> open = new StackWrap<DataKernel>();
-
-		int alku = 0;
-
-		DataKernel kernel;// = new DataKernel("~"); 
-
-		StringBuilder buffer = new StringBuilder();
-
-		for(int i = 0; i < data.length(); i++){
-			switch (data.charAt(i)) {
-			case '«':
-				if(!openbrace){
-					openbrace = true;
-					if(opencontent){
-						opencontent = false;
-						if(buffer.length()>0){
-							open.peek().data = buffer.toString() + data.substring(alku, i);
-							buffer = new StringBuilder();
-						}else{
-							open.peek().data = /*buffer.toString() +*/ data.substring(alku, i);
-						}
-						//cloud.add(kernel);
-						alku = i+1;
-						//log.info(Utils.genSpace(i)+")");
-					}else{
-						alku = i+1;
-						//log.info(Utils.genSpace(i)+"/");
-					}
-				}else{
-					log.fail("malform x!p");
-					log.fail(data);
-					log.fail(Utils.genSpace(i)+"^");
-					return null;
-				}
-				break;
-
-			case '»':
-				if(openbrace){
-					openbrace = false;
-					if(doublepoint){
-						doublepoint = false;
-						//log.info(Utils.genSpace(i)+"\\");
-						if(open.peek().id.equals(data.substring(alku, i))){
-							DataKernel temp = open.pop();
-							if(open.isEmpty()){
-								cloud.add(temp);
-							}else{
-								open.peek().add(temp);
-							}
-							alku = i+1;
-						}else{
-							log.fail("malform o!l - o["+open.peek()+"] l["+data.substring(alku, i)+"]");
-							log.fail(data);
-							log.fail(Utils.genSpace(i)+"^");
-							return null;
-						}
-
-					}else{
-						if(!opencontent){
-							opencontent = true;
-							//log.info(Utils.genSpace(i)+"(");
-							kernel = new DataKernel(data.substring(alku, i));
-							open.push(kernel);
-							alku = i+1;
-						}else{
-							log.fail("malform c!o - o["+open.peek()+"] l["+data.substring(alku, i)+"]");
-							log.fail(data);
-							log.fail(Utils.genSpace(i)+"^");
-							return null;
-						}
-					}
-
-				}else{
-					log.fail("malform e!o");
-					log.fail(data);
-					log.fail(Utils.genSpace(i)+"^");
-					return null;
-				}
-				break;
-			case ':':
-				if(openbrace){
-					doublepoint = true;
-					if(alku == i){
-						alku++;
-					}else{
-						log.fail("malform :!1st");
-						log.fail(data);
-						log.fail(Utils.genSpace(i)+"^");
-						return null;
-					}
-				}
-				break;
-
-			default:
-				break;
-			}
+		//log.info("i["+i+"]");
+		if(i < 1){
+			//log.info("s = d");
+			siblings = datas;
 		}
-
-		log.info("mineData took " + Utils.nanoTimeToString((System.nanoTime() - start)));
-		return cloud;
-	}
-
-
-	public String[] genData(HashMap<String, String> post, CmsFile file) {
-		log.info("Generating data...");
-		if(file.parent == null){
-			log.info(" plain source");
-			//String[] temp = new String[1];
-			//temp[0] = post.get("data").split("\n");
-			//return temp;
-			return post.get("data").split("\n");
-		}else{
-			log.info(" has parent");
-			ArrayList<DataKernel> buffer2 = new ArrayList<DataKernel>();
-
-			log.info("processing post entries");
-			HashMap<String, String> post_clean = new HashMap<String, String>(post);
-			post_clean.remove("_lastmodified");
-			post_clean.remove("_save");
-			post_clean.remove("_preview");
-
-			for(Entry<String,String> entry: post_clean.entrySet()){
-				log.info("entry ["+entry.getKey()+"] ["+entry.getValue()+"]");
-
-				ArrayList<DataKernel> buffer3 = buffer2;
-				int k = 0;
-				int j = entry.getKey().indexOf(".", k);
-				String key = null; 
-
-				while(j != -1){
-					key = entry.getKey().substring(k, j);
-					boolean found = false;
-					for(DataKernel dk : buffer3){
-						if(dk.id.equals(key)){
-							found = true;
-							if(dk.subs == null){
-								dk.subs = new ArrayList<DataKernel>();
-							}
-							buffer3 = dk.subs;
-							break;
-						}
-					}
-
-					if(!found){
-						DataKernel temp = new DataKernel(key);
-						buffer3.add(temp);
-						temp.subs = new ArrayList<DataKernel>();
-						buffer3 = temp.subs;
-						k = j+1;
-						j = entry.getKey().indexOf(".", k);
-						while(j != -1){
-							key = entry.getKey().substring(k, j);
-							temp = new DataKernel(key);
-							temp.subs = new ArrayList<DataKernel>();
-							buffer3.add(temp);
-							buffer3 = temp.subs;
-							k = j+1;
-							j = entry.getKey().indexOf(".", k);
-						}
-						break;
-					}
-
-					k = j+1;
-					j = entry.getKey().indexOf(".", k);
-				}
-
-				if(key == null){
-					key = entry.getKey();
-				}else{
-					key = (k != 0 ? entry.getKey().substring(k) : entry.getKey());
-				}
-
-				boolean found = false;
-				for(DataKernel dk : buffer3){
-					if(dk.id.equals(key)){
-						found = true;
-						break;
-					}
-				}
-				if(!found){
-					buffer3.add(new DataKernel(key, kastrate2(entry.getValue())));
-				}
-			}
-
-			//log.info("sort and extract string data");
-			ArrayList<String> buffer = new ArrayList<String>();
-			Collections.sort(buffer2);
-
-			for(DataKernel dk : buffer2){
-				//log.info("> "+dk.toString2(0));
-				dk.sort();
-				dk.toDataArray(buffer);
-			}
-			return buffer.toArray(new String[buffer.size()]);
-		}
+		return siblings;
 	}
 
 	private boolean checkMeta(String[] path, CmsFile file){
@@ -1556,42 +146,37 @@ public class Renderer {
 
 	}
 
-	private ArrayList<DataKernel> checkData(String[] path, ArrayList<DataKernel> datas, CmsFile file) {
-		//log.info("check for corresponding data...");
+	private CmsElement combineDataWithMeta(ArrayList<MetaKernel> meta_structure, ArrayList<DataKernel> data_structure) {
+		log.info("storm is brewing... s["+
+				(meta_structure==null?"null":meta_structure.size())+
+				"] c["+(data_structure==null?"null":data_structure.size())+
+				"]");
+		TreeSet<DataKernel> data;
+		if(data_structure != null){
+			data = new TreeSet<DataKernel>(data_structure);
+		}else{
+			data = new TreeSet<DataKernel>();
+		}
 
-		ArrayList<DataKernel> siblings = new ArrayList<DataKernel>(datas);
+		CmsElement box = new CmsElement();
+		box.addLayer("div","ingroup filled");
 
-		int i = 0;
-		boolean found = false;
-		while(path.length > i+1){
-			found = false;
-			//log.info("looking for ["+path[i]+"]");
-			for(DataKernel dk: siblings){
-				//log.info(" ?"+dk.id);
-				if(dk.id.equals(path[i])){
-					//log.info("  +");
-
-					if(dk.subs == null){
-						dk.subs = new ArrayList<DataKernel>();
-					}
-					siblings = dk.subs;
-					found = true;
-					break;
+		if(meta_structure != null){
+			for(MetaKernel kernel: meta_structure){
+				log.info("["+kernel.getType()+"]");
+				if(modules.containsKey(kernel.getType())){
+					log.info(" module found");
+					modules.get(kernel.getType()).synthesize(kernel, data, box, "");
+				}else{
+					log.fail(" invalid key/type/module ["+kernel.getType()+"]");
 				}
 			}
-			if(!found){
-				log.fail("not found ["+path[i]+"]");
-				break;
-			}
-			i++;
+		}else{
+			log.info("meta_structure == @null");
 		}
-		//log.info("i["+i+"]");
-		if(i < 1){
-			//log.info("s = d");
-			siblings = datas;
-		}
-		return siblings;
+		return box;
 	}
+
 
 	public String[] dynData(String command, String data, CmsFile file) {
 		log.info("Dynamic operation...");
@@ -1804,8 +389,1132 @@ public class Renderer {
 	}
 
 
-	private Kernel dataGut2(BufferedReader reader){
-		log.info("dataGut2");
+	private String encodeAngleBrackets(String data) {
+		if(data == null)
+			return null;
+
+		StringBuilder sb = new StringBuilder();
+		
+		int last = 0;
+		for(int i = 0 ; i < data.length(); i++){
+			if(data.charAt(i) == '<'){
+				sb.append(data.substring(last, i)).append("&lt;");
+				last = i+1;
+			}else if(data.charAt(i) == '>'){
+				sb.append(data.substring(last, i)).append("&gt;");
+				last = i+1;
+			}
+		}
+
+		if(last < data.length())
+			sb.append(data.substring(last));
+
+		return sb.toString();
+	}
+	
+	private String encodeAngleBrackets2(String data) {
+		if(data == null)
+			return null;
+
+		StringBuilder sb = new StringBuilder();
+		
+		int last = 0;
+		for(int i = 0 ; i < data.length(); i++){
+			if(data.charAt(i) == '<'){
+				sb.append(data.substring(last, i)).append("&lt;");
+				last = i+1;
+			}else if(data.charAt(i) == '>'){
+				sb.append(data.substring(last, i)).append("&gt;");
+				last = i+1;
+			}else if(data.charAt(i) == '&'){
+				sb.append(data.substring(last, i)).append("&#38;");
+				last = i+1;				
+			}
+		}
+
+		if(last < data.length())
+			sb.append(data.substring(last));
+
+		return sb.toString();
+	}
+
+
+	private String encodeDoubleAngleBrackets(String data) {
+		if(data == null)
+			return null;
+
+		StringBuilder sb = new StringBuilder();
+		
+		int last = 0;
+		for(int i = 0 ; i < data.length(); i++){
+			if(data.charAt(i) == '«'){
+				sb.append(data.substring(last, i)).append("&#171");
+				last = i+1;
+			}else if(data.charAt(i) == '»'){
+				sb.append(data.substring(last, i)).append("&#187;");
+				last = i+1;
+			}
+		}
+
+		if(last < data.length())
+			sb.append(data.substring(last));
+
+		return sb.toString();
+	}
+
+
+	private Kernel fillWithData(Kernel structure, Kernel data, VirtualPath path) {
+		log.info("fillWithData...");
+		long profiling_start = System.nanoTime();
+
+		if(structure == null){
+			log.info("no structure");
+			return new Kernel();
+		}
+		if(data == null){
+			log.info("data == @null");
+			data = new Kernel();
+		}
+
+		Kernel processed = new Kernel();
+
+		//ArrayList<Kernel> hello = structure.asList();
+		//log.info("as list:"+hello.size()+"");
+
+		for(Kernel k : structure.getSubs()){
+			if(k.type.equals(Kernel.Type.code)){
+				log.info("add [code]");
+				processed.add(k);
+			}else if(k.type.equals(Kernel.Type.data)){
+				log.info("add [data] "+k.id);
+				processed.add(k);
+				for(Kernel l : k.getSubs()){
+
+					if(l.type.equals(Kernel.Type.meta)){
+						log.info("  [fuse] "+k.id);
+						processKernel(l,data,path);
+					}
+				}
+			}else if(k.type.equals(Kernel.Type.meta)){
+				log.info("add [meta] "+k.id);
+				processed.add(processKernel(k,data,path));
+			} 
+		}
+
+		//log.info("path:"+path.getUrl());
+		//log.info("cloud:"+cloud.toString());
+		//log.info("structure:"+structure.toString());
+		//log.info("mesosphere:"+mesosphere.toString());
+
+		log.info("infuse took: " + Utils.nanoTimeToString((System.nanoTime() - profiling_start)));
+		return processed;
+	}
+
+	public CmsElement generateEditPage(CmsFile file){
+		log.info("gen edit");
+
+		/** needs 
+		 * - the file to be edited
+		 * - maybe html elements
+		 * - access to parent templates
+		 */
+
+
+		CmsElement edit_box = new CmsElement();
+		edit_box.addLayer("div","ingroup filled");
+
+		if(file.parent == null){ 	//source edit
+			log.info("source edit");
+
+			log.info("reading data [");
+			StringBuilder data = new StringBuilder();
+			log.info(file.getData());
+			data.append(encodeAngleBrackets2(file.getData()));
+			log.info(data.toString());
+			log.info("            ]");
+
+			edit_box.addField("data", data.toString(), true, new TextAreaField(500));
+
+		}else{
+			ArrayList<DataKernel> data_structure = mineData(file.getData());
+			if(data_structure != null){
+				log.info("mined data");
+				int i = 0;
+				for(DataKernel data: data_structure){
+					log.info((i++)+": " + data.toString());
+				}
+			}
+			log.info("getting parent["+file.name+"] -> ["+file.parent+"]");
+			TemplateFile template = pdb.getTemplate(file.parent);
+			if(template == null){
+				log.fail("parent template could not be found ["+file.parent+"]");
+				edit_box.addTag("pre","parent template could not be found ["+file.parent+"]");
+				edit_box.addLayer("pre");
+
+				edit_box.addContent(file.getData());
+				edit_box.up();
+
+				return edit_box;
+			}
+			ArrayList<MetaKernel> meta_structure = mineMeta(template.getData());
+			//fill parent with data and produce elements
+			edit_box = combineDataWithMeta(meta_structure, data_structure);
+		}
+
+		return edit_box;
+	}
+
+	/*
+	private Kernel gut(BufferedReader reader) {
+		long start = System.nanoTime();
+
+		char c;
+		int i;
+		Kernel open = new Kernel();
+
+		StringBuilder buffer = new StringBuilder();
+
+		try{
+			while((i = reader.read()) != -1){
+				//log.info("[gt]               ["+c+"]");
+				c = (char)i;
+				switch (c) {
+
+				case '{':
+					log.info("[gt] {");
+					if(buffer.length()>0){
+						log.info("[gt] +code -> [dg]");
+						open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
+						buffer.setLength(0);
+					}
+					open = dataGut(open, reader);
+					log.info("^");
+					break;
+
+				case '}':
+					log.info("[gt] malform - } ");
+					buffer.setLength(0);
+					break;
+
+				case '[':
+					log.info("[gt] [");
+					if(buffer.length() > 0){
+						log.info("[gt] +code -> [mg]");
+						open.subs.add(new Kernel(buffer.toString(),open, Kernel.Type.code));
+						buffer.setLength(0);
+					}
+					open = metaGut(open, reader);
+					log.info("^");
+					break;
+
+				case ']':
+					log.info("[gt] malform - ] ");
+					buffer.setLength(0);
+					break;
+				default:
+					buffer.append(c);
+				}
+			}
+
+			log.info("[gt] end of stream");
+			if(buffer.length() > 0){
+				log.info("[gt] +code");
+				open.subs.add(new Kernel(buffer.toString(),open, Kernel.Type.code));
+				buffer.setLength(0);
+			}
+		}catch (IOException ioe) {
+			log.fail("IOException occured while gutting: "+ioe);
+		}
+
+		log.info("gut took " + Utils.nanoTimeToString((System.nanoTime() - start)));
+		return open;
+	}*/
+
+
+	/*HashMap<String, TemplateFile> templateCache;
+	private CmsFile getCachedTemplate(String filename) {
+		if(templateCache == null){
+			templateCache = new HashMap<String, TemplateFile>();
+		}
+
+		TemplateFile cached = templateCache.get(filename);
+		if(cached == null){
+			cached = pdb.getTemplate(filename);
+			templateCache.put(cached.name, cached);
+		}
+
+		return cached;
+	}*/
+
+	/*
+	private Kernel dataGut(Kernel _open, BufferedReader reader) throws IOException{
+		char c;
+		int i;
+		StringBuilder buffer = new StringBuilder();
+
+		boolean openbrace = true;
+		boolean doublepoint = false;
+
+		Kernel open = new Kernel();
+
+		while((i = reader.read()) != -1){
+			c = (char)i;
+			switch (c) {
+
+			case '{':
+				log.info("[dg] {");
+				if(!openbrace){
+					openbrace = true;
+					if(buffer.length()>0){
+						log.info("[dg] +code");
+						//log.info("["+buffer.toString()+"]");
+
+						open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
+
+						//open.data = buffer.toString();
+						buffer.setLength(0);
+					}
+					//dataGut(open, reader);
+				}else{
+					log.fail("[dg] malform x!p");
+					buffer.setLength(0);
+
+				}
+				break;
+
+			case '}':
+				log.info("[dg] }");
+				if(openbrace){
+					openbrace = false;
+					if(doublepoint){
+						doublepoint = false;
+						final String id = buffer.toString();
+						buffer.setLength(0);
+						if(open.id.equals(id)){
+							log.info("[dg] $["+id+"]");
+							open = open.parent;
+							if(open.parent == null){
+								log.info("[dg] <");
+								_open.subs.add(open.subs.get(0));
+								return _open;
+							}
+						}else{
+							log.fail("[dg] malform o!l - o["+open.id+"] l["+id+"]");
+							buffer.setLength(0);
+						}
+					}else{
+						log.info("[dg] +dkernel ["+buffer.toString()+"]");
+						Kernel temp = new Kernel(buffer.toString(), open, Kernel.Type.data);
+						open.subs.add(temp);
+						open = temp;
+						buffer.setLength(0);
+					}
+					//open.subs.add(new Kernel(buffer.toString(), open, Kernel.Type.data));
+					//buffer.setLength(0);
+				}else{
+					log.fail("[dg] malform }!o");
+					buffer.setLength(0);
+				}
+				break;
+
+			case ':':
+				if(openbrace){
+					log.info("[dg] :");
+					doublepoint = true;
+					if(buffer.length() == 0){
+
+					}else{
+						buffer.append(c);
+					}
+				}
+				break;
+
+			case '[':
+				log.info("[dg] [");
+				if(buffer.length() > 0){
+					log.info("[dg] +code");
+					open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
+					buffer.setLength(0);
+				}
+				log.info("[dg] > [mg]");
+				open = metaGut(open, reader);
+				break;
+
+			case ']':
+				log.info("[dg] malform - ] ");
+				buffer.setLength(0);
+				break;
+			default:
+				buffer.append(c);
+			}
+
+		}
+		log.info("end of stream");
+		return open;
+	}*/
+
+
+	public String generateHtml(TextFile file) {
+		log.info("Generating html...");
+
+		if(file == null){
+			log.fail("file is null");
+			return null;
+		}
+
+		VirtualPath path = (file.relativePath==null?VirtualPath.create(""):file.relativePath);
+		String template;
+
+		// gut == abstract sectionize
+		// infuse == synthetize meta tags to code using cloud data;
+
+		// gut the file
+		log.info("1st get gutted file");
+		Kernel skeleton = getFile(file);
+		// infuse the file -> cloud
+		//log.info("gutts: "+structure.toString());
+
+		log.info("1st infuse");
+		Kernel data = fillWithData(skeleton, new Kernel(), path);
+		//log.info("fusion: "+cloud.toString());
+		// if file has parent
+		template = skeleton.getParentName();
+
+		while(template != null && !template.equals("null")){
+			log.info("gut lap");
+			// gut the parent
+			skeleton = getCachedTemplate(template);
+			//log.info("gutts: "+structure.toString());
+			// infuse cloud and parent -> new cloud
+			data = fillWithData(skeleton, data, path);
+			//log.info("fusion: "+cloud.toString());
+			// if parent has parent
+			template = skeleton.getParentName();
+		}
+
+		StringBuilder sb = new StringBuilder();
+
+		if(url!=null){
+			if(template!=null){
+				sb.append("Content-Type: text/html; charset=iso-8859-1;\n\n");
+			}else{
+				sb.append("Content-Type: "+file.content_type+"; charset=iso-8859-1;\n\n");
+			}
+			log.info("content type: ["+file.content_type+"] ->"+sb.toString());
+		}
+
+		//final String linesep = System.getProperty("line.separator");
+		/*for(Kernel kernel : cloud.subs){
+			sb.append(kernel.toString());
+			sb.append(linesep);
+		}*/
+
+		if(data != null){
+			sb.append(data.toHtml());
+		}else{
+			sb.append("<html><body><pre>null</pre></body></html>");
+			log.fail("cloud == @null");
+		}
+		return sb.toString();
+
+	}
+
+
+	private Kernel getCachedTemplate(String filename){
+		if(templateCache == null){
+			templateCache = new HashMap<String, Kernel>();
+		}
+
+		Kernel cached = templateCache.get(filename);
+		if(cached == null){
+
+			TemplateFile temp = pdb.getTemplateMeta(filename);
+			if(temp == null){
+				return null;
+			}
+
+			//cached = gut(temp.bin);
+			BufferedReader bin = temp.datasource.initRead();
+			cached = processData(bin);
+			temp.datasource.endRead(bin);
+
+			while(cached.parent != null)
+				cached = cached.parent;
+
+			cached.addFile(new Kernel((temp.parent==null?"null":temp.parent),Kernel.Type.file));
+			templateCache.put(temp.name, cached);
+		}
+
+		return cached;
+	}
+
+	/*
+	static ArrayList<MetaKernel> mineMeta2(String[] data) {
+		long start = System.nanoTime();
+		if(log == null){
+			log = new Logger("Renderer");
+		}
+		log.info("Mining meta2...");
+		if(data == null)
+			return new ArrayList<MetaKernel>();
+
+		ArrayList<MetaKernel> storm = new ArrayList<MetaKernel>();
+
+		boolean openbrace = false;
+		//boolean opencontent = false;
+		boolean doublepoint = false;
+		boolean end = false;
+
+		//Stack<MetaKernel> open = new Stack<MetaKernel>();
+
+		int alku = 0;
+
+		MetaKernel kernel = new MetaKernel("~"); 
+
+		StringBuilder buffer = new StringBuilder();
+		for(int l = 0; l < data.length; l++){
+
+			log.info(data[l]);
+
+			for(int i = 0; i < data[l].length(); i++){
+				switch (data[l].charAt(i)) {
+				case '[':
+					if(!openbrace){
+						openbrace = true;
+						//if(opencontent){
+						//	opencontent = false;
+						if(buffer.length()>0){ // contents (non meta)
+							MetaKernel mk = new MetaKernel();
+							mk.id = null;
+							mk.header = buffer.toString() + data[l].substring(alku, i);
+							log.info("~");
+							if(open.empty()){
+								storm.add(mk);
+								log.info("+|");
+							}else{
+								open.peek().add(mk);
+								log.info("+<");
+							}
+							buffer = new StringBuilder();
+						}else{ // contents (non meta)
+							MetaKernel mk = new MetaKernel();
+							mk.id = null;
+							mk.header = data[l].substring(alku, i);
+							log.info("~");
+							if(open.empty()){
+								storm.add(mk);
+								log.info("+|");
+							}else{
+								open.peek().add(mk);
+								log.info("+<");
+							}
+						}
+						//cloud.add(kernel);
+						alku = i+1;
+						log.info(Utils.genSpace(i)+">");
+						//}else{
+						//	alku = i+1;
+						//	log.info(Utils.genSpace(i)+"/");
+						//}
+					}else{
+						log.fail("malform x!p");
+						log.fail(data[l]);
+						log.fail(Utils.genSpace(i)+"^");
+						return null;
+					}
+					break;
+
+				case ']':
+					if(openbrace){
+						openbrace = false;
+
+						if(doublepoint){ // non dynamic or end to dynamic
+							doublepoint = false;
+							log.info(Utils.genSpace(i)+"\\");
+							if(end){  // end to dynamic
+								end = false;
+								log.info("$");
+
+								if(!open.empty() && open.peek().id.equals(data[l].substring(alku, i))){
+									MetaKernel temp = open.pop();
+									if(open.empty()){
+										storm.add(temp);
+										log.info("+|");
+									}else{
+										open.peek().add(temp);
+										log.info("+<");
+									}
+									alku = i+1;
+								}else{
+									log.fail("malform o!l - o["+open.peek()+"] l["+data[l].substring(alku, i)+"]");
+									log.fail(data[l]);
+									log.fail(Utils.genSpace(i)+"^");
+									return null;
+								}
+
+							}else{ // non dynamic
+								log.info("¤ "+data[l].substring(alku, i));
+								MetaKernel temp = new MetaKernel(data[l].substring(alku, i));
+								if(open.empty()){
+									storm.add(temp);
+									log.info("+|");
+								}else{
+									open.peek().add(temp);
+									log.info("+<");
+								}
+								alku = i+1;									
+
+							}
+
+						}else{ //dynamic
+
+							//if(!opencontent){
+							//	opencontent = true;
+							log.info(Utils.genSpace(i)+"(");
+							kernel = new MetaKernel(data[l].substring(alku, i));
+							open.push(kernel);
+							alku = i+1;
+							//}else{
+							//	log.fail("malform c!o - o["+open.peek()+"] l["+data[l].substring(alku, i)+"]");
+							//	log.fail(data[l]);
+							//	log.fail(Utils.genSpace(i)+"^");
+							//	return null;
+							//}
+						}
+
+					}else{
+						log.fail("malform e!o");
+						log.fail(data[l]);
+						log.fail(Utils.genSpace(i)+"^");
+						return null;
+					}
+					break;
+				case ':':
+					if(openbrace){
+						doublepoint = true;
+						if(alku == i){
+							alku++;
+							end = true;
+						}
+					}
+					break;
+
+				default:
+					break;
+				}
+
+
+			}
+
+			if(data[l].length()-1 > alku){
+				log.info("\\");
+				buffer.append(data[l].substring(alku));
+				buffer.append("\n");
+			}
+			alku = 0;
+
+		}
+
+		log.info("mineMeta2 took " + Utils.nanoTimeToString((System.nanoTime() - start)));
+		return storm;
+	}*/
+
+
+	public String[] getFields(CmsFile file){
+		if(file.parent == null){
+			String[] fields = new String[1];
+			fields[0] = "data";
+			return fields;
+		}else{
+			return pdb.getTemplate(file.parent).getFields();
+		}
+	}
+
+
+	private Kernel getFile(TextFile file) {
+		//Kernel data = gut(file.bin);
+		if(file != null){
+			BufferedReader bin = file.datasource.initRead();
+			if(file.parent!=null){
+				if(!file.parent.equals("null")){
+					Kernel data = processData(bin);
+					file.datasource.endRead(bin);
+					while(data.parent != null)
+						data = data.parent;
+					//data.addFile(new Kernel((file.parent==null?"null":file.parent),Kernel.Type.file)); //redundant null check
+					data.addFile(new Kernel(file.parent,Kernel.Type.file));
+					return data;
+				}
+			}
+			//Kernel data = straight(file.bin);
+			Kernel data = processData(bin);
+			file.datasource.endRead(bin);
+			return data;
+		}
+		return null;
+	}
+
+	private void initModules(){
+		locals = new HashMap<String, RenderModule>();
+
+		RenderModule module;
+
+		module = new RenderModule("a"){
+			void init(){type = Type.local;}
+			public void substitute(Kernel metakernel, VirtualPath from) {
+				metakernel.type = Kernel.Type.code;
+
+				//String original = metakernel.id;
+				//VirtualPath to = VirtualPath.create(original);
+				//metakernel.id = "<!-- anchor "+metakernel.id+"-->";// from.getPathTo(to);
+				//String local_url = null;
+				String[] parts = metakernel.id.split(":");
+				if(url != null){
+					if (parts[1].startsWith("./")){
+						parts[1] = parts[1].substring(2);
+					}
+				}
+
+				log.info("a - > "+(url==null?"@":url));
+				log.info("m - > "+parts[1]);
+				metakernel.id = (url==null?"":url)+parts[1];
+
+				//metakernel.id = "http://localhost:8080/cgi-bin/cms-2/Cgicms.exe/sivut/preview"+metakernel.id.split(":")[1];
+			}
+		};
+		locals.put(module.hook, module);
+
+		module = new RenderModule("ssi"){ //TODO: convert to using generateHtml(PageFile file)
+			void init(){type = Type.local;}
+
+			public void substitute(Kernel metakernel, VirtualPath from) {
+				metakernel.type = Kernel.Type.code;
+				PageDb pdb = PageDb.getDb();
+
+				String[] parts = metakernel.id.split(":");
+				String target = parts[1];
+
+				if(url!=null){
+					TextFile file = (TextFile)pdb.getFileMeta(VirtualPath.create(target));
+					if(file != null){
+						Kernel structure = getFile(file);
+						//log.info("apuva : "+structure.toString());
+						structure = fillWithData(structure, new Kernel(), from);
+						metakernel.id = "";
+						metakernel.add(new Kernel(structure.toHtml(),Kernel.Type.code));
+						//log.info("apuva : "+structure.toHtml());
+					}else{
+						metakernel.id = "";
+						metakernel.add(new Kernel("<!-- file not found: "+target+" -->",Kernel.Type.code));
+					}
+
+					/*
+				if(file == null){
+					log.fail("ssi fetch file null");
+					metakernel.id = "<!-- ssi error ["+VirtualPath.create(target).getUrl()+"] -->";
+				}else{
+					metakernel.id = "";
+					for(String s: file.getData()){
+						metakernel.add(new Kernel(s,Kernel.Type.code));
+					}
+				}*/
+				}else{
+					metakernel.id = "";
+					metakernel.add(new Kernel("<!--#include virtual=\""+target+"\" -->",Kernel.Type.code));
+
+				}
+				metakernel.type = Kernel.Type.code;
+			}
+		};
+		locals.put(module.hook, module);
+
+
+		modules = new HashMap<String, RenderModule>();
+
+		module = new RenderModule("line"){
+			void init(){type = Type.external;}
+
+			@Override
+			public void render(Kernel metakernel, Kernel cloud){
+				String[] parts = metakernel.id.split(":");
+				String id = parts[1];
+				Kernel data = cloud.getData(id);
+				if(data != null){
+					log.info("data found");
+					metakernel.id = "";
+					metakernel.add(data.getSubs());
+					//metakernel.id = data.getFirst().id; //"";// data.id;
+					//log.info(">"+metakernel.id+"<");
+
+					//metakernel.addAll(data);
+				}else{
+					log.info("could not get data from cloud");
+					metakernel.id = "<!-- null line -->";
+				}
+				metakernel.type = Kernel.Type.code;
+			}
+
+			@Override
+			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
+				log.info("synthesizing ["+hook+"] id["+m.id+"]");
+
+				brew.addContent(m.getLabel()+":");
+				brew.addField(parentid+m.id, Utils.deNormalize(extractData(cloud, m.id, parentid).data), true, new TextField());
+			}
+		};
+		modules.put(module.hook, module);
+
+		module = new RenderModule("area"){
+			void init(){type = Type.external;}
+			@Override
+			public void render(Kernel metakernel, Kernel cloud){
+				String[] parts = metakernel.id.split(":");
+				String id = parts[1];
+				Kernel data = cloud.getData(id);
+				if(data != null){
+					//log.info("data found");
+					metakernel.id = "";// data.id;
+					metakernel.addAll(data);
+				}else{
+					log.info("could not get data from cloud");
+					id = "<!-- null area -->";
+				}
+				metakernel.type = Kernel.Type.code;
+			}
+
+			@Override
+			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
+				log.info("synthesizing ["+hook+"] id["+m.id+"]");
+
+				int height = 200;
+
+				//String[] elements = new String[0];
+				if(m.parts != null && m.parts.length > 2){
+					height = Integer.parseInt(m.parts[2]);
+				}
+
+				brew.addContent(m.getLabel()+":");
+				brew.addField(parentid+m.id, encodeAngleBrackets(extractData(cloud, m.id, parentid).data), true, new TextAreaField(height));
+			}
+		};
+		modules.put(module.hook, module);
+
+		module = new RenderModule("parsing_area"){
+			void init(){type = Type.external;}
+			@Override
+			public void render(Kernel metakernel, Kernel cloud){
+				String[] parts = metakernel.id.split(":");
+				String id = parts[1];
+				Kernel data = cloud.getData(id);
+
+
+				if(data != null){
+					//log.info("data found");
+					metakernel.id = "";// data.id;
+					data.id = data.id.replace("\n", "<br/>");
+					for(Kernel k: data.asList()){
+
+						k.id = k.id.replace("\n", "<br/>");
+
+					}
+
+					metakernel.addAll(data);
+				}else{
+					log.info("could not get data from cloud");
+					id = "<!-- null area -->";
+				}
+				metakernel.type = Kernel.Type.code;
+			}
+
+			@Override
+			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
+				log.info("synthesizing ["+hook+"] id["+m.id+"]");
+				int height = 200;
+
+				if(m.parts != null && m.parts.length > 2){
+					height = Integer.parseInt(m.parts[2]);
+				}
+
+				brew.addContent(m.getLabel()+":");
+				brew.addField(parentid+m.id, extractData(cloud, m.id, parentid).data, true, new TextAreaField(height));
+			}
+		};
+		modules.put(module.hook, module);
+
+		module = new RenderModule("dynamic"){
+			private TreeSet<DataKernel> extractDynData(TreeSet<DataKernel> cloud, String id, String parentid){
+				log.info("extracting dyndata... id["+id+"] pid["+parentid+"]");
+
+				//first get to the right stage
+				ArrayList<DataKernel> buffer = new ArrayList<DataKernel>(cloud);
+
+				int i = 0;
+				int j = 0;
+				i = parentid.indexOf('.');
+				String curid;
+				while(i != -1){
+					curid = parentid.substring(j,i);
+					for(DataKernel dk : buffer){
+						if(dk.id.startsWith((curid))){
+							if(dk.subs == null)
+								dk.subs = new ArrayList<DataKernel>();
+							buffer = dk.subs;
+							continue;
+						}
+					}
+					j = i+1;
+					i = parentid.indexOf('.',j);
+				}
+				TreeSet<DataKernel> kernels = new TreeSet<DataKernel>();
+				for(DataKernel dk : buffer){
+					if(dk.id.startsWith((id+"-"))){
+						kernels.add(dk);
+						continue;
+					}
+				}
+				buffer.removeAll(kernels);
+				return kernels;
+			}
+
+			void init(){type = Type.external;}
+
+			@Override
+			public void render(Kernel metakernel, Kernel cloud){
+				log.info("rendering dynamic ["+metakernel.id+"]");
+				Kernel proto = new Kernel(metakernel);
+
+				ArrayList<Kernel> datas = new ArrayList<Kernel>();
+
+				for(Kernel k : cloud.getSubs()){
+					if(k.id.startsWith(metakernel.id)){
+						//log.info(" data["+k.id+"]");
+						datas.add(k);
+					}
+				}
+				metakernel.getSubs().clear();
+				metakernel.id = "";
+
+				//log.info("proto : " +proto.debug(0));				
+
+				log.info("processing");
+				for(Kernel k : datas){
+					//log.info("["+k.id+"]");
+					for(Kernel protosub:proto.getSubs()){
+						if(protosub.type.equals(Kernel.Type.code)){
+							//log.info(" [code] "+ protosub.id);
+
+							metakernel.add(new Kernel(protosub.id,Kernel.Type.code));
+
+						}else if(protosub.type.equals(Kernel.Type.meta)){
+							//log.info(" [meta] ["+protosub.id+"]");
+							RenderModule m;
+							if(protosub.id.indexOf(':') == -1){
+								m = modules.get("dynamic");
+							}else{
+								m = modules.get(protosub.id.split(":")[0]);
+							}
+							if(m!= null){
+								Kernel temp = new Kernel(protosub);
+								m.render(temp, k);
+								metakernel.add(temp);
+							}
+						}
+					}
+
+				}
+				metakernel.type = Kernel.Type.code;
+			}
+
+			@Override
+			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
+				log.info("synthesizing ["+hook+"] id["+m.id+"]");
+
+				TreeSet<DataKernel> datas = extractDynData(cloud, m.id, parentid);
+
+				if(datas != null){
+					for(DataKernel data : datas){
+						brew.addLayer("div","ingroup");
+						brew.addSingle("input type=\"hidden\" name=\""+parentid+data.id+"\" value=\"\" style=\"display:none\"");
+						brew.addTag("h3","<a class=\"add\" title=\"poista\" href=\"?del="+parentid+data.id+"\">X</a><a class=\"add\" title=\"shift up\" href=\"?up="+parentid+data.id+"\">&#94;</a>"+data.id);
+
+						for(MetaKernel subm: m.subs){
+							if(modules.containsKey(subm.getType())){
+								modules.get(subm.getType()).synthesize(subm, datas, brew, parentid+data.id+".");
+							}else{
+								log.fail(" invalid key/type/module ["+subm.getType()+"]");
+							}
+						}
+						brew.up();
+					}
+				}
+				brew.addLink(null, "ingroup", "?add="+parentid+m.getLabel(), "[+] "+m.id);
+			}
+		};
+		modules.put(module.hook, module);
+
+		module = new RenderModule("drop"){
+			void init(){type = Type.external;}
+
+			@Override
+			public void render(Kernel metakernel, Kernel cloud){
+				String[] parts = metakernel.id.split(":");
+				String id = parts[1];
+				Kernel data = cloud.getData(id);
+				if(data != null){
+					//log.info("data found");
+					metakernel.id = "";// data.id;
+					metakernel.addAll(data);
+				}else{
+					log.info("could not get data from cloud");
+					id = "<!-- null drop -->";
+				}
+				metakernel.type = Kernel.Type.code;
+			}
+
+			@Override
+			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
+				log.info("synthesizing ["+hook+"] id["+m.id+"]");
+
+				String[] elements = new String[0];
+				if(m.parts != null && m.parts.length > 2){
+					elements = m.parts[2].split(",");
+				}
+				brew.addContent(m.getLabel()+":");
+				String value = extractData(cloud, m.id, parentid).data;
+				brew.addField(parentid+m.id, value, true, new ComboBoxField(elements, value));
+			}
+		};
+		modules.put(module.hook, module);
+
+		module = new RenderModule("hidden"){
+			void init(){type = Type.external;}
+
+			@Override
+			public void render(Kernel metakernel, Kernel cloud){
+				log.info("render hidden");
+				String[] parts = metakernel.id.split(":");
+				String id = parts[1];
+				Kernel data = cloud.getData(id);
+				if(data != null){
+					log.info("data found");
+					metakernel.id = data.getFirst().id; //"";// data.id;
+					//log.info(">"+metakernel.id+"<");
+					//metakernel.addAll(data);
+				}else{
+					log.info("could not get data from cloud");
+					metakernel.id = "<!-- hidden null line -->";
+				}
+				metakernel.type = Kernel.Type.code;
+			}
+
+			@Override
+			public void synthesize(MetaKernel m, TreeSet<DataKernel> cloud, CmsElement brew, String parentid){
+				log.info("synthesizing ["+hook+"] id["+m.id+"]");
+
+				brew.addContent("<!-- " +m.getLabel()+ "-->");
+				//brew.addField(parentid+m.id, extractData(cloud, m.id, parentid).data, true, new TextField());
+			}
+		};
+		modules.put(module.hook, module);
+	}
+
+	public String[] postToCmsData(HashMap<String, String> post, CmsFile file) {
+		log.info("Generating data...");
+		if(file.parent == null){
+			log.info(" plain source");
+			//String[] temp = new String[1];
+			//temp[0] = post.get("data").split("\n");
+			//return temp;
+			return post.get("data").split("\n");
+		}else{
+			log.info(" has parent");
+			ArrayList<DataKernel> buffer2 = new ArrayList<DataKernel>();
+	
+			log.info("processing post entries");
+			HashMap<String, String> post_clean = new HashMap<String, String>(post);
+			post_clean.remove("_lastmodified");
+			post_clean.remove("_save");
+			post_clean.remove("_preview");
+	
+			for(Entry<String,String> entry: post_clean.entrySet()){
+				log.info("entry ["+entry.getKey()+"] ["+entry.getValue()+"]");
+	
+				ArrayList<DataKernel> buffer3 = buffer2;
+				int k = 0;
+				int j = entry.getKey().indexOf(".", k);
+				String key = null; 
+	
+				while(j != -1){
+					key = entry.getKey().substring(k, j);
+					boolean found = false;
+					for(DataKernel dk : buffer3){
+						if(dk.id.equals(key)){
+							found = true;
+							if(dk.subs == null){
+								dk.subs = new ArrayList<DataKernel>();
+							}
+							buffer3 = dk.subs;
+							break;
+						}
+					}
+	
+					if(!found){
+						DataKernel temp = new DataKernel(key);
+						buffer3.add(temp);
+						temp.subs = new ArrayList<DataKernel>();
+						buffer3 = temp.subs;
+						k = j+1;
+						j = entry.getKey().indexOf(".", k);
+						while(j != -1){
+							key = entry.getKey().substring(k, j);
+							temp = new DataKernel(key);
+							temp.subs = new ArrayList<DataKernel>();
+							buffer3.add(temp);
+							buffer3 = temp.subs;
+							k = j+1;
+							j = entry.getKey().indexOf(".", k);
+						}
+						break;
+					}
+	
+					k = j+1;
+					j = entry.getKey().indexOf(".", k);
+				}
+	
+				if(key == null){
+					key = entry.getKey();
+				}else{
+					key = (k != 0 ? entry.getKey().substring(k) : entry.getKey());
+				}
+	
+				boolean found = false;
+				for(DataKernel dk : buffer3){
+					if(dk.id.equals(key)){
+						found = true;
+						break;
+					}
+				}
+				if(!found){
+					buffer3.add(new DataKernel(key, encodeDoubleAngleBrackets(entry.getValue())));
+				}
+			}
+	
+			//log.info("sort and extract string data");
+			ArrayList<String> buffer = new ArrayList<String>();
+			Collections.sort(buffer2);
+	
+			for(DataKernel dk : buffer2){
+				//log.info("> "+dk.toString2(0));
+				dk.sort();
+				dk.toDataArray(buffer);
+			}
+			return buffer.toArray(new String[buffer.size()]);
+		}
+	}
+
+
+	private Kernel processData(BufferedReader reader){
+		log.info("processData2");
 
 		if(reader == null){
 			log.fail("reader == null");
@@ -1916,7 +1625,7 @@ public class Renderer {
 						buffer.setLength(0);
 					}
 					log.info("[dg] > [mg]");
-					open = metaGut(open, reader);
+					open = processMeta(open, reader);
 					break;
 
 				case ']':
@@ -1940,18 +1649,338 @@ public class Renderer {
 			log.info("end of stream");
 			if(buffer.length() > 0)
 				open.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
-			log.info("gut2 took " + Utils.nanoTimeToString((System.nanoTime() - start)));
+			log.info("processData2 took " + Utils.nanoTimeToString((System.nanoTime() - start)));
 			return open;
 		}catch (IOException ioe) {
-			log.fail("IOexception while gutting : "+ ioe);
+			log.fail("IOexception while processData2 : "+ ioe);
 		}
 		return null;
+	}
+
+	private Kernel processKernel(Kernel kernel, Kernel data, VirtualPath path) {
+		log.info("processKernel...");
+
+		String[] parts = kernel.id.split(":");
+		String type = "";
+		if(parts.length == 1){
+			type = "dynamic";
+		}else if (parts.length > 1){
+			type = parts[0];
+		}
+
+		log.info("type ["+type+"]");
+		log.info(kernel.id);
+		if(modules.containsKey(type)){
+			//log.info(" module found");
+			modules.get(type).render(kernel, data);
+		}else{
+			if(locals.containsKey(type)){
+				locals.get(type).substitute(kernel, path);
+				//log.info(" module found in locals");
+			}else{
+				log.fail(" invalid key/type/module ["+type+"]");
+			}
+		}
+		return kernel;
+	}
+
+
+	private Kernel processMeta(Kernel open, BufferedReader reader) throws IOException{
+		char c;
+		int i;
+		StringBuilder buffer = new StringBuilder();
+
+		boolean openbrace = true;
+		boolean doublepoint = false;
+		boolean end = false;
+
+		while((i = reader.read()) != -1){
+			c = (char)i;
+			switch (c) {
+
+			case '[':
+				log.info("[mg] [");
+				if(!openbrace){
+					openbrace = true;
+					if(buffer.length()>0){
+						log.info("[mg] >data");
+						//open.data = buffer.toString();
+						open.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
+						buffer.setLength(0);
+					}
+				}else{
+					log.fail("[mg] malform x!p");
+				}
+				break;
+
+			case ']':
+				log.info("[mg] ]");
+				if(openbrace){
+					openbrace = false;
+					if(doublepoint){
+						doublepoint = false;
+						if(end){ // end to dynamic
+							end = false;
+							final String id = buffer.toString();
+							buffer.setLength(0);
+							if(open.id.equals(id)){
+								log.info("[mg] $");
+								open = open.parent;
+								if(!open.type.equals(Kernel.Type.meta)){
+									log.info("[mg] <");
+									return open;
+								}
+							}else{
+								log.fail("[mg] malform o!l - o["+open.id+"] l["+id+"]");
+							}
+						}else{ // normal tag
+							log.info("[mg] +normal ");
+							//open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.meta));
+							open.add(new Kernel(buffer.toString(),open,Kernel.Type.meta));
+							if(!open.type.equals(Kernel.Type.meta))
+								return open;
+							buffer.setLength(0);
+						}
+					}else{ // dynamic
+						log.info("[mg] +dynamic");
+						Kernel temp = new Kernel(buffer.toString(), open, Kernel.Type.meta);
+						//open.subs.add(temp);
+						open.add(temp);
+						open = temp;
+						buffer.setLength(0);
+					}
+				}else{
+					log.fail("[mg] malform }!o");
+				}
+				break;
+
+			case ':':
+				log.info("[mg] :");
+				if(openbrace){
+					doublepoint = true;
+					if(buffer.length() == 0){
+						log.info("[mg] =$");
+						end = true;
+					}else{
+						buffer.append(c);
+					}
+				}
+				break;
+
+			default:
+				buffer.append(c);
+			}
+
+		}
+		log.info("end of stream");
+		return open;
 	}
 
 	public void setUrl(String url){
 		this.url = url;
 	}
 
+	public static ArrayList<DataKernel> mineData(String data){
+		long start = System.nanoTime();
+		log.info("Mining data...");
+		ArrayList<DataKernel> cloud = new ArrayList<DataKernel>();
+
+		boolean openbrace = false;
+		boolean opencontent = false;
+		boolean doublepoint = false;
+
+		StackWrap<DataKernel> open = new StackWrap<DataKernel>();
+
+		int alku = 0;
+
+		DataKernel kernel;// = new DataKernel("~"); 
+
+		StringBuilder buffer = new StringBuilder();
+
+		for(int i = 0; i < data.length(); i++){
+			switch (data.charAt(i)) {
+			case '«':
+				if(!openbrace){
+					openbrace = true;
+					if(opencontent){
+						opencontent = false;
+						if(buffer.length()>0){
+							open.peek().data = buffer.toString() + data.substring(alku, i);
+							buffer = new StringBuilder();
+						}else{
+							open.peek().data = /*buffer.toString() +*/ data.substring(alku, i);
+						}
+						//cloud.add(kernel);
+						alku = i+1;
+						//log.info(Utils.genSpace(i)+")");
+					}else{
+						alku = i+1;
+						//log.info(Utils.genSpace(i)+"/");
+					}
+				}else{
+					log.fail("malform x!p");
+					log.fail(data);
+					log.fail(Utils.genSpace(i)+"^");
+					return null;
+				}
+				break;
+
+			case '»':
+				if(openbrace){
+					openbrace = false;
+					if(doublepoint){
+						doublepoint = false;
+						//log.info(Utils.genSpace(i)+"\\");
+						if(open.peek().id.equals(data.substring(alku, i))){
+							DataKernel temp = open.pop();
+							if(open.isEmpty()){
+								cloud.add(temp);
+							}else{
+								open.peek().add(temp);
+							}
+							alku = i+1;
+						}else{
+							log.fail("malform o!l - o["+open.peek()+"] l["+data.substring(alku, i)+"]");
+							log.fail(data);
+							log.fail(Utils.genSpace(i)+"^");
+							return null;
+						}
+
+					}else{
+						if(!opencontent){
+							opencontent = true;
+							//log.info(Utils.genSpace(i)+"(");
+							kernel = new DataKernel(data.substring(alku, i));
+							open.push(kernel);
+							alku = i+1;
+						}else{
+							log.fail("malform c!o - o["+open.peek()+"] l["+data.substring(alku, i)+"]");
+							log.fail(data);
+							log.fail(Utils.genSpace(i)+"^");
+							return null;
+						}
+					}
+
+				}else{
+					log.fail("malform e!o");
+					log.fail(data);
+					log.fail(Utils.genSpace(i)+"^");
+					return null;
+				}
+				break;
+			case ':':
+				if(openbrace){
+					doublepoint = true;
+					if(alku == i){
+						alku++;
+					}else{
+						log.fail("malform :!1st");
+						log.fail(data);
+						log.fail(Utils.genSpace(i)+"^");
+						return null;
+					}
+				}
+				break;
+
+			default:
+				break;
+			}
+		}
+
+		log.info("mineData took " + Utils.nanoTimeToString((System.nanoTime() - start)));
+		return cloud;
+	}
+
+	public static ArrayList<MetaKernel> mineMeta(String data) {
+		long start = System.nanoTime();
+		if(log == null){
+			log = new Logger("Renderer");
+		}
+		log.info("Mining meta...");
+		if(data == null)
+			return new ArrayList<MetaKernel>();
+
+		ArrayList<MetaKernel> storm = new ArrayList<MetaKernel>();
+
+		StackWrap<MetaKernel> parents = new StackWrap<MetaKernel>();
+		//Stack<MetaKernel> parents = new Stack<MetaKernel>();
+
+		MetaKernel kernel = new MetaKernel("~");
+
+		int prev = 0;
+		int alku = 0;
+		String intag = "";
+		for(String line : data.split("\n")){
+			//log.info(line);
+			prev = 0;
+			while((alku = line.indexOf('[', prev)) != -1){
+				//log.info("  [");
+				//log.info(Utils.genSpace(alku)+"^");
+				if((prev = line.indexOf(']', alku)) != -1){
+					//log.info("  ]");
+					//log.info(Utils.genSpace(prev)+"^");
+
+					intag = line.substring(alku+1, prev);
+					//log.info("  >"+intag+"<");
+
+					switch (intag.indexOf(':')) {
+
+					case -1: //dynaaminen
+						//log.info("  d");
+						kernel = new MetaKernel();
+						kernel.id = intag;
+						parents.push(kernel);
+						break;
+
+					case 0:	//lopputagi (dynaamiselle)
+						//log.info("  /d");
+						if(!parents.isEmpty()){
+							kernel = parents.pop();
+							if(parents.isEmpty()){
+								storm.add(kernel);
+							}else{
+								parents.peek().add(kernel);
+							}
+						}else{
+							log.fail("malform - empty parent");
+							log.fail(line);
+							log.fail(Utils.genSpace(prev)+"^");
+							return null;
+						}
+						break;
+
+					default : //normi tagit
+						//log.info("  n");
+						kernel = new MetaKernel(intag);
+					if(!parents.isEmpty()){
+						//log.info("  -> ["+parents.peek().id+"]");
+						parents.peek().add(kernel);
+					}else{
+						//log.info("  -> root");
+						storm.add(kernel);
+					}
+					}
+				}else{
+					log.fail("malform");
+					log.fail(line);
+					log.fail(Utils.genSpace(prev)+"^");
+					return null;
+				}
+			}
+		}
+		HashSet<String> done = new HashSet<String>(storm.size());
+		ArrayList<MetaKernel> clean = new ArrayList<MetaKernel>(storm.size());
+		for(MetaKernel k : storm ){
+			if(!done.contains(k.id)){
+				clean.add(k);
+				done.add(k.id);
+			}
+		}
+
+		log.info("mineMeta took " + Utils.nanoTimeToString((System.nanoTime() - start)));
+		return clean;//storm;
+	}
+	
 }
 
 
