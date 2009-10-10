@@ -37,7 +37,7 @@ manage
  archive
  get files
   by extension
-    
+
  */
 
 public class FileOps {
@@ -160,7 +160,7 @@ public class FileOps {
 
 	//	public boolean delete(File file){}
 	//	public boolean exists(File file){}
-	public static boolean archive(File file){
+	public static boolean archive(File file, boolean overwrite){
 		if(file.exists()){
 			File archive = Cgicms.archives_dir;
 			final String originalname = file.getName();
@@ -173,7 +173,7 @@ public class FileOps {
 			);
 			log.info("archive["+file.getName()+"]");
 			log.info(Arrays.toString(files));
-			
+
 			String finalname = originalname+"_000";
 
 			if(files.length > 0){
@@ -192,7 +192,7 @@ public class FileOps {
 				}
 			}
 			log.info("finalname = "+finalname);
-			
+
 			File dest = new File(archive,finalname);
 
 			if(!dest.exists()){
@@ -204,8 +204,19 @@ public class FileOps {
 					return false;
 				}
 			}else{
-				log.info("file exists");
-				log.fail("archive failed["+originalname+"] -> too many files in archive");
+				if(overwrite){
+					dest.delete();
+					if(file.renameTo(dest)){
+						log.info("archive success["+originalname+"]");
+						return true;
+					}else{
+						log.info("archive failed["+originalname+"]");
+						return false;
+					}
+				}else{
+					log.info("file exists");
+					log.fail("archive failed["+originalname+"] -> too many files in archive");
+				}
 			}
 		}else{
 			log.fail("no file["+file.getName()+"] found");
@@ -219,6 +230,36 @@ public class FileOps {
 					return (name.contains("." + extension));
 				}}
 		);
+	}
+
+	public static boolean copy(File source, File target, boolean overwrite) {
+		if(!overwrite && target.exists()){
+			log.info("target exists");
+			return false;
+		}
+		try{
+			final FileInputStream fin = new FileInputStream(source);
+			final FileOutputStream fout = new FileOutputStream(target);
+			final byte[] buffer = new byte[2048];
+			int c;
+
+			while ((c = fin.read(buffer)) != -1){
+				if(c != buffer.length){
+					byte[] buffer2 = new byte[c];
+					System.arraycopy(buffer, 0, buffer2, 0, c);
+					fout.write(buffer2);
+					break;
+				}
+				fout.write(buffer);
+			}
+
+			fin.close();
+			fout.close();
+		}catch (IOException ioe) {
+			log.fail("IOException copying file:"+ioe);
+			return false;
+		}
+		return true;
 	}
 }
 /*

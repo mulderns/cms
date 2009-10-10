@@ -847,7 +847,7 @@ public class Renderer {
 			log.info("positive cache hit ["+filename+"]");
 		}
 
-		return cached;
+		return new Kernel(cached);
 	}
 
 	/*

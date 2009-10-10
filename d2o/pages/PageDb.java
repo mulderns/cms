@@ -2,6 +2,8 @@ package d2o.pages;
 
 
 import java.io.File;
+import java.io.FileFilter;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -40,7 +42,7 @@ public class PageDb {
 		actions = new FlushingFile(new File(sdir, "actions"));
 	}
 
-	
+
 	public boolean createDir(String path, String name){
 		if(!treedex.state.open){
 			if(treedex.load() != null){
@@ -107,14 +109,14 @@ public class PageDb {
 					return true;
 				}
 				log.fail("could not remove directory from db");
-				
+
 			}else{
 				log.fail("could not remove directory["+temp.getAbsolutePath()+"]");
 			}
 		}else{
 			log.fail("directory ["+temp+"] doesn't exist or is not a directory");
 		}
-		
+
 		return false;
 	}
 
@@ -246,7 +248,7 @@ public class PageDb {
 		});
 		return temp.toArray(new IndexRecord[0]);
 	}
-	
+
 	public String rename(VirtualPath path, String uusinimi) {
 		IndexFile index = getIndex(path.getPath());
 		if(index == null){
@@ -447,19 +449,19 @@ public class PageDb {
 				log.info(" 3");
 				IndexFile dex = new IndexFile(dir);
 
-					log.info(" 4");
-					if(dex.fileExists(parts[parts.length-1])){
-						log.info(" 5");
-						
-						File file = new File(dir,"page.meta."+parts[parts.length-1]);
-						log.info(" "+ file.getAbsolutePath());
-						if(file.exists()){
-							log.info(" 6");
-							log.info(" the file exists");
-							return true;
-						}						
-					}
-				
+				log.info(" 4");
+				if(dex.fileExists(parts[parts.length-1])){
+					log.info(" 5");
+
+					File file = new File(dir,"page.meta."+parts[parts.length-1]);
+					log.info(" "+ file.getAbsolutePath());
+					if(file.exists()){
+						log.info(" 6");
+						log.info(" the file exists");
+						return true;
+					}						
+				}
+
 			}
 			//			}
 		}
@@ -497,11 +499,11 @@ public class PageDb {
 
 		StringBuilder errors = new StringBuilder();
 
-		if(!FileOps.archive(data)){
+		if(!FileOps.archive(data,false)){
 			errors.append("could not remove data["+data.getAbsolutePath()+"]\n");
 		}
 
-		if(!FileOps.archive(meta)){
+		if(!FileOps.archive(meta,false)){
 			errors.append("could not remove meta["+meta.getAbsolutePath()+"]");
 		}
 		if(errors.length() > 0){
@@ -510,7 +512,7 @@ public class PageDb {
 		actions.append("-f,"+path+"/"+name+","+Cgicms.datarelay.username);
 		return null;
 	}
-	
+
 	public boolean checkDirSyntax(String path, String name) {
 		if(
 				path.contains("..") ||
@@ -647,7 +649,7 @@ public class PageDb {
 		for(String dir : getDirList("/")){
 			getIndex(dir).file.delete();
 		}
-		
+
 	}
 
 	public void setStatus(VirtualPath path, char status) {
@@ -660,7 +662,7 @@ public class PageDb {
 		if(!index.setStatus(path.getFilename(), status)){
 			log.fail("couldn't change status of ["+path.getFilename()+"]");
 		}
-		
+
 	}
 
 	public char getStatus(VirtualPath path) {
@@ -676,8 +678,56 @@ public class PageDb {
 			return 0;
 		}
 		return record.status;
-		
+
 	}
 
+	public boolean saveRendered(VirtualPath path) {
+		File source_dir = new File(sdir,path.getPath());
+		log.info("saveRendered in dir["+source_dir.getAbsolutePath()+"]");
+
+		File source_meta = new File(source_dir,"page.meta."+path.getFilename());
+		File source_data = new File(source_dir,"page.data."+path.getFilename());
+
+		File target_meta = new File(source_dir,"r.page.meta."+path.getFilename());
+		File target_data = new File(source_dir,"r.page.data."+path.getFilename());
+
+		if(source_meta.exists() && source_data.exists()){
+			FileOps.archive(target_meta,true);
+			FileOps.archive(target_data,true);
+			return (FileOps.copy(source_meta, target_meta, true) &&	FileOps.copy(source_data, target_data, true));
+
+		}else{
+			log.info("one or more source files are missing");
+			return false;
+		}
+	}
+
+	public void revertChanges() {
+		revertDir(sdir);
+	}
+
+	private void revertDir(File targetdir){
+		for(File file : targetdir.listFiles( new FilenameFilter(){
+			public boolean accept(File dir, String name) {
+				return (name.startsWith("r.page."));
+			}
+		})){
+			String source_name = file.getName();
+			String target_name = source_name.substring(2);
+			File target = new File(file.getParentFile(),target_name);
+			if(FileOps.copy(file, target, true)){
+				log.info("reverting ["+file.getName()+"] -> ["+target.getName()+"] success");
+			}else{
+				log.fail("reverting ["+file.getName()+"] -> ["+target.getName()+"] failure");
+			}
+
+		}
+
+		for(File dir : targetdir.listFiles(new FileFilter() {public boolean accept(File pathname) {
+			return (pathname.isDirectory());				
+		}})){
+			revertDir(dir);
+		}
+	}
 }
 

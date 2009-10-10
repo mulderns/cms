@@ -252,7 +252,7 @@ public class ViikkoDb {
 				}
 				log.info("["+year+"]<["+cur_year+"]   ["+week+"]<["+cur_week+"]");
 				if(year < cur_year || week < cur_week)
-					FileOps.archive(_file);
+					FileOps.archive(_file,false);
 			}
 
 		}

@@ -112,7 +112,7 @@ public class ModMaintenance extends Module {
 
 		actions.add(new Action("arkistoi logi", "archlog"){public void execute(){
 			log.info("archiving log");
-			FileOps.archive(new File(Cgicms.logbooks_dir,"actionlog"));
+			FileOps.archive(new File(Cgicms.logbooks_dir,"actionlog"),false);
 
 			CmsElement result = new CmsElement();
 			result.createBox("Logi", "medium3");
@@ -634,7 +634,7 @@ public class ModMaintenance extends Module {
 			if(f.isFile()){
 				String[] temp = FileOps.readToArray(f);
 				String filename = f.getName();
-				FileOps.archive(f);
+				FileOps.archive(f,false);
 				FileOps.write(new File(Cgicms.database_dir,filename), temp, false);
 			}
 		}

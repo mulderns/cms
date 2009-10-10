@@ -1045,7 +1045,7 @@ public class ModPages extends Module {
 				PageDb pdb = PageDb.getDb();
 
 				String[] files = pdb.getFileNameList(path.getUrl());
-				page.addCenter("<h5>"+path+"</h5>");
+				page.addCenter("<h5>"+path.getUrl()+"</h5>");
 				page.addCenter("<pre>\n");
 				for(String filename : files){
 					page.addCenter(filename +" ");
@@ -1108,20 +1108,36 @@ public class ModPages extends Module {
 
 				}else if(file.type.equals(CmsFile.Type.TEXT)){
 					//log.info("pagefile");
+										
+					File target_path = new File(datarelay.target,path.getPath());
+					if(!target_path.exists())
+						target_path.mkdirs();
+					File target = new File(target_path,file.name);
+					
 					Renderer renderer = Renderer.getRenderer();
 
 					String data = renderer.generateHtml((TextFile)file);
+					if(data == null){
+						page.addCenter("data == null");
+						return false;
+					}
+						
 					String[] ds = new String[1];
 					ds[0] = data;
-					File target_path = new File(datarelay.target);
-					FileOps.write(new File(target_path,file.name), ds , false);
+					//File target_path = new File(datarelay.target);
+					if(!FileOps.write(target, ds , false)){
+						page.addCenter("could not write to target");
+						return false;
+					}
+					
 					pdb.setStatus(path,'.');
+					pdb.saveRendered(path);
+					
 					//page.addCenter("ok");
 					return true;
 				}
 				return false;
 			}
-
 			
 		});
 
@@ -1138,6 +1154,13 @@ public class ModPages extends Module {
 			PageDb pdb = PageDb.getDb();
 			pdb.deleteIndexes();
 			pagebuilder.setRedirect(script+"/"+hook+"/cleandirs/");
+		}});
+		
+		actions.add(new Action("Revert to last rendered", "revert"){public void execute(){
+			PageDb pdb = PageDb.getDb();
+			pdb.revertChanges();
+			//pagebuilder.setRedirect(script+"/"+hook+"/cleandirs/");
+			pagebuilder.setRedirect(script+"/"+hook);
 		}});
 		
 		actions.add(new Action("Scan target", "scan"){public void execute(){
