@@ -1014,16 +1014,31 @@ public class ModPages extends Module {
 
 		actions.add(new Action(null, "render"){
 			public void execute(){
+								
 				if(ext.length()==0){
-					log.info("render all");
-					page.setTitle("Rendering all pages");
-					renderDir("/");
+					CmsElement box = new CmsElement();
+					box.createBox("Render all pages");
+					box.addFormTop(script+"/"+hook+"/"+action_hook);
+					box.addTag("label", "force rendering of all pages");
+					box.addField("force", "force", false, new CheckBoxField());
+					box.addField("render", "render", true, new SubmitField());
+					
+					
+					if(checkFields(box.getFields())){
+						log.info("render all");
+						page.setTitle("Rendering all pages");
+						renderDir("/", checkField("force"));
+					}else {
+						page.addCenter(box);
+					}
+					
+
 				}else{
-					renderFile(ext);
+					renderFile(ext, true);
 				}
 			}
 		
-			private void renderDir(String _path){
+			private void renderDir(String _path, boolean force){
 				VirtualPath path = VirtualPath.create(_path);
 				log.info("rendering dir ["+path.getUrl()+"] ("+_path+")");
 				
@@ -1034,19 +1049,19 @@ public class ModPages extends Module {
 				page.addCenter("<pre>\n");
 				for(String filename : files){
 					page.addCenter(filename +" ");
-					page.addCenter((renderFile(path.getUrl()+"/"+filename)?"..ok":"..fail"));
+					page.addCenter((renderFile(path.getUrl()+"/"+filename, force)?"..ok":"..fail"));
 					page.addCenter("\n");
 				}
 				page.addCenter("</pre>");
 
 				String[] dirs = pdb.getDirList(path.getUrl()+"/");
 				for(String dir: dirs){
-					renderDir(path.getUrl()+"/"+dir);
+					renderDir(path.getUrl()+"/"+dir, force);
 				}
 
 			}
 
-			private boolean renderFile(String ext) {
+			private boolean renderFile(String ext, boolean force) {
 				log.info("rendering file ["+ext+"]");
 				VirtualPath path = VirtualPath.create(ext);
 				PageDb pdb = PageDb.getDb();
@@ -1058,7 +1073,7 @@ public class ModPages extends Module {
 					return false;
 				}
 
-				if(pdb.getStatus(path) == '.'){
+				if(!force && pdb.getStatus(path) == '.'){
 					page.addCenter("..no changes");
 					return true;
 				}

@@ -91,7 +91,7 @@ public class Renderer {
 	}
 
 	private boolean checkMeta(String[] path, CmsFile file){
-		log.info("check for corresponding meta...");
+		//log.info("check for corresponding meta...");
 		TemplateFile parent = pdb.getTemplate(file.parent);
 		if(parent == null){
 			log.fail("parent template could not be found ["+file.parent+"]");
@@ -147,10 +147,10 @@ public class Renderer {
 	}
 
 	private CmsElement combineDataWithMeta(ArrayList<MetaKernel> meta_structure, ArrayList<DataKernel> data_structure) {
-		log.info("storm is brewing... s["+
-				(meta_structure==null?"null":meta_structure.size())+
-				"] c["+(data_structure==null?"null":data_structure.size())+
-				"]");
+		//log.info("storm is brewing... s["+
+		//		(meta_structure==null?"null":meta_structure.size())+
+		//		"] c["+(data_structure==null?"null":data_structure.size())+
+		//		"]");
 		TreeSet<DataKernel> data;
 		if(data_structure != null){
 			data = new TreeSet<DataKernel>(data_structure);
@@ -163,9 +163,9 @@ public class Renderer {
 
 		if(meta_structure != null){
 			for(MetaKernel kernel: meta_structure){
-				log.info("["+kernel.getType()+"]");
+				//log.info("["+kernel.getType()+"]");
 				if(modules.containsKey(kernel.getType())){
-					log.info(" module found");
+					//log.info(" module found");
 					modules.get(kernel.getType()).synthesize(kernel, data, box, "");
 				}else{
 					log.fail(" invalid key/type/module ["+kernel.getType()+"]");
@@ -179,17 +179,17 @@ public class Renderer {
 
 
 	public String[] dynData(String command, String data, CmsFile file) {
-		log.info("Dynamic operation...");
+		//log.info("Dynamic operation...");
 
 		if(file.parent == null){
 			log.fail(" no parent, dynamic operation not possible");
 			return null;
 		}
 
-		log.info(" has parent");
+		//log.info(" has parent");
 
 		if(command.equals("add")){
-			log.info("add");
+			//log.info("add");
 
 			String[] path = data.split("\\.");
 			//log.info("path["+data+"] -> ["+path.length+"]");
@@ -252,13 +252,13 @@ public class Renderer {
 				dk.toDataArray(buffer);
 			}
 
-			log.info("</add>");
+			//log.info("</add>");
 			return buffer.toArray(new String[buffer.size()]);
 
 
 
 		}else if(command.equals("up")){
-			log.info("up");
+			//log.info("up");
 
 			String[] path = data.split("\\.");
 			//log.info("path["+data+"] -> ["+path.length+"]");
@@ -325,11 +325,11 @@ public class Renderer {
 				dk.toDataArray(buffer);
 			}
 
-			log.info("</up>");
+			//log.info("</up>");
 			return buffer.toArray(new String[buffer.size()]);
 
 		}else if(command.equals("del")){
-			log.info("del");
+			//log.info("del");
 
 			String[] path = data.split("\\.");
 			//log.info("path["+data+"] -> ["+path.length+"]");
@@ -378,7 +378,7 @@ public class Renderer {
 				dk.toDataArray(buffer);
 			}
 
-			log.info("</del>");
+			//log.info("</del>");
 			return buffer.toArray(new String[buffer.size()]);
 
 
@@ -464,7 +464,7 @@ public class Renderer {
 
 
 	private Kernel fillWithData(Kernel structure, Kernel data, VirtualPath path) {
-		log.info("fillWithData...");
+		//log.info("fillWithData...");
 		long profiling_start = System.nanoTime();
 
 		if(structure == null){
@@ -483,20 +483,20 @@ public class Renderer {
 
 		for(Kernel k : structure.getSubs()){
 			if(k.type.equals(Kernel.Type.code)){
-				log.info("add [code]");
+				//log.info("add [code]");
 				processed.add(k);
 			}else if(k.type.equals(Kernel.Type.data)){
-				log.info("add [data] "+k.id);
+				//log.info("add [data] "+k.id);
 				processed.add(k);
 				for(Kernel l : k.getSubs()){
 
 					if(l.type.equals(Kernel.Type.meta)){
-						log.info("  [fuse] "+k.id);
+						//log.info("  [fuse] "+k.id);
 						processKernel(l,data,path);
 					}
 				}
 			}else if(k.type.equals(Kernel.Type.meta)){
-				log.info("add [meta] "+k.id);
+				//log.info("add [meta] "+k.id);
 				processed.add(processKernel(k,data,path));
 			} 
 		}
@@ -769,19 +769,19 @@ public class Renderer {
 		// infuse == synthetize meta tags to code using cloud data;
 
 		// gut the file
-		log.info("1st get gutted file");
+		//log.info("1st get gutted file");
 		Kernel skeleton = getFile(file);
 		// infuse the file -> cloud
 		//log.info("gutts: "+structure.toString());
 
-		log.info("1st infuse");
+		//log.info("1st infuse");
 		Kernel data = fillWithData(skeleton, new Kernel(), path);
 		//log.info("fusion: "+cloud.toString());
 		// if file has parent
 		template = skeleton.getParentName();
 
 		while(template != null && !template.equals("null")){
-			log.info("gut lap");
+			//log.info("gut lap");
 			// gut the parent
 			skeleton = getCachedTemplate(template);
 			//log.info("gutts: "+structure.toString());
@@ -827,7 +827,7 @@ public class Renderer {
 
 		Kernel cached = templateCache.get(filename);
 		if(cached == null){
-
+			log.info("negative cache hit ["+filename+"]");
 			TemplateFile temp = pdb.getTemplateMeta(filename);
 			if(temp == null){
 				return null;
@@ -844,7 +844,7 @@ public class Renderer {
 			cached.addFile(new Kernel((temp.parent==null?"null":temp.parent),Kernel.Type.file));
 			templateCache.put(temp.name, cached);
 		}else{
-			log.info("positive cache hit");
+			log.info("positive cache hit ["+filename+"]");
 		}
 
 		return cached;
@@ -1077,8 +1077,8 @@ public class Renderer {
 					}
 				}
 
-				log.info("a - > "+(url==null?"@":url));
-				log.info("m - > "+parts[1]);
+				//log.info("a - > "+(url==null?"@":url));
+				//log.info("m - > "+parts[1]);
 				metakernel.id = (url==null?"":url)+parts[1];
 
 				//metakernel.id = "http://localhost:8080/cgi-bin/cms-2/Cgicms.exe/sivut/preview"+metakernel.id.split(":")[1];
@@ -1142,7 +1142,7 @@ public class Renderer {
 				String id = parts[1];
 				Kernel data = cloud.getData(id);
 				if(data != null){
-					log.info("data found");
+					//log.info("data found");
 					metakernel.id = "";
 					metakernel.add(data.getSubs());
 					//metakernel.id = data.getFirst().id; //"";// data.id;
@@ -1701,11 +1701,11 @@ public class Renderer {
 			switch (c) {
 
 			case '[':
-				log.info("[mg] [");
+				//log.info("[mg] [");
 				if(!openbrace){
 					openbrace = true;
 					if(buffer.length()>0){
-						log.info("[mg] >data");
+						//log.info("[mg] >data");
 						//open.data = buffer.toString();
 						open.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
 						buffer.setLength(0);
@@ -1716,7 +1716,7 @@ public class Renderer {
 				break;
 
 			case ']':
-				log.info("[mg] ]");
+				//log.info("[mg] ]");
 				if(openbrace){
 					openbrace = false;
 					if(doublepoint){
@@ -1726,7 +1726,7 @@ public class Renderer {
 							final String id = buffer.toString();
 							buffer.setLength(0);
 							if(open.id.equals(id)){
-								log.info("[mg] $");
+								//log.info("[mg] $");
 								open = open.parent;
 								if(!open.type.equals(Kernel.Type.meta)){
 									log.info("[mg] <");
@@ -1736,7 +1736,7 @@ public class Renderer {
 								log.fail("[mg] malform o!l - o["+open.id+"] l["+id+"]");
 							}
 						}else{ // normal tag
-							log.info("[mg] +normal ");
+							//log.info("[mg] +normal ");
 							//open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.meta));
 							open.add(new Kernel(buffer.toString(),open,Kernel.Type.meta));
 							if(!open.type.equals(Kernel.Type.meta))
@@ -1744,7 +1744,7 @@ public class Renderer {
 							buffer.setLength(0);
 						}
 					}else{ // dynamic
-						log.info("[mg] +dynamic");
+						//log.info("[mg] +dynamic");
 						Kernel temp = new Kernel(buffer.toString(), open, Kernel.Type.meta);
 						//open.subs.add(temp);
 						open.add(temp);
@@ -1757,11 +1757,11 @@ public class Renderer {
 				break;
 
 			case ':':
-				log.info("[mg] :");
+				//log.info("[mg] :");
 				if(openbrace){
 					doublepoint = true;
 					if(buffer.length() == 0){
-						log.info("[mg] =$");
+						//log.info("[mg] =$");
 						end = true;
 					}else{
 						buffer.append(c);
@@ -1774,7 +1774,7 @@ public class Renderer {
 			}
 
 		}
-		log.info("end of stream");
+		//log.info("end of stream");
 		return open;
 	}
 
