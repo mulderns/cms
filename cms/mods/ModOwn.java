@@ -208,6 +208,8 @@ public class ModOwn extends Module{
 						box.addTag("pre","error - file data could not be updated");
 						break;
 					}
+					
+					pdb.setStatus(naamapath, 'm');
 
 					log.info("update data["+file.name+"] successfull");
 					ActionLog.action("Updated ["+file.relativePath.getUrl()+"]" );

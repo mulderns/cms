@@ -305,10 +305,30 @@ public class Cgicms {
 			ActionLog.write();
 
 		}else if(Collections.binarySearch(arguments, "--update") >= 0){
-			// read input from cgi-environment
+			
+			/** ¤ */
+			if((main_props = loadProperties(main_props_file)) == null){
+				log.fail("loading properties failed");
+				return;
+			}
+			if(!checkProperties(main_props)){
+				log.fail("not all properties set in properties file");
+				return;
+			}
 			datarelay = new DataRelay();
+			datarelay.script = getScriptFile();
+			datarelay.target = getRelativePath();
+			datarelay.res = getResRoot();
 			datarelay.env = new HashMap<String,String>(System.getenv());
+			group_hook = "cms";
+			
+			// read input from cgi-environment
 			request = new HttpRequest(datarelay);//initHttpRequest();
+			
+			/** ¤ */
+			
+			// read input from cgi-environment
+
 
 			//authentication & sessions
 			log.info("proceeding to update week");

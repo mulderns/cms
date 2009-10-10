@@ -576,6 +576,7 @@ public class ModPages extends Module {
 					if(pdb.updateData(file)){
 						log.info("update data["+file.name+"] successfull");
 						ActionLog.action("Updated ["+file.relativePath.getUrl()+"]" );
+						pdb.setStatus(path, 'm');
 						pagebuilder.setRedirect(script+"/"+hook+"/"+action_hook+path.getUrl());
 					}else{
 						box.addTag("pre","error - file data could not be updated");
@@ -1011,52 +1012,103 @@ public class ModPages extends Module {
 		}});
 
 
-		actions.add(new Action(null, "render"){public void execute(){
-			log.info("render to file");
-			VirtualPath path = VirtualPath.create(ext);
-			PageDb pdb = PageDb.getDb();
-
-			CmsFile file = pdb.getFileMeta(path);
-
-			if(file == null){
-				log.fail("could not acuire file for preview :(");
-				return;
+		actions.add(new Action(null, "render"){
+			public void execute(){
+				if(ext.length()==0){
+					log.info("render all");
+					page.setTitle("Rendering all pages");
+					renderDir("/");
+				}else{
+					renderFile(ext);
+				}
 			}
+		
+			private void renderDir(String _path){
+				VirtualPath path = VirtualPath.create(_path);
+				log.info("rendering dir ["+path.getUrl()+"] ("+_path+")");
+				
+				PageDb pdb = PageDb.getDb();
 
-			// according to type,
-			if(file.type.equals(CmsFile.Type.BINARY)){
-				//copy file content to target
-				try{
-					File target_path = new File(datarelay.target,path.getPath());
+				String[] files = pdb.getFileNameList(path.getUrl());
+				page.addCenter("<h5>"+path+"</h5>");
+				page.addCenter("<pre>\n");
+				for(String filename : files){
+					page.addCenter(filename +" ");
+					page.addCenter((renderFile(path.getUrl()+"/"+filename)?"..ok":"..fail"));
+					page.addCenter("\n");
+				}
+				page.addCenter("</pre>");
 
-					if(!target_path.exists())
-						target_path.mkdirs();
-
-					File target = new File(target_path,file.name);
-					BinaryFile rfile = (BinaryFile)file;
-
-					if(!FileOps.write(target, rfile.getData(),false)){
-						page.addCenter("could not write the file");
-					}else{
-						page.addCenter("ok");
-					}
-				}catch (Exception e){
-					page.addCenter("exception:"+e);
+				String[] dirs = pdb.getDirList(path.getUrl()+"/");
+				for(String dir: dirs){
+					renderDir(path.getUrl()+"/"+dir);
 				}
 
-
-			}else if(file.type.equals(CmsFile.Type.TEXT)){
-				log.info("pagefile");
-				Renderer renderer = Renderer.getRenderer();
-
-				String data = renderer.generateHtml((TextFile)file);
-				String[] ds = new String[1];
-				ds[0] = data;
-				File target_path = new File(datarelay.target);
-				FileOps.write(new File(target_path,file.name), ds , false);
-				page.addCenter("ok");
 			}
-		}});
+
+			private boolean renderFile(String ext) {
+				log.info("rendering file ["+ext+"]");
+				VirtualPath path = VirtualPath.create(ext);
+				PageDb pdb = PageDb.getDb();
+
+				CmsFile file = pdb.getFileMeta(path);
+
+				if(file == null){
+					log.fail("could not acuire file for preview :(");
+					return false;
+				}
+
+				if(pdb.getStatus(path) == '.'){
+					page.addCenter("..no changes");
+					return true;
+				}
+				
+				// according to type,
+				if(file.type.equals(CmsFile.Type.BINARY)){
+					//copy file content to target
+					try{
+						File target_path = new File(datarelay.target,path.getPath());
+
+						if(!target_path.exists())
+							target_path.mkdirs();
+
+						File target = new File(target_path,file.name);
+						BinaryFile rfile = (BinaryFile)file;
+
+						if(!FileOps.write(target, rfile.getData(),false)){
+							page.addCenter("..could not write the file");
+							pdb.setStatus(path,'o');
+							return false;
+						}else{
+							pdb.setStatus(path,'.');
+							//page.addCenter("ok");
+							return true;
+						}
+					}catch (Exception e){
+						pdb.setStatus(path,'x');
+						page.addCenter("exception:"+e);
+						return false;
+					}
+
+
+				}else if(file.type.equals(CmsFile.Type.TEXT)){
+					//log.info("pagefile");
+					Renderer renderer = Renderer.getRenderer();
+
+					String data = renderer.generateHtml((TextFile)file);
+					String[] ds = new String[1];
+					ds[0] = data;
+					File target_path = new File(datarelay.target);
+					FileOps.write(new File(target_path,file.name), ds , false);
+					pdb.setStatus(path,'.');
+					//page.addCenter("ok");
+					return true;
+				}
+				return false;
+			}
+
+			
+		});
 
 		actions.add(new Action("Puhdista", "cleandirs"){public void execute(){
 			PageDb pdb = PageDb.getDb();

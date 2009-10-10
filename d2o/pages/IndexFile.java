@@ -54,6 +54,16 @@ public class IndexFile {
 		return indexdb.pol(filename);
 	}
 
+	public boolean setStatus(String name, char status){
+		if (!indexdb.pol(name)) {
+			return false;
+		}
+		IndexRecord record = new IndexRecord(indexdb.get(name));
+		indexdb.del(name);
+		record.status = status;
+		return indexdb.add(name, record.toArray());
+	}
+	
 	public IndexRecord getRecord(String filename) {
 		if (!indexdb.pol(filename)) {
 			return null;

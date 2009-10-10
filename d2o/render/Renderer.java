@@ -389,7 +389,7 @@ public class Renderer {
 	}
 
 
-	private String encodeAngleBrackets(String data) {
+	/*private String encodeAngleBrackets(String data) {
 		if(data == null)
 			return null;
 
@@ -410,7 +410,7 @@ public class Renderer {
 			sb.append(data.substring(last));
 
 		return sb.toString();
-	}
+	}*/
 	
 	private String encodeAngleBrackets2(String data) {
 		if(data == null)
@@ -528,9 +528,9 @@ public class Renderer {
 
 			log.info("reading data [");
 			StringBuilder data = new StringBuilder();
-			log.info(file.getData());
+			//log.info(file.getData());
 			data.append(encodeAngleBrackets2(file.getData()));
-			log.info(data.toString());
+			//log.info(data.toString());
 			log.info("            ]");
 
 			edit_box.addField("data", data.toString(), true, new TextAreaField(500));
@@ -843,6 +843,8 @@ public class Renderer {
 
 			cached.addFile(new Kernel((temp.parent==null?"null":temp.parent),Kernel.Type.file));
 			templateCache.put(temp.name, cached);
+		}else{
+			log.info("positive cache hit");
 		}
 
 		return cached;
@@ -1194,7 +1196,7 @@ public class Renderer {
 				}
 
 				brew.addContent(m.getLabel()+":");
-				brew.addField(parentid+m.id, encodeAngleBrackets(extractData(cloud, m.id, parentid).data), true, new TextAreaField(height));
+				brew.addField(parentid+m.id, encodeAngleBrackets2(extractData(cloud, m.id, parentid).data), true, new TextAreaField(height));
 			}
 		};
 		modules.put(module.hook, module);
@@ -1537,11 +1539,11 @@ public class Renderer {
 				switch (c) {
 
 				case '«':
-					log.info("[dg] {");
+					//log.info("[dg] {");
 					if(!openbrace){
 						openbrace = true;
 						if(buffer.length()>0){
-							log.info("[dg] +code");
+							//log.info("[dg] +code");
 							//log.info("["+buffer.toString()+"]");
 
 							//open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
@@ -1559,7 +1561,7 @@ public class Renderer {
 					break;
 
 				case '»':
-					log.info("[dg] }");
+					//log.info("[dg] }");
 					if(openbrace){
 						openbrace = false;
 						if(doublepoint){
@@ -1567,12 +1569,12 @@ public class Renderer {
 							final String id = buffer.toString();
 							buffer.setLength(0);
 							if(open.id.equals(id)){
-								log.info("[dg] $["+id+"]");
+								//log.info("[dg] $["+id+"]");
 
 								if(open.parent == null){
 									log.fail("[dg] malform p=@ - o["+open.id+"]");
 								}else{
-									log.info("[dg] <");
+									//log.info("[dg] <");
 									open = open.parent;
 								}
 
@@ -1587,7 +1589,7 @@ public class Renderer {
 								buffer.setLength(0);
 							}
 						}else{
-							log.info("[dg] +dkernel ["+buffer.toString()+"]");
+							//log.info("[dg] +dkernel ["+buffer.toString()+"]");
 							Kernel temp = new Kernel(buffer.toString(), open, Kernel.Type.data);
 							//open.subs.add(temp);
 							open.add(temp);
@@ -1604,7 +1606,7 @@ public class Renderer {
 
 				case ':':
 					if(openbrace){
-						log.info("[dg] :");
+						//log.info("[dg] :");
 						doublepoint = true;
 						if(buffer.length() == 0){
 
@@ -1617,19 +1619,19 @@ public class Renderer {
 					break;
 
 				case '[':
-					log.info("[dg] [");
+					//log.info("[dg] [");
 					if(buffer.length() > 0){
-						log.info("[dg] +code");
+						//log.info("[dg] +code");
 						//open.subs.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
 						open.add(new Kernel(buffer.toString(),open,Kernel.Type.code));
 						buffer.setLength(0);
 					}
-					log.info("[dg] > [mg]");
+					//log.info("[dg] > [mg]");
 					open = processMeta(open, reader);
 					break;
 
 				case ']':
-					log.info("[dg] malform - ] ");
+					log.fail("[dg] malform - ] ");
 					buffer.setLength(0);
 					break;
 

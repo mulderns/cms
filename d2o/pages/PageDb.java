@@ -217,7 +217,7 @@ public class PageDb {
 		for(String[] raw : index.getRecords()){
 			IndexRecord record = new IndexRecord(raw);
 			temp.add(record.filename);
-			log.info("record >> "+record);
+			log.info("record >> "+record.filename);
 		}
 		Collections.sort(temp);
 		return temp.toArray(new String[0]);
@@ -647,6 +647,35 @@ public class PageDb {
 		for(String dir : getDirList("/")){
 			getIndex(dir).file.delete();
 		}
+		
+	}
+
+	public void setStatus(VirtualPath path, char status) {
+		log.info("changing status ["+path.getUrl()+"] -> "+status);
+		IndexFile index = getIndex(path.getPath());
+		if(index == null){
+			log.fail("couldn't get index file ["+path.getPath()+"]");
+			return;
+		}
+		if(!index.setStatus(path.getFilename(), status)){
+			log.fail("couldn't change status of ["+path.getFilename()+"]");
+		}
+		
+	}
+
+	public char getStatus(VirtualPath path) {
+		log.info("get status ["+path.getUrl()+"]");
+		IndexFile index = getIndex(path.getPath());
+		if(index == null){
+			log.fail("couldn't get index file ["+path.getPath()+"]");
+			return 0;
+		}
+		IndexRecord record = index.getRecord(path.getFilename());
+		if(record == null){
+			log.fail("could not get record");
+			return 0;
+		}
+		return record.status;
 		
 	}
 
