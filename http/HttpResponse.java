@@ -48,7 +48,7 @@ public class HttpResponse {
 	public String toString(){
 		StringBuilder buf = new StringBuilder();
 		buf.append("Content-type: "+content_type);
-		buf.append("; charser="+charset);
+		buf.append("; charset="+charset);
 		if(cookies.size() > 0){
 			for (String cookie : cookies) {
 				buf.append(linesep + cookie);

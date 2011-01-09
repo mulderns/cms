@@ -226,8 +226,32 @@ public class ViikkoDb {
 
 	public int getWeekNumber(int offset) {
 		Calendar now = Calendar.getInstance();
+		/*log.fail("Debug-Calendar");
+		log.fail(
+				"day["+now.get(Calendar.DAY_OF_MONTH)+"] " +
+				"month["+now.get(Calendar.MONTH)+"] " +
+				"year["+now.get(Calendar.YEAR)+"] " +
+				"week["+now.get(Calendar.WEEK_OF_YEAR)+"] " +
+				"first_d_w["+now.getFirstDayOfWeek()+"] []"
+				);*/
 		now.setFirstDayOfWeek(Calendar.MONDAY);
+		/*log.fail("----set---- ["+Calendar.MONDAY+"]");
+		log.fail(
+				"day["+now.get(Calendar.DAY_OF_MONTH)+"] " +
+				"month["+now.get(Calendar.MONTH)+"] " +
+				"year["+now.get(Calendar.YEAR)+"] " +
+				"week["+now.get(Calendar.WEEK_OF_YEAR)+"] " +
+				"first_d_w["+now.getFirstDayOfWeek()+"] []"
+				);*/
 		now.add(Calendar.WEEK_OF_YEAR, offset);
+		/*log.fail("----add----");
+		log.fail(
+				"day["+now.get(Calendar.DAY_OF_MONTH)+"] " +
+				"month["+now.get(Calendar.MONTH)+"] " +
+				"year["+now.get(Calendar.YEAR)+"] " +
+				"week["+now.get(Calendar.WEEK_OF_YEAR)+"] " +
+				"first_d_w["+now.getFirstDayOfWeek()+"] []"
+				);*/
 		return now.get(Calendar.WEEK_OF_YEAR);
 	}
 

@@ -35,7 +35,7 @@ import cms.mods.ModViikko;
 
 public class Cgicms {
 
-	public static final File settings_dir = new File("..", "settings");
+	//public static final File settings_dir = new File("..", "settings");
 	public static final File sessions_dir = new File("..", "sessions");
 	public static final File database_dir = new File("..", "database");
 	public static final File logbooks_dir = new File("..", "logbooks");
@@ -45,7 +45,7 @@ public class Cgicms {
 	//material, elements, frontend
 
 	static final File[] directories = {
-		settings_dir, // settings for cgicms and modules
+		//settings_dir, // settings for cgicms and modules
 		sessions_dir, // stored (user)sessions
 		database_dir, // users, groups, etc.
 		logbooks_dir, // logged actions
@@ -54,24 +54,24 @@ public class Cgicms {
 		archives_dir  // backupping
 	};
 
-	static final File main_props_file = new File(settings_dir, "properties");
+	static final File main_props_file = new File(database_dir, "settings");
 
 	final static PropKey[] property_keys = {
-			new PropKey(
-					"res_root",
-					"http://www.students.tut.fi/~kortesmv/cms/",
-					"url to external resources such as images and stylesheets"
-			),
-			new PropKey(
-					"script_file",
-					"http://www.students.tut.fi/cgi-bin/cgiwrap/kortesmv/makemyday.cgi",
-					"url of the script file, which launces cms."
-			),
-			new PropKey(
-					"relative_target_path",
-					"..\\..\\",
-					"(relative)path from cms to where you would like final pages to be placed(public_html?)"
-			)
+		new PropKey(
+				"res_root",
+				"http://www.students.tut.fi/~kortesmv/cms/",
+				"url to external resources such as images and stylesheets"
+		),
+		new PropKey(
+				"script_file",
+				"http://www.students.tut.fi/cgi-bin/cgiwrap/kortesmv/makemyday.cgi",
+				"url of the script file, which launces cms."
+		),
+		new PropKey(
+				"relative_target_path",
+				"..\\..\\",
+				"(relative)path from cms to where you would like final pages to be placed(public_html?)"
+		)
 	};
 
 	public static final Logger log = new Logger("___");
@@ -84,14 +84,14 @@ public class Cgicms {
 	public ModuleLoader loader;
 
 	public static String group_hook;
-	private long t_begin, t_init, t_request, t_restore, t_execute;
+	//private long t_begin, t_init, t_request, t_restore, t_execute;
 	private long t_begin_nano, t_init_nano, t_request_nano, t_restore_nano, t_execute_nano;
 
 	HashMap<String,String> main_props;
 
 	Cgicms(){
 		log.meta("CGICMS");
-		t_begin = System.currentTimeMillis();
+		//t_begin = System.currentTimeMillis();
 		t_begin_nano = System.nanoTime();
 		ActionLog.setLogFile(new File(logbooks_dir, "actionlog"));
 	}
@@ -154,9 +154,9 @@ public class Cgicms {
 				Logger.setEnableSystemOut(true);
 			}
 
-			t_init = System.currentTimeMillis();
+			//t_init = System.currentTimeMillis();
 			t_init_nano = System.nanoTime();
-			log.info("not-properties load+check took: "+(t_init - t_temp)+" ms");
+			//log.info("not-properties load+check took: "+(t_init - t_temp)+" ms");
 
 			datarelay = new DataRelay();
 			datarelay.script = getScriptFile();
@@ -164,10 +164,10 @@ public class Cgicms {
 			datarelay.res = getResRoot();
 			datarelay.env = new HashMap<String,String>(System.getenv());
 			group_hook = "cms";
-			
+
 			// read input from cgi-environment
 			request = new HttpRequest(datarelay);//initHttpRequest();
-			t_request = System.currentTimeMillis();
+			//t_request = System.currentTimeMillis();
 			t_request_nano = System.nanoTime();
 
 			//Deploy deploy = new Deploy(this);
@@ -194,12 +194,12 @@ public class Cgicms {
 					!sessioner.createSession() //create new from received login
 			){
 				sessioner.doLogin(); // send login page
-				t_restore = System.currentTimeMillis();
+				//t_restore = System.currentTimeMillis();
 				t_restore_nano = System.nanoTime();
 
 			}else{
 				log.info("has session");
-				t_restore = System.currentTimeMillis();
+				//t_restore = System.currentTimeMillis();
 				t_restore_nano = System.nanoTime();
 				session = datarelay.session;
 
@@ -215,13 +215,13 @@ public class Cgicms {
 				t_temp = System.nanoTime();
 				loader.load_modules();
 				pagebuilder.addHidden(" load modules = "+((System.nanoTime()-t_temp)/1000000)+" ms");
-				
+
 				log.info("user-"+session.getUser().toString());
-				
+
 				long apu = System.nanoTime();
 				loader.execute(); // get the inputs, do the outputs
 				pagebuilder.addHidden(" execute module = "+((System.nanoTime()-apu)/1000000)+" ms");
-				
+
 				pagebuilder.bake();
 
 				if(session.delete){
@@ -233,16 +233,17 @@ public class Cgicms {
 				}
 			}
 
-			t_execute = System.currentTimeMillis();
+			//t_execute = System.currentTimeMillis();
 			t_execute_nano = System.nanoTime();
-			log.info("run took: "+(System.currentTimeMillis()-t_begin)+" ms");
-			ActionLog.time(
-					"i "+Utils.addLeading((int)(t_init - t_begin), 4) +" "+
-					"r "+Utils.addLeading((int)(t_request - t_init), 4) +" "+
-					"l "+Utils.addLeading((int)(t_restore - t_request), 4) +" "+
-					"e "+Utils.addLeading((int)(t_execute - t_restore), 4) +" "+
-					"t "+Utils.addLeading((int)(System.currentTimeMillis() - t_begin), 4));
-		
+			//log.info("run took: "+(System.currentTimeMillis()-t_begin)+" ms");
+			log.info("run took: "+(System.nanoTime()-t_begin_nano)+" ns");
+			//			ActionLog.time(
+			//					"i "+Utils.addLeading((int)(t_init - t_begin), 4) +" "+
+			//					"r "+Utils.addLeading((int)(t_request - t_init), 4) +" "+
+			//					"l "+Utils.addLeading((int)(t_restore - t_request), 4) +" "+
+			//					"e "+Utils.addLeading((int)(t_execute - t_restore), 4) +" "+
+			//					"t "+Utils.addLeading((int)(System.currentTimeMillis() - t_begin), 4));
+
 			ActionLog.time(
 					"i "+Utils.addLeading((int)(t_init_nano - t_begin_nano), 10).substring(0, 4) +" "+
 					"r "+Utils.addLeading((int)(t_request_nano - t_init_nano), 10).substring(0, 4) +" "+
@@ -260,7 +261,7 @@ public class Cgicms {
 			datarelay.pagebuilder = pagebuilder;
 			ModUpload upload = new ModUpload(datarelay);
 			upload.servePublic();
-			
+
 		}else if(Collections.binarySearch(arguments, "--servefile") >= 0){
 			datarelay = new DataRelay();
 			datarelay.env = new HashMap<String,String>(System.getenv());
@@ -305,7 +306,7 @@ public class Cgicms {
 			ActionLog.write();
 
 		}else if(Collections.binarySearch(arguments, "--update") >= 0){
-			
+
 			/** ¤ */
 			if((main_props = loadProperties(main_props_file)) == null){
 				log.fail("loading properties failed");
@@ -321,12 +322,12 @@ public class Cgicms {
 			datarelay.res = getResRoot();
 			datarelay.env = new HashMap<String,String>(System.getenv());
 			group_hook = "cms";
-			
+
 			// read input from cgi-environment
 			request = new HttpRequest(datarelay);//initHttpRequest();
-			
+
 			/** ¤ */
-			
+
 			// read input from cgi-environment
 
 
@@ -334,13 +335,47 @@ public class Cgicms {
 			log.info("proceeding to update week");
 			pagebuilder = new PageBuilder(this);
 			datarelay.pagebuilder = pagebuilder;
-			
+
 			if(!new ModViikko(datarelay).blind_update()){
 				ActionLog.error("update failed");
 			}else{
 				ActionLog.log("kicker updated week successfully");
 			}
+
+			ActionLog.write();
 			
+		}else if(Collections.binarySearch(arguments, "--rukous_send") >= 0){
+
+			/** ¤ */
+			if((main_props = loadProperties(main_props_file)) == null){
+				log.fail("loading properties failed");
+				return;
+			}
+			if(!checkProperties(main_props)){
+				log.fail("not all properties set in properties file");
+				return;
+			}
+			datarelay = new DataRelay();
+			datarelay.script = getScriptFile();
+			datarelay.target = getRelativePath();
+			datarelay.res = getResRoot();
+			datarelay.env = new HashMap<String,String>(System.getenv());
+			group_hook = "cms";
+
+			// read input from cgi-environment
+			request = new HttpRequest(datarelay);//initHttpRequest();
+
+			//authentication & sessions
+			log.info("proceeding to update week");
+			pagebuilder = new PageBuilder(this);
+			datarelay.pagebuilder = pagebuilder;
+
+			if(!new Help(datarelay).blind_send()){
+				ActionLog.error("rukous_send failed");
+			}else{
+				ActionLog.log("Prayer requests sent successfully");
+			}
+
 			ActionLog.write();
 
 		}else if(Collections.binarySearch(arguments, "--reset") >= 0){
@@ -373,18 +408,18 @@ public class Cgicms {
 			);
 
 			log.info("proceeding to sessions");
-		
+
 			//authentication & sessions
 			log.info("validating key");
 
 			KeyManager keymanager = new KeyManager(datarelay);
 			keymanager.doStuff();
-			
+
 			ActionLog.write();
 			//Deploy deploy = new Deploy(this);
 			//deploy.dumpEnv("env.dump");
 			log.info("____________________________________________");
-			
+
 		}else if(Collections.binarySearch(arguments, "--apua") >= 0){
 
 			// read input from cgi-environment
@@ -401,7 +436,7 @@ public class Cgicms {
 			new Help(datarelay);
 			ActionLog.write();
 
-		/*}else if(Collections.binarySearch(arguments, "--poll") >= 0){
+			/*}else if(Collections.binarySearch(arguments, "--poll") >= 0){
 			//dumpEnv("env.poll.dump");
 
 			// read input from cgi-environment
@@ -440,17 +475,17 @@ public class Cgicms {
 			new Deploy(this).makeDeploy();
 			return;
 
-		/*}else if(Collections.binarySearch(arguments, "--hash") >= 0){
+			/*}else if(Collections.binarySearch(arguments, "--hash") >= 0){
 			// --hash prints out the hash of args[1]
 			new Deploy(this).generateHash(args[1]);
 			return;
-*/
+			 */
 		}else if(Collections.binarySearch(arguments, "--bootstrap") >= 0){
 			// --hash prints out the hash of args[1]
 			new Deploy(this).bootStrapRootUser("mullis", "mallis");
 			//bootSmack("")
 			return;
-			
+
 		}else if(Collections.binarySearch(arguments, "--convert") >= 0){
 			// --hash prints out the hash of args[1]
 			new Deploy(this).upgradeUserDB();

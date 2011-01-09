@@ -21,7 +21,7 @@ public class CheckBoxField extends CmsField {
 		}else if(checked){
 			sb.append(" checked=\"checked\"");
 		}
-		sb.append("type=\"checkbox\" />");
+		sb.append(" type=\"checkbox\" />");
 		return sb.toString();
 	}
 	

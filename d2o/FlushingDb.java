@@ -37,7 +37,7 @@ public class FlushingDb {
 
 		loaded = false;
 	}
-	
+
 	public boolean add(String key, String[] data) {
 		if (key == null)
 			throw new NullPointerException("key is null");
@@ -54,7 +54,7 @@ public class FlushingDb {
 
 		return store(record);
 	}
-	
+
 	public boolean put(String key, String[] data) {
 		if (key == null)
 			throw new NullPointerException("key is null");
@@ -66,7 +66,7 @@ public class FlushingDb {
 				log.fail("could not load dbfile["+source+"]");
 				return false;
 			}
-		
+
 		FlushingRecord record = new FlushingRecord(key, data);
 		records.put(key, record);
 
@@ -87,7 +87,7 @@ public class FlushingDb {
 
 		FlushingRecord record = new FlushingRecord(key, data);
 		records.put(key, record);
-		
+
 		return store();
 	}
 
@@ -133,13 +133,13 @@ public class FlushingDb {
 			log.info("key in use [" + key + "]");
 			return false;
 		}
-		
+
 		FlushingRecord record = records.remove(key);
 		record.id = target;
 		records.put(target, record);
 		return store();
 	}
-	
+
 	public boolean del(String key) {
 		if (key == null)
 			throw new NullPointerException("key is null");
@@ -162,20 +162,34 @@ public class FlushingDb {
 				log.fail("could not load dbfile["+source+"]");
 				return null;
 			}
-		
+
 		ArrayList<String[]> all = new ArrayList<String[]>();
 		for(FlushingRecord r :records.values()){
 			all.add(r.data);
 		}
 		return all;
 	}
-	
+
+	public boolean rst(boolean areYouSure){
+		if(areYouSure){
+			if (!loaded)
+				if(!load()){
+					log.fail("could not load dbfile["+source+"]");
+					return false;
+				}
+			records = new HashMap<String, FlushingRecord>();
+			return store();
+		}else{
+			return false;
+		}
+	}
+
 	private boolean load() {
 		if (loaded)
 			return false;
 
 		records = new HashMap<String, FlushingRecord>();
-		
+
 		for (String recline : dbfile.loadAll()) {
 			FlushingRecord rec = new FlushingRecord(Csv.decode(recline));
 			records.put(rec.id, rec);
