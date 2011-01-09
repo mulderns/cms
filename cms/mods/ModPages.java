@@ -743,7 +743,7 @@ public class ModPages extends Module {
 			side.up();
 			side.addLayer("div","ingroup filled");
 			side.addLink("preview", script + "/" + hook + "/preview" +  path.getUrl(true) );
-			side.addLink("render", script + "/" + hook + "/render"  +   path.getUrl(true) );
+			side.addLink("publish", script + "/" + hook + "/render"  +   path.getUrl(true) );
 
 			side.up();
 			side.addLayer("div","ingroup filled");
@@ -1090,7 +1090,8 @@ public class ModPages extends Module {
 						File target = new File(target_path,file.name);
 						BinaryFile rfile = (BinaryFile)file;
 
-						if(!FileOps.write(target, rfile.getData(),false)){
+						//if(!FileOps.write(target, rfile.getData(),false)){
+						if(!FileOps.copy(rfile.datasource.getFile(), target, true)){
 							page.addCenter("..could not write the file");
 							pdb.setStatus(path,'o');
 							return false;
@@ -1116,7 +1117,7 @@ public class ModPages extends Module {
 					
 					Renderer renderer = Renderer.getRenderer();
 
-					String data = renderer.generateHtml((TextFile)file);
+					String data = renderer.generateHtml((TextFile)file,path.getPath());
 					if(data == null){
 						page.addCenter("data == null");
 						return false;

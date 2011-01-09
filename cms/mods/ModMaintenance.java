@@ -1,5 +1,6 @@
 package cms.mods;
 
+import html.CheckBoxField;
 import html.CmsElement;
 import html.FileField;
 import html.SubmitField;
@@ -19,6 +20,8 @@ import util.Utils;
 import cms.Cgicms;
 import cms.DataRelay;
 import cms.FileOps;
+import cms.ext.RukousRecord;
+import d2o.FlushingDb;
 import d2o.FlushingFile;
 import d2o.UserDb;
 
@@ -78,6 +81,115 @@ public class ModMaintenance extends Module {
 			page.setTitle("Maintenance - Message of the day");
 			page.addCenter(box);
 			page.addLeft(getActionLinks());
+
+		}});
+
+		actions.add(new Action("Rukouspyynnöt", "rukousp"){public void execute(){
+			log.info("viewing rukouspyynnöt");
+
+			FlushingDb rukousdb = new FlushingDb("rukousdb");
+
+			if(checkField("censor") || checkField("decensor")){
+				pagebuilder.addHidden("has submits");
+
+				for(String key : datarelay.post.keySet()){
+					pagebuilder.addHidden("key["+key+"]");
+				}
+
+				if(datarelay.post.containsKey("censor")){
+					//TODO:
+					//scan database for keys contained in post and mark censored
+
+
+					for(String key : datarelay.post.keySet()){
+						if(rukousdb.pol(key)){
+							RukousRecord record = new RukousRecord(rukousdb.get(key));
+							record.censored = true;
+							rukousdb.put(key, record.toArray());
+						}
+					}
+
+
+				}else if(datarelay.post.containsKey("decensor")){
+					//TODO:
+					//scan database for keys contained in post and remove censored mark
+					for(String key : datarelay.post.keySet()){
+						if(rukousdb.pol(key)){
+							RukousRecord record = new RukousRecord(rukousdb.get(key));
+							record.censored = false;
+							rukousdb.put(key, record.toArray());
+						}
+					}
+				}
+			}
+
+
+			ArrayList<RukousRecord> rukoukset = new ArrayList<RukousRecord>();
+			for(String[] data : rukousdb.all()){
+				rukoukset.add(new RukousRecord(data));
+			}
+
+			CmsElement box = new CmsElement();
+
+			box.createBox("Rukouspyynnöt","medium4");
+			//box.up();
+
+
+			Calendar cal = Calendar.getInstance();
+			cal.setFirstDayOfWeek(Calendar.MONDAY);
+
+			CmsElement censoredBox = new CmsElement();
+
+			censoredBox.createBox("Censored","medium4");
+
+
+			for(RukousRecord  record : rukoukset.toArray(new RukousRecord[0])){
+				pagebuilder.addHidden("rec["+record.toString()+"]");
+				cal.setTimeInMillis(Long.parseLong(record.time));
+
+				if(record.censored){
+
+					censoredBox.addLayer("div","ingroup filled");
+					censoredBox.addLayer("table");
+					censoredBox.addLayer("tr");
+					censoredBox.addLayer("td");
+					censoredBox.addField( record.time, record.time, false, new CheckBoxField(record.censored));
+					censoredBox.up();
+
+					censoredBox.addTag("td", Utils.addLeading(cal.get(Calendar.DATE), 2)+"."+ Utils.addLeading(cal.get(Calendar.MONTH)+1, 2)+": ");
+					censoredBox.addTag("td", record.text);
+
+					censoredBox.up(3);
+
+				}else{
+
+
+					box.addLayer("div","ingroup filled");
+					box.addLayer("table");
+					box.addLayer("tr");
+					box.addLayer("td");
+					box.addField( record.time, record.time, false, new CheckBoxField(record.censored));
+					box.up();
+
+					box.addTag("td", Utils.addLeading(cal.get(Calendar.DATE), 2)+"."+ Utils.addLeading(cal.get(Calendar.MONTH)+1, 2)+": ");
+					box.addTag("td", record.text);
+
+					box.up(3);
+				}
+			}
+
+			box.addFormTop(script+"/"+hook+"/"+action_hook);
+			box.addField("censor", "censor", true, new SubmitField(true));
+
+			censoredBox.addFormTop(script+"/"+hook+"/"+action_hook);
+			censoredBox.addField("decensor", "decensor", true, new SubmitField(true));
+
+
+			page.setTitle("Maintenance - Rukouspyynnöt");
+			page.addCenter(box);
+			page.addCenter(censoredBox);
+			page.addLeft(getActionLinks());
+
 
 		}});
 
@@ -418,7 +530,7 @@ public class ModMaintenance extends Module {
 			page.addCenter(result);
 			page.addLeft(getActionLinks());
 		}});
-		
+
 		actions.add(new Action("Varmuuskopioi kaikki", "backupall"){public void execute(){
 			log.info("doing full backup");
 
@@ -436,21 +548,21 @@ public class ModMaintenance extends Module {
 
 		actions.add(null);
 
-//		actions.add(new Action("päivitä", "update"){public void execute(){
-//			log.info("updating svn repository");
-//
-//			CmsElement result = new CmsElement();
-//			result.createBox("Päivitys","medium4");
-//
-//			String r = updateRepository();
-//			Utils.sleep(2000);
-//			result.addTag("pre",r);
-//			//result.addLink("muut toiminnot", script + "/" + hook );
-//
-//			page.setTitle("Maintenance - Logi");
-//			page.addCenter(result);
-//			page.addLeft(getActionLinks());
-//		}});
+		//		actions.add(new Action("päivitä", "update"){public void execute(){
+		//			log.info("updating svn repository");
+		//
+		//			CmsElement result = new CmsElement();
+		//			result.createBox("Päivitys","medium4");
+		//
+		//			String r = updateRepository();
+		//			Utils.sleep(2000);
+		//			result.addTag("pre",r);
+		//			//result.addLink("muut toiminnot", script + "/" + hook );
+		//
+		//			page.setTitle("Maintenance - Logi");
+		//			page.addCenter(result);
+		//			page.addLeft(getActionLinks());
+		//		}});
 
 		actions.add(new Action("Build info", "build"){public void execute(){
 			ClassLoader cl = this.getClass().getClassLoader();
@@ -562,29 +674,29 @@ public class ModMaintenance extends Module {
 		super.execute();
 	}
 
-//	private String updateRepository() {
-//		StringBuilder sb = new StringBuilder();
-//		try{
-//			Process update = Runtime.getRuntime().exec("sh paivita_sivut.sh");
-//			BufferedInputStream bes = new BufferedInputStream(update.getErrorStream());
-//			BufferedInputStream bis = new BufferedInputStream(update.getInputStream());
-//			int read;
-//			while((read = bes.read()) != -1){
-//				sb.append((char)read);
-//			}
-//			while((read = bis.read()) != -1){
-//				sb.append((char)read);
-//			}
-//			bis.close();
-//			bes.close();
-//			sb.append("\n process exit value: ").append(update.exitValue());
-//		}catch(IOException ioe){
-//			sb.append(ioe.toString());
-//		}catch(Exception e){
-//			sb.append(e.toString());
-//		}
-//		return sb.toString();
-//	}
+	//	private String updateRepository() {
+	//		StringBuilder sb = new StringBuilder();
+	//		try{
+	//			Process update = Runtime.getRuntime().exec("sh paivita_sivut.sh");
+	//			BufferedInputStream bes = new BufferedInputStream(update.getErrorStream());
+	//			BufferedInputStream bis = new BufferedInputStream(update.getInputStream());
+	//			int read;
+	//			while((read = bes.read()) != -1){
+	//				sb.append((char)read);
+	//			}
+	//			while((read = bis.read()) != -1){
+	//				sb.append((char)read);
+	//			}
+	//			bis.close();
+	//			bes.close();
+	//			sb.append("\n process exit value: ").append(update.exitValue());
+	//		}catch(IOException ioe){
+	//			sb.append(ioe.toString());
+	//		}catch(Exception e){
+	//			sb.append(e.toString());
+	//		}
+	//		return sb.toString();
+	//	}
 
 	private String getActionLog() {
 		log.info("getting actionlog");
@@ -639,7 +751,7 @@ public class ModMaintenance extends Module {
 			}
 		}
 	}
-	
+
 	private void backupAll(){
 		//TODO: backup all
 	}

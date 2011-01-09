@@ -991,7 +991,7 @@ public class ModViikko extends Module {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("TKrT:n tulevaa toimintaa"+lf);
-		sb.append("\nVko "+db.getWeekNumber(offset)+lf);
+		sb.append("\nVko "+db.getWeekNumber(offset-1)+lf); // because stupid students.tut.fi thinks its +1
 		int oldday = 0;
 		for(ViikkoEntry ve: stweekmail){
 			if(oldday != ve.day){
@@ -1010,7 +1010,7 @@ public class ModViikko extends Module {
 		}
 		sb.append(lf);
 		if(ndweekmail.size()>0){
-			sb.append(lf+"Vko "+db.getWeekNumber(offset+1)+lf);
+			sb.append(lf+"Vko "+db.getWeekNumber(offset+1-1)+lf); // because stupid students.tut.fi thinks its +1
 			for(ViikkoEntry ve: ndweekmail){
 				sb.append(ve.day+"."+ve.month+". ");
 				sb.append(ve.otsikko);

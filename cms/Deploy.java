@@ -284,7 +284,7 @@ public class Deploy {
 		log.info("writing file:"+fileName);
 
 		try{
-			File output = new File(Cgicms.settings_dir.getParentFile(), fileName);
+			File output = new File(Cgicms.database_dir.getParentFile(), fileName);
 			if(output.exists() && !overwrite){
 				log.info(" not overwriting");
 				return false;

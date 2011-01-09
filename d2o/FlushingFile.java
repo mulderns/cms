@@ -316,5 +316,9 @@ public class FlushingFile {
 		return last_modified;
 	}
 
+	public File getFile() {
+		return flush_file;
+	}
+
 
 }
