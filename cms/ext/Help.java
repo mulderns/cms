@@ -68,8 +68,6 @@ public class Help {
 	}
 
 	public boolean blind_send() {
-		// TODO Auto-generated method stub
-
 		// compose the rukous mail
 
 		//  read records
@@ -90,17 +88,18 @@ public class Help {
 		}
 
 		//  sensure
-		for(RukousRecord cencor : censor_list){			
-			for(RukousRecord record : requests){
-				if( record.text.equalsIgnoreCase(cencor.text))
-					remove_list.add(record);			
+		for(RukousRecord record : requests){
+			for(RukousRecord cencor : censor_list){	
+				if(record.text.equalsIgnoreCase(cencor.text)){
+					remove_list.add(record);
+					break;
+				}
 			}
 		}
-		
+
 		requests.removeAll(remove_list);
 
 		// send the rukous mail to hallitus list
-
 		StringBuffer viesti = new StringBuffer();
 		viesti.append("Viikon rukouspyynnöt:\n");
 		viesti.append("\n-----\n");
@@ -108,9 +107,9 @@ public class Help {
 			viesti.append(record.text);
 			viesti.append("\n\n-----\n\n");
 		}
-		
+
 		viesti.append("\n-----\n\n");
-		
+
 		ActionLog.log("Rukouspyynnöt");
 		//Mailer mailer = new Mailer();
 		//ActionLog.log(Mailer.sendMail("TKrT rukouspalvelu", "tkrt-hallitus@tut.fi", "TKrT:n rukouspalvelun rukouspyynnöt", viesti));

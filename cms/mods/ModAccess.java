@@ -37,8 +37,9 @@ public class ModAccess extends Module {
 		actions.add(new Action(null,""){public void execute(){
 			GroupDb gdb = GroupDb.getDb();
 
-			String [] groups = gdb.getGroupNames();
-
+			ArrayList<String> groups = new ArrayList<String>(Arrays.asList(gdb.getGroupNames()));
+			Collections.sort(groups);
+			
 			CmsElement box = new CmsElement();
 
 			box.addLayer("div", "boxi2");

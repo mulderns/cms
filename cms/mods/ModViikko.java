@@ -1046,7 +1046,7 @@ public class ModViikko extends Module {
 				sb.append(lf+ve.paikka);
 			if(ve.yhteenveto.size()>0)
 				for(String s: ve.yhteenveto)
-					if(s.length()>0){sb.append(lf+s);}
+					if(s.length()>0){sb.append(lf+chop(s,73));}
 
 			sb.append(lf+lf);
 			if(ve.teksti.size()>0){
