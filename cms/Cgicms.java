@@ -270,7 +270,6 @@ public class Cgicms {
 
 			//dumpEnv("env.file.dump");
 
-			//TODO: --servefile
 			SessionerCms sessioner = new SessionerCms(datarelay);
 			session = sessioner.getSession();
 

@@ -103,8 +103,6 @@ public class Treedex {
 	}
 	
 	public IndexFile getIndexFile(String path){
-		//TODO: IndexFile getIndexFile(String path)
-		
 		File temp = new File(root_dir,path);
 		if(temp.exists() && temp.isDirectory()){
 			File index = new File(temp,"index");

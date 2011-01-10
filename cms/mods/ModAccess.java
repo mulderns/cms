@@ -672,6 +672,9 @@ public class ModAccess extends Module {
 						UserInfoRecord userinfo = udb.getUserInfo(ext);
 						//TODO: make message better
 						String message = 
+							"TKrT:n hallituksen ja toimareiden h‰rp‰ke\n" +
+							"\n" +
+							"Vanha salasanasi on resetoitu TAI uusi k‰ytt‰j‰tunnuksesi odottaa aktivoimista.\n\n" +
 							"T‰ll‰ avaimella p‰‰set sis‰‰n muokkaamaan salasanaa : \n" +
 							"https://www.students.tut.fi/cgi-bin/cgiwrap/tkrt/reset.cgi?";
 
@@ -681,7 +684,7 @@ public class ModAccess extends Module {
 						message = message.concat(key);
 						if(datarelay.post.containsKey("spostiin") && userinfo != null){
 							String result;
-							result = Mailer.sendMail("TKrT-Cms", userinfo.email, "Salasanasi on resetoitu", message);
+							result = Mailer.sendMail("TKrT-Cms", userinfo.email, "TKrT-Cms Salasanasi on resetoitu", message);
 							if(result == null){
 								box.addTag("p", "avain l‰hetettiin onnistuneesti");
 								box.addTag("pre style=\"font-size:12.5px;\"", message);

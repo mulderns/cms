@@ -105,10 +105,7 @@ public class KeyManager {
 			log.info("session ok");
 			session = datarelay.session;
 
-			// TODO Auto-generated method stub
-
 			doLogin();
-
 		}
 
 		log.info(" but now - session.delete["+session.delete+"]");

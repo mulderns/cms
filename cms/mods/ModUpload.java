@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import util.ActionLog;
 import util.Logger;
@@ -45,9 +46,11 @@ public class ModUpload extends Module {
 
 			FileHive fh = FileHive.getFileHive();
 
-			DateFormat format = DateFormat.getDateInstance();
+			DateFormat format = DateFormat.getDateInstance(DateFormat.SHORT,Locale.UK);
+			
+			
 			Comparator<UploadFileRecord> by_name = new Comparator<UploadFileRecord>(){public int compare(UploadFileRecord o1, UploadFileRecord o2) {
-				return o1.filename.compareTo(o2.filename);
+				return o1.filename.toLowerCase().compareTo(o2.filename.toLowerCase());
 			}};
 			Comparator<UploadFileRecord> by_user = new Comparator<UploadFileRecord>(){public int compare(UploadFileRecord o1, UploadFileRecord o2) {
 				return o1.upload_user.compareTo(o2.upload_user);
@@ -273,9 +276,6 @@ public class ModUpload extends Module {
 		}});
 
 		actions.add(new Action("categories", "categories"){public void execute(){
-			//TODO:
-			
-
 			FlushingFile categoryfile = new FlushingFile(new File(Cgicms.products_dir,"misc.categories"));
 			String[] data;
 			if(checkField("categories")){
@@ -285,7 +285,12 @@ public class ModUpload extends Module {
 				categoryfile.overwrite(util.Csv.encode(data));
 
 			}else{
-				data = util.Csv.decode(categoryfile.loadAll()[0]);
+				try{
+					data = util.Csv.decode(categoryfile.loadAll()[0]);
+				}catch(ArrayIndexOutOfBoundsException e){
+					data = new String[1];
+					data[0] = "-";					
+				}
 			}
 
 			StringBuilder sb = new StringBuilder();
@@ -293,7 +298,6 @@ public class ModUpload extends Module {
 				sb.append(s).append(",");
 			}
 			
-
 			CmsElement box = new CmsElement();
 			box.createBox("Categories","medium3");
 			box.addFormTop(script + "/" + hook + "/" + action_hook);
@@ -304,8 +308,6 @@ public class ModUpload extends Module {
 			page.setTitle("Edit file categories");
 			page.addCenter(box);
 			page.addLeft(getActionLinks());
-			
-			
 		}});
 		
 		actions.add(new Action(null, "download"){public void execute(){
@@ -484,7 +486,9 @@ public class ModUpload extends Module {
 			data = util.Csv.decode(categoryfile.loadAll()[0]);
 
 			return data;
-		}catch (NullPointerException npe){
+		}catch (NullPointerException e){
+			return new String[]{"-"};
+		}catch (ArrayIndexOutOfBoundsException e){
 			return new String[]{"-"};
 		}
 	}

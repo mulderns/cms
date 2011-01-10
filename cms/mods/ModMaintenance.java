@@ -97,10 +97,7 @@ public class ModMaintenance extends Module {
 				}
 
 				if(datarelay.post.containsKey("censor")){
-					//TODO:
 					//scan database for keys contained in post and mark censored
-
-
 					for(String key : datarelay.post.keySet()){
 						if(rukousdb.pol(key)){
 							RukousRecord record = new RukousRecord(rukousdb.get(key));
@@ -109,9 +106,7 @@ public class ModMaintenance extends Module {
 						}
 					}
 
-
 				}else if(datarelay.post.containsKey("decensor")){
-					//TODO:
 					//scan database for keys contained in post and remove censored mark
 					for(String key : datarelay.post.keySet()){
 						if(rukousdb.pol(key)){
