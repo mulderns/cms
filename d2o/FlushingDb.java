@@ -129,8 +129,8 @@ public class FlushingDb {
 			log.info("key not found [" + key + "]");
 			return false;
 		}
-		if (pol(key)) {
-			log.info("key in use [" + key + "]");
+		if (pol(target)) {
+			log.info("target key in use [" + key + "]");
 			return false;
 		}
 

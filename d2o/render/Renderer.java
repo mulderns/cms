@@ -168,7 +168,7 @@ public class Renderer {
 					//log.info(" module found");
 					modules.get(kernel.getType()).synthesize(kernel, data, box, "");
 				}else{
-					log.fail(" invalid key/type/module ["+kernel.getType()+"]");
+					log.fail(" invalid key/type/module 2 ["+kernel.getType()+"]");
 				}
 			}
 		}else{
@@ -1407,7 +1407,7 @@ public class Renderer {
 							if(modules.containsKey(subm.getType())){
 								modules.get(subm.getType()).synthesize(subm, datas, brew, parentid+data.id+".");
 							}else{
-								log.fail(" invalid key/type/module ["+subm.getType()+"]");
+								log.fail(" invalid key/type/module 3 ["+subm.getType()+"]");
 							}
 						}
 						brew.up();
@@ -1744,7 +1744,7 @@ public class Renderer {
 				locals.get(type).substitute(kernel, path);
 				//log.info(" module found in locals");
 			}else{
-				log.fail(" invalid key/type/module ["+type+"]");
+				log.fail(" invalid key/type/module 1 ["+type+"]");
 			}
 		}
 		return kernel;

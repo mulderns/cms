@@ -17,6 +17,7 @@ public class UploadFileRecord {
 
 	public boolean public_access;
 	public String access_groups;
+	public String category;
 
 	public UploadFileRecord(){
 		filename = "untitled";
@@ -33,11 +34,12 @@ public class UploadFileRecord {
 		download_count = 0;
 
 		public_access = false;
-		access_groups = null;
+		category = "";
+		access_groups = "";
 	}
 	
 	public UploadFileRecord(String[] parts) {
-		if(parts.length == 11){
+		if(parts.length == 12){
 			filename = parts[0];
 			stored_name= parts[1];
 			size = Long.parseLong(parts[2]);
@@ -52,7 +54,8 @@ public class UploadFileRecord {
 			download_count = Integer.parseInt(parts[8]);
 
 			public_access = Boolean.parseBoolean(parts[9]);
-			access_groups = parts[10];
+			category = parts[10];
+			access_groups = parts[11];
 			
 		}else{
 			filename = "error";
@@ -76,6 +79,7 @@ public class UploadFileRecord {
 				Integer.toString(download_count),
 
 				Boolean.toString(public_access),
+				category,
 				access_groups
 
 		};

@@ -156,7 +156,7 @@ public class ModMaintenance extends Module {
 					censoredBox.addField( record.time, record.time, false, new CheckBoxField(record.censored));
 					censoredBox.up();
 
-					censoredBox.addTag("td", Utils.addLeading(cal.get(Calendar.DATE), 2)+"."+ Utils.addLeading(cal.get(Calendar.MONTH)+1, 2)+": ");
+					censoredBox.addTag("td", Utils.addLeading(cal.get(Calendar.DATE), 2)+"."+ Utils.addLeading(cal.get(Calendar.MONTH)+1, 2)+". ");
 					censoredBox.addTag("td", record.text);
 
 					censoredBox.up(3);
@@ -168,7 +168,7 @@ public class ModMaintenance extends Module {
 					box.addLayer("table");
 					box.addLayer("tr");
 					box.addLayer("td");
-					box.addField( record.time, record.time, false, new CheckBoxField(record.censored));
+					box.addField( record.time, record.time, false, new CheckBoxField(!record.censored));
 					box.up();
 
 					box.addTag("td", Utils.addLeading(cal.get(Calendar.DATE), 2)+"."+ Utils.addLeading(cal.get(Calendar.MONTH)+1, 2)+": ");

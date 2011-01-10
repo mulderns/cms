@@ -51,7 +51,7 @@ public class FileHive {
 	}
 
 	public boolean addFile(String user, boolean public_access,
-			String access_groups, FormPart part) {
+			String access_groups, String category, FormPart part) {
 		UploadFileRecord record = new UploadFileRecord();
 
 		record.filename = part.getFilename();
@@ -108,6 +108,7 @@ public class FileHive {
 		record.download_count = 0;
 
 		record.public_access = public_access;
+		record.category = category;
 		record.access_groups = (access_groups == null ? "" : access_groups);
 
 		if (!filedb.add(record.filename, record.toArray())) {
@@ -145,7 +146,7 @@ public class FileHive {
 			log.info("target file does not exist. removing index + meta");
 		}
 
-		if (filedb.del(filename)) {
+		if (!filedb.del(filename)) {
 			log.fail("could not remove file from index");
 			return false;
 		}
@@ -154,7 +155,7 @@ public class FileHive {
 	}
 
 	public boolean renameFile(String filename, String newname){
-		log.info("renaming file");
+		log.info("renaming file ["+filename+"] -> ["+newname+"]");
 
 		if(!filedb.pol(filename)) {
 			log.fail("file not found in index");
@@ -286,6 +287,10 @@ public class FileHive {
 			return false;
 		}
 		return true;
+	}
+	
+	public boolean updateFileRecord(UploadFileRecord record){
+		return filedb.mod(record.filename, record.toArray());
 	}
 
 	public void up(String filename) {

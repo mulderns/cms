@@ -13,7 +13,7 @@ public class Mailer {
 		String sendmail = "/usr/sbin/sendmail -t";
 		//String reply_to = "Reply-to: filtsu@hotmail.com\n";
 
-		/**
+		/** example perl
 		my $sendmail = "/usr/sbin/sendmail -t";
 	 	my $reply_to = "Reply-to: foo\@bar.org\n";
 		my $subject = "Subject: Confirmation of your submission\n";
