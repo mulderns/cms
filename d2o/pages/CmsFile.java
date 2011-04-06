@@ -183,10 +183,12 @@ public class CmsFile implements Comparable<CmsFile>{
 		return false;
 	}
 
-	public boolean rename(String uusinimi, File dir) {
+	public boolean rename(String uusinimi, VirtualPath path, File sdir) {
 		name = uusinimi;
 		modified = true;
 
+		File dir = new File(sdir, path.getPath());
+		
 		File old_meta = new File(dir,metafilename);
 		File old_data = new File(dir,datafilename);
 

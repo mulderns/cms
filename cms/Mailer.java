@@ -43,7 +43,7 @@ public class Mailer {
 			input.append("From: "+from+"\n");
 			input.append("Subject: " + subject + "\n");
 			input.append("To: " + to + "\n");
-			input.append("Content-type: text/plain\n\n");
+			input.append("Content-type: text/plain; charset=\"iso-8859-1\"\n\n");
 			input.append(message);
 
 			long start = System.currentTimeMillis();

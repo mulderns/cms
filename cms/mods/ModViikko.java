@@ -711,14 +711,14 @@ public class ModViikko extends Module {
 						result = Mailer.sendMail(
 								"TKrT tiedotus <tkrt@students.cc.tut.fi>",
 								datarelay.post.get("saaja"),
-								"TKrT:llä tapahtuu",
+								"[TKrT] TKrT:llä tapahtuu",
 								getViikkoMail(0,false)
 						);
 					}else if(ext.equals("1")){
 						result = Mailer.sendMail(
 								"TKrT tiedotus <tkrt@students.cc.tut.fi>",
 								datarelay.post.get("saaja"),
-								"TKrT:llä tapahtuu",
+								"[TKrT] TKrT:llä tapahtuu",
 								getViikkoMail(1,false)
 						);
 					}else{

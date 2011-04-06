@@ -6,6 +6,7 @@ import html.ComboBoxField;
 import html.FileField;
 import html.HiddenField;
 import html.SubmitField;
+import html.TextAreaField;
 import html.TextField;
 import http.FormPart;
 
@@ -18,8 +19,10 @@ import java.util.Map.Entry;
 
 import util.ActionLog;
 import util.Utils;
+import cms.Cgicms;
 import cms.DataRelay;
 import cms.FileOps;
+import d2o.FlushingFile;
 import d2o.pages.BinaryFile;
 import d2o.pages.CmsFile;
 import d2o.pages.IndexRecord;
@@ -470,7 +473,7 @@ public class ModPages extends Module {
 					CmsFile file = pdb.getFileMeta(path);
 					CmsElement box = new CmsElement();
 					box.createBox("Vaihda nimeä", "medium3");
-					box.addFormTop(script + "/" + hook + "/" + action_hook +"/"+ path.getUrl());
+					box.addFormTop(script + "/" + hook + "/" + action_hook + path.getUrl(true));
 
 					box.addTag("label","Uusi nimi");
 					box.addField("uusinimi", file.name, true, new TextField(27));
@@ -481,7 +484,7 @@ public class ModPages extends Module {
 						if((result = pdb.rename(path, datarelay.post.get("uusinimi"))) != null){
 							pagebuilder.addMessage("error: "+result);
 						}else{
-							pagebuilder.setRedirect(script + "/" + hook + "/" + "file/" + path.getPath()+"/"+datarelay.post.get("uusinimi"));
+							pagebuilder.setRedirect(script + "/" + hook + "/" + "file/" + path.getPath()+ datarelay.post.get("uusinimi"));
 						}
 					}else{
 						page.addCenter(box);
@@ -1165,38 +1168,95 @@ public class ModPages extends Module {
 		}});
 		
 		actions.add(new Action("Scan target", "scan"){public void execute(){
+			//TODO: load ignore dir list
+			//      somehow relay that information to the scanner
+			
+			FlushingFile ff = new FlushingFile(new File(Cgicms.products_dir,"misc.scanexclude"));
+			
+			if(ext.contentEquals("exclude")){
+				if(checkField("exclude")){
+					String data = datarelay.post.get("exclude");
+					ff.overwrite(data);
+				}
+			}
+			
+			String[] exclude = ff.loadAll();
+			if(exclude == null){
+				exclude = new String[0];
+			}
+			
+			CmsElement stuff = new CmsElement();
+			stuff.createBox("Excluded directories","medium3");
+
+			stuff.addFormTop(script+"/"+hook+"/"+action_hook+"/exclude");
+			StringBuilder excludes = new StringBuilder();
+			for(String s : exclude)
+				excludes.append(s).append("\n");
+			stuff.addField("exclude", excludes.toString(), true, new TextAreaField(200));
+			stuff.addField("submit","submit",false,new SubmitField(true));
+
+			page.addCenter(stuff);		
+			
 			
 			CmsElement box = new CmsElement();
 			box.createBox("target looks like this");
+			box.addLayer("pre style=\"font-size:12.5px\"");
 			
 			File target_dir = new File(datarelay.target);
 			
-			ArrayList<File> root_list = new ArrayList<File>(Arrays.asList(target_dir.listFiles()));
+			scanDir(target_dir, 0, box, exclude);
+
+			page.addCenter(box);
+			page.addLeft(getActionLinks());
+		}
+		
+		public void scanDir(File dir, int depth, CmsElement box, String[] excludes){
+			//TODO: exlude dirs in scan
+			
+			File[] files = dir.listFiles();
+			if(files == null)
+				return;
+			ArrayList<File> root_list = new ArrayList<File>(Arrays.asList(files));
 			Collections.sort(root_list);
-			
-			
+						
 			PageDb pdb = PageDb.getDb();
-			
-			box.addLayer("pre style=\"font-size:12.5px\"");
+			String db_path = "/";// = dir.getName();
+			File temp = dir;
+			for (int i = 0; i < depth; i +=2 ){
+				db_path = "/" + temp.getName() + db_path;
+				log.info("db_path["+db_path+"]");
+				temp = temp.getParentFile();
+			}
 			
 			for(File f : root_list){
 				if(f.isFile()){
 					box.addContent(
 							(pdb.fileExists(
-									VirtualPath.create("/"+f.getName())
-									)?"+ ":"- ")+f.getName()+"\n");
+									VirtualPath.create(db_path + f.getName())
+									)?"  ":"+ ")+Utils.genSpace(depth)+ "."+ f.getName()+"\n");
 				}else {
+					boolean skip = false;
+					for(String s : excludes){
+						if(s.equalsIgnoreCase(f.getName()))
+							skip = true;
+							break;
+					}
 					
-					box.addContent("d"+
+					if(skip)
+						continue;
+					
+					box.addContent(//"d"+
 							(pdb.dirExists(
-									"/"+f.getName()
-									)?"+ ":"- ")+f.getName()+"\n");
+									db_path + f.getName()
+									)?"  ":"+ ")+Utils.genSpace(depth)+ "> " +f.getName()+"\n");
+					scanDir(f,depth+2,box,excludes);
 		
 				}
 			}
-			page.addCenter(box);
-			page.addLeft(getActionLinks());
-		}});
+			
+		}
+		
+		});
 		
 
 		actions.add(new Action(null, "upload"){public void execute(){

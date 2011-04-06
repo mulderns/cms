@@ -467,7 +467,10 @@ public class ModOwn extends Module{
 			}
 		}});
 
-		actions.add(new Action(null, "upload"){public void execute(){
+		
+		//TODO: doesn't work because misc.naamat is no longer used. instead the info '
+		//      can be found from database/userinfo [7]
+		actions.add(new Action(null, "upload"){public void execute(){ 
 			VirtualPath path = VirtualPath.create("/res/");
 
 			FlushingFile naamaprofiilit = new FlushingFile(new File(Cgicms.products_dir,"misc.naamat"));

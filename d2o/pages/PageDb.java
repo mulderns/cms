@@ -259,9 +259,19 @@ public class PageDb {
 			return "name already in use";
 		}
 
-		index.renameRecord(path.getFilename(),uusinimi);
+		if(!index.renameRecord(path.getFilename(),uusinimi))
+			return "error while renaming index record";
 
-		if(CmsFile.loadFile(path, sdir).rename(uusinimi,sdir)){
+		CmsFile muuta = CmsFile.loadFile(path, sdir);
+		if(muuta == null)
+			return "could not load the file record ["+path+"]";
+		
+		//log.info("path for renaming file ["+path+"]");
+		//log.info("directory for renaming file ["+path.getPath()+"]");
+		//log.info("sdirectory for renaming file ["+sdir.getAbsolutePath()+"]");
+		
+		
+		if(muuta.rename(uusinimi, path, sdir)){
 			actions.append("r,"+path+","+uusinimi+","+Cgicms.datarelay.username);
 			return null;
 		}
@@ -435,28 +445,28 @@ public class PageDb {
 
 		String[] parts = path.split("/");
 
-		log.info(" 0");
+		//log.info(" 0");
 		if(parts.length > 0){
 			StringBuilder sb = new StringBuilder();
-			log.info(" 1");
+			//log.info(" 1");
 			for(int i = 0; i < parts.length -1; i++){
 				sb.append(parts[i]+"/");
 			}
-			log.info(" 2");
+			//log.info(" 2");
 			File dir = new File(sdir,sb.toString());
 			File index = new File(dir,"index");
 			if(index.exists()){
-				log.info(" 3");
+				//log.info(" 3");
 				IndexFile dex = new IndexFile(dir);
 
-				log.info(" 4");
+				//log.info(" 4");
 				if(dex.fileExists(parts[parts.length-1])){
-					log.info(" 5");
+					//log.info(" 5");
 
 					File file = new File(dir,"page.meta."+parts[parts.length-1]);
 					log.info(" "+ file.getAbsolutePath());
 					if(file.exists()){
-						log.info(" 6");
+						//log.info(" 6");
 						log.info(" the file exists");
 						return true;
 					}						
