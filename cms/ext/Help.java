@@ -23,7 +23,7 @@ public class Help {
 						datarelay.post.containsKey("rukousaihe")
 				)
 		){
-			RukousRecord record = new RukousRecord(System.currentTimeMillis(),datarelay.post.get("rukousaihe"));
+			RukousRecord record = new RukousRecord(System.currentTimeMillis(),stripNewlines(datarelay.post.get("rukousaihe")));
 
 			//create an entry in the rukous database
 			rukousdb = new FlushingDb(source);
@@ -65,6 +65,10 @@ public class Help {
 		}
 		 */
 		pagebuilder.bake();
+	}
+
+	private String stripNewlines(String string) {
+		return string.replace("\r", ";").replace("\n", ";"); 
 	}
 
 	public boolean blind_send() {
