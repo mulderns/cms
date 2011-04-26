@@ -1204,6 +1204,11 @@ public class ModPages extends Module {
 			
 			File target_dir = new File(datarelay.target);
 			
+			//log.info("excludes:");
+			//for(String s : exclude)
+			//	log.info(" ["+s+"]");
+			
+			
 			scanDir(target_dir, 0, box, exclude);
 
 			page.addCenter(box);
@@ -1224,7 +1229,7 @@ public class ModPages extends Module {
 			File temp = dir;
 			for (int i = 0; i < depth; i +=2 ){
 				db_path = "/" + temp.getName() + db_path;
-				log.info("db_path["+db_path+"]");
+				//log.info("db_path["+db_path+"]");
 				temp = temp.getParentFile();
 			}
 			
@@ -1236,10 +1241,14 @@ public class ModPages extends Module {
 									)?"  ":"+ ")+Utils.genSpace(depth)+ "."+ f.getName()+"\n");
 				}else {
 					boolean skip = false;
+					//log.info(" ## scanning skip ["+f.getName()+"]");
 					for(String s : excludes){
-						if(s.equalsIgnoreCase(f.getName()))
+						//log.info("    ["+s+"]");
+						if(s.equalsIgnoreCase(f.getName())){
 							skip = true;
 							break;
+						}
+						//log.info("     -");							
 					}
 					
 					if(skip)
