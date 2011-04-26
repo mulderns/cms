@@ -218,7 +218,7 @@ public class ModOwn extends Module{
 					}else{
 						Renderer renderer = Renderer.getRenderer();
 
-						String data = renderer.generateHtml((TextFile)file);
+						String data = renderer.generateHtml((TextFile)file, false);
 						String[] ds = new String[1];
 						ds[0] = data;
 						File target_path = new File(datarelay.target);
@@ -335,7 +335,7 @@ public class ModOwn extends Module{
 			}
 			Renderer renderer = Renderer.getRenderer();
 			renderer.setUrl(script+"/sivut/preview/");
-			String data = renderer.generateHtml(naamasivu);
+			String data = renderer.generateHtml(naamasivu, false);
 
 			pagebuilder.rawSend(data);
 

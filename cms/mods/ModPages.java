@@ -989,7 +989,7 @@ public class ModPages extends Module {
 
 				Renderer renderer = Renderer.getRenderer();
 				renderer.setUrl(script+"/"+hook+"/preview/");
-				String data = renderer.generateHtml((TextFile)file);
+				String data = renderer.generateHtml((TextFile)file,false);
 				data = data.replace("</html>", "" +
 						"<div style=\"" +
 						"border:2px solid red;" +
@@ -1120,7 +1120,7 @@ public class ModPages extends Module {
 					
 					Renderer renderer = Renderer.getRenderer();
 
-					String data = renderer.generateHtml((TextFile)file,path.getPath());
+					String data = renderer.generateHtml((TextFile)file,false);
 					if(data == null){
 						page.addCenter("data == null");
 						return false;

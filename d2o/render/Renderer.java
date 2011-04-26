@@ -754,7 +754,7 @@ public class Renderer {
 	}*/
 
 
-	public String generateHtml(TextFile file) {
+	public String generateHtml(TextFile file, boolean strip) {
 		log.info("Generating html...");
 
 		if(file == null){
@@ -794,20 +794,14 @@ public class Renderer {
 
 		StringBuilder sb = new StringBuilder();
 
-		if(url!=null){
-			if(template!=null){
+		if(url != null && !strip){
+			if(template != null){
 				sb.append("Content-Type: text/html; charset=iso-8859-1;\n\n");
 			}else{
 				sb.append("Content-Type: "+file.content_type+"; charset=iso-8859-1;\n\n");
 			}
-			log.info("content type: ["+file.content_type+"] ->"+sb.toString());
+			log.info("content type: ["+file.content_type+"] -> "+sb.toString());
 		}
-
-		//final String linesep = System.getProperty("line.separator");
-		/*for(Kernel kernel : cloud.subs){
-			sb.append(kernel.toString());
-			sb.append(linesep);
-		}*/
 
 		if(data != null){
 			sb.append(data.toHtml());
@@ -819,71 +813,7 @@ public class Renderer {
 
 	}
 
-	public String generateHtml(TextFile file, String _path) {
-		log.info("Generating html...");
-
-		if(file == null){
-			log.fail("file is null");
-			return null;
-		}
-
-		VirtualPath path = (file.relativePath==null?VirtualPath.create(""):file.relativePath);
-		String template;
-
-		// gut == abstract sectionize
-		// infuse == synthetize meta tags to code using cloud data;
-
-		// gut the file
-		//log.info("1st get gutted file");
-		Kernel skeleton = getFile(file);
-		// infuse the file -> cloud
-		//log.info("gutts: "+structure.toString());
-
-		//log.info("1st infuse");
-		Kernel data = fillWithData(skeleton, new Kernel(), path);
-		//log.info("fusion: "+cloud.toString());
-		// if file has parent
-		template = skeleton.getParentName();
-
-		while(template != null && !template.equals("null")){
-			//log.info("gut lap");
-			// gut the parent
-			skeleton = getCachedTemplate(template);
-			//log.info("gutts: "+structure.toString());
-			// infuse cloud and parent -> new cloud
-			data = fillWithData(skeleton, data, path);
-			//log.info("fusion: "+cloud.toString());
-			// if parent has parent
-			template = skeleton.getParentName();
-		}
-
-		StringBuilder sb = new StringBuilder();
-
-		if(url!=null){
-			if(template!=null){
-				sb.append("Content-Type: text/html; charset=iso-8859-1;\n\n");
-			}else{
-				sb.append("Content-Type: "+file.content_type+"; charset=iso-8859-1;\n\n");
-			}
-			log.info("content type: ["+file.content_type+"] ->"+sb.toString());
-		}
-
-		//final String linesep = System.getProperty("line.separator");
-		/*for(Kernel kernel : cloud.subs){
-			sb.append(kernel.toString());
-			sb.append(linesep);
-		}*/
-
-		if(data != null){
-			sb.append(data.toHtml());
-		}else{
-			sb.append("<html><body><pre>null</pre></body></html>");
-			log.fail("cloud == @null");
-		}
-		return sb.toString();
-
-	}
-	
+		
 	private Kernel getCachedTemplate(String filename){
 		if(templateCache == null){
 			templateCache = new HashMap<String, Kernel>();
@@ -1163,27 +1093,23 @@ public class Renderer {
 				if(url!=null){
 					TextFile file = (TextFile)pdb.getFileMeta(VirtualPath.create(target));
 					if(file != null){
-						Kernel structure = getFile(file);
+						
+						metakernel.id = "";
+						metakernel.add(new Kernel(generateHtml(file, true),Kernel.Type.code));
+						
+						
+						/*Kernel structure = getFile(file);
 						//log.info("apuva : "+structure.toString());
 						structure = fillWithData(structure, new Kernel(), from);
 						metakernel.id = "";
 						metakernel.add(new Kernel(structure.toHtml(),Kernel.Type.code));
-						//log.info("apuva : "+structure.toHtml());
+						//log.info("apuva : "+structure.toHtml());*/
+						
 					}else{
 						metakernel.id = "";
 						metakernel.add(new Kernel("<!-- file not found: "+target+" -->",Kernel.Type.code));
 					}
 
-					/*
-				if(file == null){
-					log.fail("ssi fetch file null");
-					metakernel.id = "<!-- ssi error ["+VirtualPath.create(target).getUrl()+"] -->";
-				}else{
-					metakernel.id = "";
-					for(String s: file.getData()){
-						metakernel.add(new Kernel(s,Kernel.Type.code));
-					}
-				}*/
 				}else{
 					metakernel.id = "";
 					metakernel.add(new Kernel("<!--#include virtual=\""+target+"\" -->",Kernel.Type.code));
