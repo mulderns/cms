@@ -163,6 +163,14 @@ public class Cgicms {
 			datarelay.target = getRelativePath();
 			datarelay.res = getResRoot();
 			datarelay.env = new HashMap<String,String>(System.getenv());
+			
+			// Fix for java calendar week_of_year +1 issue on linux
+			if(System.getProperty("os.name").startsWith("Linux")){
+				datarelay.week_fix = -1;
+			}else{
+				datarelay.week_fix = 0;
+			}
+						
 			group_hook = "cms";
 
 			// read input from cgi-environment

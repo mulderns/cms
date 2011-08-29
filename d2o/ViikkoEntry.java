@@ -7,11 +7,15 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Calendar;
 
+import cms.Cgicms;
+
 import util.Csv;
 import util.Logger;
 import util.Utils;
 
 public class ViikkoEntry implements Comparable<ViikkoEntry>{
+	cms.DataRelay datarelay = Cgicms.datarelay;
+	
 	public String otsikko, paiva, vuosi, paikka;
 	public ArrayList<String> yhteenveto;
 	public ArrayList<String> teksti;
@@ -132,7 +136,7 @@ public class ViikkoEntry implements Comparable<ViikkoEntry>{
 		Calendar experim = Calendar.getInstance();
 		experim.setFirstDayOfWeek(Calendar.MONDAY);
 		experim.set(year,month-1,day);
-		week = experim.get(Calendar.WEEK_OF_YEAR);
+		week = experim.get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix;
 	}
 
 	public void genAutoWeek(int offset){

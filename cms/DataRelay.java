@@ -27,6 +27,8 @@ public class DataRelay {
 	public String target;
 	public String res;
 
+	public int week_fix;
+	
 	public PageBuilder pagebuilder;
 	public Session session;
 	public Logger log = new Logger("datarelay");
