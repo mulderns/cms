@@ -167,7 +167,7 @@ public class ModViikko extends Module {
 			ViikkoDb db = new ViikkoDb();
 			db.checkDb();
 			int last_week = 999;
-			int current_week = Calendar.getInstance().get(Calendar.WEEK_OF_YEAR);
+			int current_week = Calendar.getInstance().get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix;
 
 			for(ViikkoEntry ve : db.getUserEntries("all")){
 				if(ve.getWeek() != last_week){
@@ -779,7 +779,10 @@ public class ModViikko extends Module {
 
 		actions.add(new Action("Päivitä sivut", "julkaise"){public void execute(){
 			if(checkField("flag")){
-				FileOps.write(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false), false);
+				FileOps.write(new File(datarelay.target,"s_viikko_gen.html"), getViikkoHtml(false), false);
+				
+				FileOps.write(new File(datarelay.target,"s_tuleva.html"), getTulevaHtml(), false);
+				
 				CmsElement box = new CmsElement();
 				box.createBox("Sivujen päivitys", "medium3");
 				box.addTag("p","sivut päivitetty");
@@ -817,6 +820,11 @@ public class ModViikko extends Module {
 				page.addCenter("<div class=\"right\">");
 				page.addCenter(getViikkoHtml(false));
 				page.addCenter("</div>");
+				
+				page.addCenter("<div class=\"right\">");
+				page.addCenter(getTulevaHtml());
+				page.addCenter("</div>");
+								
 				page.addLeft(getActionLinks());
 			}
 		}});
@@ -991,7 +999,7 @@ public class ModViikko extends Module {
 
 		StringBuilder sb = new StringBuilder();
 		sb.append("TKrT:n tulevaa toimintaa"+lf);
-		sb.append("\nVko "+db.getWeekNumber(offset-1)+lf); // because stupid students.tut.fi thinks its +1
+		sb.append("\nVko "+db.getWeekNumber(offset)+lf); 
 		int oldday = 0;
 		for(ViikkoEntry ve: stweekmail){
 			if(oldday != ve.day){
@@ -1010,7 +1018,7 @@ public class ModViikko extends Module {
 		}
 		sb.append(lf);
 		if(ndweekmail.size()>0){
-			sb.append(lf+"Vko "+db.getWeekNumber(offset+1-1)+lf); // because stupid students.tut.fi thinks its +1
+			sb.append(lf+"Vko "+db.getWeekNumber(offset+1)+lf);
 			for(ViikkoEntry ve: ndweekmail){
 				sb.append(ve.day+"."+ve.month+". ");
 				sb.append(ve.otsikko);
@@ -1120,6 +1128,41 @@ public class ModViikko extends Module {
 	}
 
 
+	private String getTulevaHtml(){
+		CmsElement tap = new CmsElement();
+
+		ViikkoDb db = new ViikkoDb();
+		int last_week = 999;
+		
+		for(ViikkoEntry ve : db.getUserEntries("all")){
+			if(ve.getWeek() != last_week){
+				tap.up(3);
+				last_week = ve.getWeek();
+
+				tap.addLayer("div", "boxi2 medium3");
+				tap.addTag("h4", "Vko "+ve.getWeek());
+				tap.addLayer("div", "ingroup filled");
+				tap.addLayer("table", "table5");
+				tap.addSingle("colgroup width=\"65\"");
+				tap.addSingle("colgroup width=\"55\"");
+				tap.addSingle("colgroup width=\"150\"");
+				tap.addSingle("colgroup");
+				
+			}
+
+			tap.addLayer("tr");
+			tap.addTag("td", null, ve.getDayName()+" "+ ve.day+"."+ve.month+".");
+			tap.addTag("td", null, Utils.addLeading(ve.hour,2) +":" + Utils.addLeading(ve.minute, 2));
+			tap.addTag("td", null, ve.otsikko);
+			tap.addTag("td", null, ve.paikka);
+			
+			tap.up();
+		}
+		tap.up(3);
+		return tap.toString();
+		
+	}
+	
 	private String getViikkoHtml(boolean preview){
 		ViikkoDb db = new ViikkoDb();
 		Calendar k = Calendar.getInstance();
@@ -1250,7 +1293,10 @@ public class ModViikko extends Module {
 
 	public boolean blind_update(){
 		ActionLog.action("updating week, blind");
-		return FileOps.write(new File(datarelay.target+"s_viikko_gen.html"), getViikkoHtml(false), false);
+		
+		return FileOps.write(new File(datarelay.target,"s_viikko_gen.html"), getViikkoHtml(false), false)
+		&&
+		FileOps.write(new File(datarelay.target,"s_tuleva.html"), getTulevaHtml(), false);
 	}
 }
 

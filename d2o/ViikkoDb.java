@@ -10,11 +10,12 @@ import util.Csv;
 import util.Logger;
 import util.Utils;
 import cms.Cgicms;
+import cms.DataRelay;
 import cms.FileOps;
 
 public class ViikkoDb {
 	Logger log;
-
+	DataRelay datarelay = Cgicms.datarelay;
 	File db_file;
 
 	public ViikkoDb(){
@@ -35,7 +36,7 @@ public class ViikkoDb {
 		try{
 			experim.set(ve.year, ve.month-1, ve.day);
 			experim.setFirstDayOfWeek(Calendar.MONDAY);
-			return genFilename(ve.year,experim.get(Calendar.WEEK_OF_YEAR));
+			return genFilename(ve.year,experim.get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix);
 		}catch(Exception e){
 			return null;
 		}
@@ -67,8 +68,8 @@ public class ViikkoDb {
 			try{
 				experim.set(year, month-1, day);
 				experim.setFirstDayOfWeek(Calendar.MONDAY);
-				log.info("generated filename from id ["+id+"] -> ["+year + Utils.addLeading(experim.get(Calendar.WEEK_OF_YEAR),2) + ".hap"+"]");
-				return genFilename(year,experim.get(Calendar.WEEK_OF_YEAR));
+				log.info("generated filename from id ["+id+"] -> ["+year + Utils.addLeading(experim.get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix,2) + ".hap"+"]");
+				return genFilename(year,experim.get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix);
 
 			}catch(Exception e){
 				log.info("date ill formed");
@@ -213,7 +214,7 @@ public class ViikkoDb {
 		Calendar now = Calendar.getInstance();
 		now.setFirstDayOfWeek(Calendar.MONDAY);
 		now.add(Calendar.WEEK_OF_YEAR, offset);
-		int week = now.get(Calendar.WEEK_OF_YEAR);
+		int week = now.get(Calendar.WEEK_OF_YEAR) + datarelay.week_fix;
 		int year = now.get(Calendar.YEAR);
 
 		ArrayList<ViikkoEntry> array = loadEntries(genFilename(year,week), vain_mailiin, vain_etukateen);
@@ -252,14 +253,14 @@ public class ViikkoDb {
 				"week["+now.get(Calendar.WEEK_OF_YEAR)+"] " +
 				"first_d_w["+now.getFirstDayOfWeek()+"] []"
 				);*/
-		return now.get(Calendar.WEEK_OF_YEAR);
+		return now.get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix;
 	}
 
 	public void removeOld() {
 		Calendar now = Calendar.getInstance();
 		now.setFirstDayOfWeek(Calendar.MONDAY);
 		int cur_year = now.get(Calendar.YEAR);
-		int cur_week = now.get(Calendar.WEEK_OF_YEAR);
+		int cur_week = now.get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix;
 
 		//FileHive fh = FileHive.getFileHive(db_file);
 		for(File _file : FileOps.getFiles(db_file,"hap")){
