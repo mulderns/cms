@@ -1133,8 +1133,12 @@ public class ModViikko extends Module {
 
 		ViikkoDb db = new ViikkoDb();
 		int last_week = 999;
-		
+		int current_week = Calendar.getInstance().get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix;
+
 		for(ViikkoEntry ve : db.getUserEntries("all")){
+			if(ve.getWeek() < current_week || ve.getWeek() > current_week + 2)
+				continue;
+			
 			if(ve.getWeek() != last_week){
 				tap.up(3);
 				last_week = ve.getWeek();
@@ -1152,7 +1156,11 @@ public class ModViikko extends Module {
 
 			tap.addLayer("tr");
 			tap.addTag("td", null, ve.getDayName()+" "+ ve.day+"."+ve.month+".");
-			tap.addTag("td", null, Utils.addLeading(ve.hour,2) +":" + Utils.addLeading(ve.minute, 2));
+			if(ve.hour == 0 && ve.minute == 0){
+				tap.addTag("td", null, "&nbsp;");
+			}else{
+				tap.addTag("td", null, Utils.addLeading(ve.hour,2) +":" + Utils.addLeading(ve.minute, 2));
+			}
 			tap.addTag("td", null, ve.otsikko);
 			tap.addTag("td", null, ve.paikka);
 			

@@ -519,7 +519,19 @@ public class PageDb {
 		if(errors.length() > 0){
 			return errors.toString();
 		}
+		
 		actions.append("-f,"+path+"/"+name+","+Cgicms.datarelay.username);
+
+		// adding deletion of the file outside cms in render dir
+		File rendered_target = new File(new File(Cgicms.datarelay.target, path), name);
+		try{
+			if(rendered_target.exists() && !rendered_target.delete()){
+				return "could not delete rendered filedata";
+			}
+		}catch (Exception ex){
+			return ex.toString();
+		}
+		
 		return null;
 	}
 
