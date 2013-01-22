@@ -148,6 +148,7 @@ public class ViikkoEntry implements Comparable<ViikkoEntry>{
 			day = experim.get(Calendar.DAY_OF_MONTH);
 			month = experim.get(Calendar.MONTH)+1;
 			year = experim.get(Calendar.YEAR);
+			week = experim.get(Calendar.WEEK_OF_YEAR)+datarelay.week_fix;
 			auto = false;
 		}
 	}
