@@ -330,6 +330,12 @@ public class Cgicms {
 			datarelay.env = new HashMap<String,String>(System.getenv());
 			group_hook = "cms";
 
+			if(System.getProperty("os.name").startsWith("Linux")){
+				datarelay.week_fix = -1;
+			}else{
+				datarelay.week_fix = 0;
+			}
+			
 			// read input from cgi-environment
 			request = new HttpRequest(datarelay);//initHttpRequest();
 
@@ -343,7 +349,10 @@ public class Cgicms {
 			pagebuilder = new PageBuilder(this);
 			datarelay.pagebuilder = pagebuilder;
 
-			if(!new ModViikko(datarelay).blind_update()){
+			cms.mods.ModViikko viikko = new ModViikko(datarelay);
+			viikko.activate();
+			
+			if(!viikko.blind_update()){
 				ActionLog.error("update failed");
 			}else{
 				ActionLog.log("kicker updated week successfully");
