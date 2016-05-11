@@ -166,7 +166,7 @@ public class Cgicms {
 			
 			// Fix for java calendar week_of_year +1 issue on linux
 			if(System.getProperty("os.name").startsWith("Linux")){
-				datarelay.week_fix = -1;
+				datarelay.week_fix = 0;
 			}else{
 				datarelay.week_fix = 0;
 			}
@@ -479,6 +479,7 @@ public class Cgicms {
 
 		}else if(Collections.binarySearch(arguments, "--check") >= 0){
 			// --check might confirm the correct dir/file structure and/or other stuff
+			Logger.setEnableSystemOut(true);
 			Deploy deploy = new Deploy(this);
 			deploy.checkDirStructure();
 			//checkModules();
@@ -488,6 +489,7 @@ public class Cgicms {
 
 		}else if(Collections.binarySearch(arguments, "--deploy") >= 0){
 			// --deploy helps test the system
+			Logger.setEnableSystemOut(true);
 			new Deploy(this).makeDeploy();
 			return;
 
@@ -498,6 +500,7 @@ public class Cgicms {
 			 */
 		}else if(Collections.binarySearch(arguments, "--bootstrap") >= 0){
 			// --hash prints out the hash of args[1]
+			Logger.setEnableSystemOut(true);
 			new Deploy(this).bootStrapRootUser("mullis", "mallis");
 			//bootSmack("")
 			return;

@@ -25,6 +25,7 @@ import cms.FileOps;
 import d2o.FlushingFile;
 import d2o.pages.BinaryFile;
 import d2o.pages.CmsFile;
+import d2o.pages.CmsFile.Type;
 import d2o.pages.IndexRecord;
 import d2o.pages.PageDb;
 import d2o.pages.TemplateFile;
@@ -1236,9 +1237,14 @@ public class ModPages extends Module {
 			for(File f : root_list){
 				if(f.isFile()){
 					box.addContent(
-							(pdb.fileExists(
-									VirtualPath.create(db_path + f.getName())
-									)?"  ":"+ ")+Utils.genSpace(depth)+ "."+ f.getName()+"\n");
+							(pdb.fileExists(VirtualPath.create(db_path + f.getName()))
+									?
+									"  " : 
+										"<a href=\""+
+										script + "/" + hook + "/createDummy" +
+										db_path + f.getName()
+										+"\">+</a>" + " "
+							) + Utils.genSpace(depth)+ "."+ f.getName()+"\n");
 				}else {
 					boolean skip = false;
 					//log.info(" ## scanning skip ["+f.getName()+"]");
@@ -1371,6 +1377,48 @@ public class ModPages extends Module {
 				//page.addTop(getMenu());
 				page.addCenter(box);
 			}
+		}});
+		
+		actions.add(new Action(null, "createDummy"){public void execute(){
+			VirtualPath path = VirtualPath.create(ext);
+			
+			CmsElement box = new CmsElement();
+			box.addLayer("div","boxi2 medium3");
+			box.addTag("h4","Create dummy:");
+			box.addLayer("div", "ingroup filled");
+			box.addTag("p", "["+path.getPath()+"]" +path.getFilename());
+			
+			PageDb pdb = PageDb.getDb();
+			if(pdb.fileExists(path)){
+				box.addTag("p", "file exists in pdb");
+			}else{
+				if(!pdb.dirExists(path.getPath())){
+					box.addTag("p", "not ! creating dir");
+					
+					StringBuilder sb = new StringBuilder();
+					for(String dir : path.getPath().split("/")){
+						if(dir.length()>0){
+							
+							pdb.createDir(sb.toString(), dir);
+							sb.append(dir).append('/');
+						}
+					}
+					
+					//pdb.createDir(path.up().up(), path.up().getFilename());
+				}else{
+					CmsFile dummy = new CmsFile(path.getFilename());
+					dummy.type = Type.DUMMY;
+					if(pdb.addFile(path.getPath(), dummy)){
+						box.addTag("p", "file created!");
+					}else{
+						box.addTag("p", "file could not be created");
+					}
+					
+				}
+			}
+			
+			
+			page.addCenter(box);
 		}});
 	}
 

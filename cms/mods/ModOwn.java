@@ -389,8 +389,11 @@ public class ModOwn extends Module{
 				box.addField("uusi", null, true, new PassField(-1));
 				box.addContent("</td></tr><tr><td>Uudestaan:</td><td>");
 				box.addField("uusi2", null, true, new PassField(-1));
+				box.addContent("</td></tr><tr><td colspan=\"2\">");
+				box.addField("submit", "submit", false, new SubmitField(true));
 				box.addContent("</td></tr></table");
-				box.addContent("<input type=\"submit\" value=\"vaihda\" class=\"list\">");
+				//box.addContent("<input type=\"submit\" value=\"vaihda\" class=\"list\">");
+				
 				box.addContent("</form>");				
 
 				if(checkFields(box.getFields())){
@@ -455,13 +458,13 @@ public class ModOwn extends Module{
 						result.addLink("muut toiminnot", script + "/" + hook );
 
 						page.setTitle("Omat tiedot");
-						page.addTop(getMenu());
+						//page.addTop(getMenu());
 						page.addCenter(result.toString());
 
 					}
 				}else{
 					page.setTitle("Käyttäjä kohtaiset hommelit");
-					page.addTop(getMenu());
+					//page.addTop(getMenu());
 					page.addCenter(box);
 				}
 			}
