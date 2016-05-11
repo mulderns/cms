@@ -120,7 +120,7 @@ public class ModUpload extends Module {
 				}
 				
 				for(UploadFileRecord record : records){
-					if(!record.category.equals(category))
+					if(record.category!= null && !record.category.equals(category))
 						continue;
 					parillinen = !parillinen;
 					box.addLayer("tr"+(parillinen?" style=\"background-color:#f5f5f5\"":""));
